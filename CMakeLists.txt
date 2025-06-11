@@ -3,4 +3,71 @@ project(PearlLab)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(PearlLab main.cpp)
+set(VENV_PATH "/home/xabdomo/tf-env")
+set(Python3_EXECUTABLE "${VENV_PATH}/bin/python3")
+set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/libs/imgui")
+set(IMGUI_SOURCES
+        ${IMGUI_DIR}/imgui.cpp
+        ${IMGUI_DIR}/imgui_demo.cpp
+        ${IMGUI_DIR}/imgui_draw.cpp
+        ${IMGUI_DIR}/imgui_tables.cpp
+        ${IMGUI_DIR}/imgui_widgets.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+)
+set(GLAD_DIR "${CMAKE_SOURCE_DIR}/libs/glad")
+set(GLAD_SOURCES ${GLAD_DIR}/src/glad.c)
+set(PEAR_LAB_SOURCES
+        src/ui/font_manager.cpp
+        src/ui/font_manager.hpp
+        src/ui/lab_layout.cpp
+        src/ui/lab_layout.hpp
+        src/ui/modules/logger.cpp
+        src/ui/modules/logger.hpp
+        src/backend/py_scope.cpp
+        src/backend/py_scope.hpp
+        src/ui/modules/py_module_window.cpp
+        src/ui/modules/py_module_window.hpp
+        src/backend/py_param.cpp
+        src/backend/py_param.hpp)
+# deps
+find_package(Boost REQUIRED COMPONENTS python)
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+find_package(pybind11 REQUIRED)
+find_package(glfw3 REQUIRED)
+set(OpenGL_GL_PREFERENCE GLVND)
+find_package(OpenGL REQUIRED)
+find_package(yaml-cpp CONFIG REQUIRED)
+
+execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c "import numpy; print(numpy.get_include())"
+        OUTPUT_VARIABLE NUMPY_INCLUDE_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+message(${NUMPY_INCLUDE_DIR})
+message(${Python3_INCLUDE_DIRS})
+
+include_directories(${Boost_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS} ${NUMPY_INCLUDE_DIR})
+include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends)
+include_directories(${GLAD_DIR}/include)
+
+add_subdirectory(libs/ImGuiFileDialog)
+include_directories(libs/ImGuiFileDialog)
+
+add_executable(PearlLab
+        src/main.cpp
+        ${PEAR_LAB_SOURCES}
+        ${IMGUI_SOURCES}
+        ${GLAD_SOURCES}
+)
+
+target_link_libraries(PearlLab
+        glfw
+        OpenGL::GL
+        ImGuiFileDialog
+        ${Boost_LIBRARIES}
+        ${Python3_LIBRARIES}
+        pybind11::module
+        yaml-cpp
+)
