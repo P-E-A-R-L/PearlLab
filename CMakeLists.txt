@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(VENV_PATH "/home/xabdomo/tf-env")
 set(Python3_EXECUTABLE "${VENV_PATH}/bin/python3")
 set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/libs/imgui")
+set(IMGUI_NODE_DIR "${CMAKE_SOURCE_DIR}/libs/imgui-node-editor")
+set(GLAD_DIR "${CMAKE_SOURCE_DIR}/libs/glad")
+
 set(IMGUI_SOURCES
         ${IMGUI_DIR}/imgui.cpp
         ${IMGUI_DIR}/imgui_demo.cpp
@@ -15,8 +18,17 @@ set(IMGUI_SOURCES
         ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
         ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
 )
-set(GLAD_DIR "${CMAKE_SOURCE_DIR}/libs/glad")
+
+
 set(GLAD_SOURCES ${GLAD_DIR}/src/glad.c)
+
+set(IMGUI_NODE_SOURCES
+        ${IMGUI_NODE_DIR}/crude_json.cpp
+        ${IMGUI_NODE_DIR}/imgui_canvas.cpp
+        ${IMGUI_NODE_DIR}/imgui_node_editor.cpp
+        ${IMGUI_NODE_DIR}/imgui_node_editor_api.cpp
+)
+
 set(PEAR_LAB_SOURCES
         src/ui/font_manager.cpp
         src/ui/font_manager.hpp
@@ -29,7 +41,12 @@ set(PEAR_LAB_SOURCES
         src/ui/modules/py_module_window.cpp
         src/ui/modules/py_module_window.hpp
         src/backend/py_param.cpp
-        src/backend/py_param.hpp)
+        src/backend/py_param.hpp
+        src/ui/modules/pipeline_graph.cpp
+        src/ui/modules/pipeline_graph.hpp
+        src/ui/shared_ui.cpp
+        src/ui/shared_ui.hpp)
+
 # deps
 find_package(Boost REQUIRED COMPONENTS python)
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
@@ -51,6 +68,7 @@ message(${Python3_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS} ${NUMPY_INCLUDE_DIR})
 include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends)
 include_directories(${GLAD_DIR}/include)
+include_directories(${IMGUI_NODE_DIR})
 
 add_subdirectory(libs/ImGuiFileDialog)
 include_directories(libs/ImGuiFileDialog)
@@ -60,6 +78,7 @@ add_executable(PearlLab
         ${PEAR_LAB_SOURCES}
         ${IMGUI_SOURCES}
         ${GLAD_SOURCES}
+        ${IMGUI_NODE_SOURCES}
 )
 
 target_link_libraries(PearlLab

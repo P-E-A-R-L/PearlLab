@@ -7,44 +7,37 @@
 #include <GLFW/glfw3.h>
 
 #include "ImGuiFileDialog.h"
+#include "shared_ui.hpp"
 #include "../backend/py_scope.hpp"
 #include "modules/logger.hpp"
+#include "modules/pipeline_graph.hpp"
 #include "modules/py_module_window.hpp"
 
 namespace LabLayout {
     // hidden because normally not other module would need these functions
     // these are just some demo functions to make the UI .. well .. do something
     // they are to be changed with the actual modules
-    void renderEnvironmentsModule();
-    void renderAgentsModule();
-    void renderMethodsModule();
+    void renderObjectsModule();
     void renderPipelineModule();
     void renderPreviewModule();
-    void renderEventLogModule();
     void renderParamsModule();
 
 }
 
 extern GLFWwindow* AppWindow;
 
-void LabLayout::renderEnvironmentsModule() {
-    ImGui::Begin("Environments");
+void LabLayout::renderObjectsModule() {
+    ImGui::Begin("Objects");
     ImGui::BulletText("Env1");
     ImGui::BulletText("Env2");
-    ImGui::End();
-}
-
-void LabLayout::renderAgentsModule() {
-    ImGui::Begin("Agents");
+    ImGui::BulletText("Mask1");
+    ImGui::BulletText("Mask2");
     ImGui::BulletText("Agent A");
     ImGui::BulletText("Agent B");
-    ImGui::End();
-}
-
-void LabLayout::renderMethodsModule() {
-    ImGui::Begin("Methods");
     ImGui::BulletText("Method X");
     ImGui::BulletText("Method Y");
+    ImGui::BulletText("Custom 1");
+    ImGui::BulletText("CUstom 2");
     ImGui::End();
 }
 
@@ -64,19 +57,12 @@ void LabLayout::renderPreviewModule() {
     ImGui::End();
 }
 
-void LabLayout::renderEventLogModule() {
-    ImGui::Begin("Event Log");
-    ImGui::TextColored(ImVec4(1,0,0,1), "[ERROR] Failed to load AgentA");
-    ImGui::Text("[INFO] Initialized");
-    ImGui::End();
-}
-
 void LabLayout::renderParamsModule() {
     static char modelPath[128] = "models/agent_a.model";
     static float noise = 0.1f;
     static float learningRate = 0.01f;
 
-    ImGui::Begin("Object Params");
+    ImGui::Begin("Inspector");
     ImGui::InputText("Model Path", modelPath, IM_ARRAYSIZE(modelPath));
     ImGui::SliderFloat("Noise", &noise, 0.0f, 1.0f);
     ImGui::SliderFloat("Learning Rate", &learningRate, 0.001f, 1.0f);
@@ -88,6 +74,8 @@ void LabLayout::init() {
     Logger::init();
     PyScope::init();
     PyModuleWindow::init();
+    PipelineGraph::init();
+    SharedUi::init();
 }
 
 void LabLayout::render() {
@@ -145,7 +133,7 @@ void LabLayout::render() {
             std::string filePath = ImGuiFileDialog::Instance()->GetFilePathName();
             auto result = PyScope::LoadModuleForClasses(filePath);
             for (auto obj: result) {
-                PyModuleWindow::modules.push_back(obj);
+                SharedUi::pushModule(obj);
                 Logger::info("Loaded module: " + std::string(py::str(obj.attr("__name__"))));
             }
         }
@@ -206,16 +194,14 @@ void LabLayout::render() {
 
         Logger::info("Docking windows...");
         // Dock windows
-        ImGui::DockBuilderDockWindow("Environments", left_top);
-        ImGui::DockBuilderDockWindow("Agents", left_mid);
-        ImGui::DockBuilderDockWindow("Methods", left);
+        ImGui::DockBuilderDockWindow("Objects", left_top);
         ImGui::DockBuilderDockWindow("Pipeline", left_bot);
 
         ImGui::DockBuilderDockWindow("Preview", center_top);
+        ImGui::DockBuilderDockWindow("Pipeline Graph", center_top);
         ImGui::DockBuilderDockWindow("Event Log", center_bot);
 
-        ImGui::DockBuilderDockWindow("Object Params", right);
-
+        ImGui::DockBuilderDockWindow("Inspector", right);
         ImGui::DockBuilderFinish(dockspace_id);
 
 
@@ -225,20 +211,20 @@ void LabLayout::render() {
     ImGui::End();
 
     // Render individual windows
-    renderEnvironmentsModule();
-    renderAgentsModule();
-    renderMethodsModule();
+    renderObjectsModule();
     renderPipelineModule();
     renderPreviewModule();
-    //renderEventLogModule();
     renderParamsModule();
 
     Logger::render();
     if (open_modules_debugger) PyModuleWindow::render();
+    PipelineGraph::render();
 }
 
 void LabLayout::destroy() {
     PyModuleWindow::destroy();
+    PipelineGraph::destroy();
+    SharedUi::destroy();
 }
 
 

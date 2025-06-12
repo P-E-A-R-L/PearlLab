@@ -10,12 +10,8 @@ class test:
     string_file: Param(str, isFilePath=True, editable=False, default="C:/path/to/file.txt") = "C:/path/to/file.txt"
     mode: Param(int, choices=[0, 1, 2], default=1) = 1
 
-    def init(self):
-        print("That worked :)")
+    def __init__(self, x: int , y = None):
         pass
 
 
-if __name__ == "__main__":
-    t = test()
-    print(str(t.__annotations__['string_file']))
-    print(t.string_file)
+print(Param.__init__)

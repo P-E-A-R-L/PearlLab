@@ -13,8 +13,6 @@ namespace py = pybind11;
 
 
 namespace PyModuleWindow {
-    extern std::vector<py::object> modules;
-
     void init();
     void render();
     void destroy();

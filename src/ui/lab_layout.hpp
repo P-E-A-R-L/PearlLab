@@ -6,7 +6,6 @@
 #define LAB_LAYOUT_HPP
 
 
-
 namespace LabLayout {
     void init();
     void render();

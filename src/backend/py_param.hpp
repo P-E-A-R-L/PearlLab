@@ -16,6 +16,7 @@ enum ParamType {
 };
 
 struct Param {
+    std::string attrName;
     ParamType type;
     bool editable;
     std::string rangeStart;
@@ -24,6 +25,7 @@ struct Param {
     bool hasChoices;
     std::vector<std::string> choices;
     std::string defaultValue;
+    std::string disc;
 };
 
 std::string ParamTypeAsString(ParamType);

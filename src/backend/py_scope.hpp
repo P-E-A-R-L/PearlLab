@@ -14,10 +14,16 @@ namespace py = pybind11;
 class PyScope {
 public:
     py::module annotations;
-    py::object param_class;
     py::module sys;
+    py::module builtins;
+    
     std::vector<py::module> modules;
     std::vector<py::module> pythonModules;
+
+    py::object param_type;
+    py::object int_type;
+    py::object float_type;
+    py::object str_type;
 
     static PyScope& getInstance();
     static void clearInstance();

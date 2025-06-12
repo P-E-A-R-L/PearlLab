@@ -80,49 +80,17 @@ std::vector<py::object> PyScope::LoadModuleForClasses(const std::string &path) {
     }
 
     auto& instance = getInstance();
-    auto param_class = instance.param_class;
+    auto param_class = instance.param_type;
 
     std::vector<py::object> result;
 
     py::dict mod_dict = py::cast<py::dict>(module->attr("__dict__"));
 
-    std::cout << std::string(py::str(param_class)) << std::endl;
-
-
-
     for (auto item : mod_dict) {
         std::string class_name = py::str(item.first);
         pybind11::handle cls = item.second;
-
         // 1. Must be a class
         if (!py::hasattr(cls, "__bases__"))
-            continue;
-
-        // 2. Must have __annotations__ with at least one Param
-        if (!py::hasattr(cls, "__annotations__"))
-            continue;
-
-        py::dict annotations = cls.attr("__annotations__");
-        bool has_param = false;
-        for (auto ann : annotations) {
-            py::handle ann_type = ann.second;
-            if (py::isinstance(ann_type, param_class)) {
-                has_param = true;
-                break;
-            }
-        }
-        if (!has_param)
-            continue;
-
-        // 3. Must have a no-arg __init__ (try instantiating with no args)
-        try {
-            py::object instance = cls();
-        } catch (...) {
-            continue;
-        }
-
-        // 4. Must have an init_custom method
-        if (!py::hasattr(cls, "init") || !PyCallable_Check(cls.attr("init").ptr()))
             continue;
 
         // Passed all checks
@@ -143,13 +111,19 @@ void PyScope::init() {
 
     Logger::info("Initializing Python ...");
     instance->sys = py::module_::import("sys");
+    instance->builtins     = py::module_::import("builtins");
+    instance->int_type   = instance->builtins.attr("int");
+    instance->float_type   = instance->builtins.attr("float");
+    instance->str_type   = instance->builtins.attr("str");
+
     auto dummy = instance->sys.attr("path").attr("append")("./py");
 
     try {
         instance->annotations = py::module_::import("annotations");
-        instance->param_class = instance->annotations.attr("Param");
+        instance->param_type = instance->annotations.attr("Param");
 
         instance->pythonModules.push_back(instance->sys);
+        instance->pythonModules.push_back(instance->builtins);
         instance->pythonModules.push_back(instance->annotations);
 
         Logger::info("Done.");
@@ -162,9 +136,11 @@ void PyScope::init() {
         Logger::error("  Failed to import 'py/annotations' module.");
     }
 
-    if (instance->param_class.is_none()) {
+    if (instance->param_type.is_none()) {
         Logger::error("  Failed to import 'annotations' from 'py/annotations' module.");
     }
+
+
 }
 
 Param PyScope::parseParamFromAnnotation(py::handle value) {
@@ -175,6 +151,7 @@ Param PyScope::parseParamFromAnnotation(py::handle value) {
     std::string isFilePath = py::str(value.attr("isFilePath"));
     auto choices = value.attr("choices");
     std::string def = py::str(value.attr("default"));
+    std::string disc = py::str(value.attr("disc"));
 
     ParamType o_type;
 
@@ -208,10 +185,12 @@ Param PyScope::parseParamFromAnnotation(py::handle value) {
     result.rangeStart   = "None"; // maybe use optional ? idk tbh ...
     result.rangeEnd     = "None";
     result.defaultValue = "None";
+    result.disc         = disc;
+
     if (o_type != OTHER) {
-        result.rangeStart = rangeStart;
-        result.rangeEnd = rangeEnd;
-        result.isFilePath = (isFilePath == "True");
+        result.rangeStart   = rangeStart;
+        result.rangeEnd     = rangeEnd;
+        result.isFilePath   = (isFilePath == "True");
         result.defaultValue = def;
     }
 
