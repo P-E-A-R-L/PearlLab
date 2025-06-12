@@ -45,7 +45,9 @@ set(PEAR_LAB_SOURCES
         src/ui/modules/pipeline_graph.cpp
         src/ui/modules/pipeline_graph.hpp
         src/ui/shared_ui.cpp
-        src/ui/shared_ui.hpp)
+        src/ui/shared_ui.hpp
+        src/ui/modules/objects_panel.cpp
+        src/ui/modules/objects_panel.hpp)
 
 # deps
 find_package(Boost REQUIRED COMPONENTS python)

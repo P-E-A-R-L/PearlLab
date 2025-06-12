@@ -10,6 +10,7 @@
 #include "shared_ui.hpp"
 #include "../backend/py_scope.hpp"
 #include "modules/logger.hpp"
+#include "modules/objects_panel.hpp"
 #include "modules/pipeline_graph.hpp"
 #include "modules/py_module_window.hpp"
 
@@ -17,7 +18,6 @@ namespace LabLayout {
     // hidden because normally not other module would need these functions
     // these are just some demo functions to make the UI .. well .. do something
     // they are to be changed with the actual modules
-    void renderObjectsModule();
     void renderPipelineModule();
     void renderPreviewModule();
     void renderParamsModule();
@@ -25,21 +25,6 @@ namespace LabLayout {
 }
 
 extern GLFWwindow* AppWindow;
-
-void LabLayout::renderObjectsModule() {
-    ImGui::Begin("Objects");
-    ImGui::BulletText("Env1");
-    ImGui::BulletText("Env2");
-    ImGui::BulletText("Mask1");
-    ImGui::BulletText("Mask2");
-    ImGui::BulletText("Agent A");
-    ImGui::BulletText("Agent B");
-    ImGui::BulletText("Method X");
-    ImGui::BulletText("Method Y");
-    ImGui::BulletText("Custom 1");
-    ImGui::BulletText("CUstom 2");
-    ImGui::End();
-}
 
 void LabLayout::renderPipelineModule() {
     ImGui::Begin("Pipeline");
@@ -76,6 +61,7 @@ void LabLayout::init() {
     PyModuleWindow::init();
     PipelineGraph::init();
     SharedUi::init();
+    ObjectsPanel::init();
 }
 
 void LabLayout::render() {
@@ -211,7 +197,6 @@ void LabLayout::render() {
     ImGui::End();
 
     // Render individual windows
-    renderObjectsModule();
     renderPipelineModule();
     renderPreviewModule();
     renderParamsModule();
@@ -219,12 +204,14 @@ void LabLayout::render() {
     Logger::render();
     if (open_modules_debugger) PyModuleWindow::render();
     PipelineGraph::render();
+    ObjectsPanel::render();
 }
 
 void LabLayout::destroy() {
     PyModuleWindow::destroy();
     PipelineGraph::destroy();
     SharedUi::destroy();
+    ObjectsPanel::destroy();
 }
 
 

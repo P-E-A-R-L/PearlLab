@@ -5,11 +5,57 @@
 #include "py_scope.hpp"
 #include <filesystem>
 #include <iostream>
-
+#include <sstream>
 #include "../ui/modules/logger.hpp"
 
 namespace fs = std::filesystem;
 
+
+class PythonOutputRedirectorMsg {
+public:
+    //std::stringstream buffer;
+    void write(const std::string &msg) {
+        if (msg.empty()) return;
+        //buffer << msg;
+        Logger::message(msg);
+        //flush();
+    }
+
+    void flush() {
+        //Logger::message(buffer.str());
+        //buffer.clear();
+    }
+};
+
+class PythonOutputRedirectorErr {
+public:
+    //std::stringstream buffer;
+    void write(const std::string &msg) {
+        if (msg.empty()) return;
+        //buffer << msg;
+        Logger::error(msg);
+        //flush();
+    }
+
+    void flush() {
+        //Logger::error(buffer.str());
+        //buffer.clear();
+    }
+};
+
+PYBIND11_EMBEDDED_MODULE(python_redirect_msg, m) {
+    py::class_<PythonOutputRedirectorMsg>(m, "Redirector_msg")
+        .def(py::init<>())
+        .def("write", &PythonOutputRedirectorMsg::write)
+        .def("flush", &PythonOutputRedirectorMsg::flush);
+}
+
+PYBIND11_EMBEDDED_MODULE(python_redirect_err, m) {
+    py::class_<PythonOutputRedirectorErr>(m, "Redirector_err")
+        .def(py::init<>())
+        .def("write", &PythonOutputRedirectorErr::write)
+        .def("flush", &PythonOutputRedirectorErr::flush);
+}
 
 static PyScope* instance = nullptr;
 
@@ -93,6 +139,12 @@ std::vector<py::object> PyScope::LoadModuleForClasses(const std::string &path) {
         if (!py::hasattr(cls, "__bases__"))
             continue;
 
+        // 2. Must not be abstract
+        if (py::bool_(instance.inspect_isabstrct(cls))) {
+            Logger::warning("Skipping abstract class: " + class_name);
+            continue;
+        }
+
         // Passed all checks
         result.push_back(py::reinterpret_borrow<py::object>(cls));
     }
@@ -111,10 +163,15 @@ void PyScope::init() {
 
     Logger::info("Initializing Python ...");
     instance->sys = py::module_::import("sys");
+    instance->inspect = py::module_::import("inspect");
     instance->builtins     = py::module_::import("builtins");
-    instance->int_type   = instance->builtins.attr("int");
-    instance->float_type   = instance->builtins.attr("float");
-    instance->str_type   = instance->builtins.attr("str");
+
+    instance->int_type    = instance->builtins.attr("int");
+    instance->float_type  = instance->builtins.attr("float");
+    instance->str_type    = instance->builtins.attr("str");
+    instance->issubclass    = instance->builtins.attr("issubclass");
+
+    instance->inspect_isabstrct = instance->inspect.attr("isabstract");
 
     auto dummy = instance->sys.attr("path").attr("append")("./py");
 
@@ -123,13 +180,12 @@ void PyScope::init() {
         instance->param_type = instance->annotations.attr("Param");
 
         instance->pythonModules.push_back(instance->sys);
+        instance->pythonModules.push_back(instance->inspect);
         instance->pythonModules.push_back(instance->builtins);
         instance->pythonModules.push_back(instance->annotations);
-
-        Logger::info("Done.");
     } catch (...) {
         // nothing to do
-        Logger::error("Failed to initialize Python (see errors)");
+        Logger::error("[Lab Library] Failed to initialize Python (see errors)");
     }
 
     if (instance->annotations.is_none()) {
@@ -140,7 +196,40 @@ void PyScope::init() {
         Logger::error("  Failed to import 'annotations' from 'py/annotations' module.");
     }
 
+    try {
+        instance->pearl_agent  = py::module_::import("pearl.agent");
+        instance->pearl_env    = py::module_::import("pearl.env");
+        instance->pearl_method = py::module_::import("pearl.method");
+        instance->pearl_mask   = py::module_::import("pearl.mask");
 
+        instance->pearl_agent_type   = instance->pearl_agent  .attr("RLAgent");
+        instance->pearl_env_type     = instance->pearl_env    .attr("RLEnvironment");
+        instance->pearl_method_type  = instance->pearl_method .attr("ExplainabilityMethod");
+        instance->pearl_mask_type    = instance->pearl_mask   .attr("Mask");
+
+        instance->pythonModules.push_back(instance->pearl_agent);
+        instance->pythonModules.push_back(instance->pearl_env);
+        instance->pythonModules.push_back(instance->pearl_method);
+        instance->pythonModules.push_back(instance->pearl_mask);
+    } catch (...) {
+        // nothing to do
+        Logger::error("[Pearl Library] Failed to initialize Python (see errors)");
+    }
+
+    // Redirect Python output
+    instance->redirect_msg_mod = py::module_::import("python_redirect_msg");
+    instance->redirector_msg = instance->redirect_msg_mod.attr("Redirector_msg")();
+    instance->redirect_err_mod = py::module_::import("python_redirect_err");
+    instance->redirector_err = instance->redirect_err_mod.attr("Redirector_err")();
+    instance->sys.attr("stdout") = instance->redirector_msg;
+    instance->sys.attr("stderr") = instance->redirector_err;
+
+
+    Logger::info("Done.");
+}
+
+bool PyScope::isSubclass(py::handle obj, py::handle base) {
+    return getInstance().issubclass(obj, base).cast<bool>();
 }
 
 Param PyScope::parseParamFromAnnotation(py::handle value) {

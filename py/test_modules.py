@@ -15,3 +15,10 @@ class test:
 
 
 print(Param.__init__)
+print(test.__module__  + "." + test.__qualname__)
+print(Param.__module__ + "." + Param.__qualname__)
+
+from pearl.provided.AssaultEnv import AssaultEnvShapMask
+from pearl.mask import Mask
+
+print(issubclass(AssaultEnvShapMask, Mask))
