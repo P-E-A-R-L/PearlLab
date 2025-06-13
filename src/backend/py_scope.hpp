@@ -13,18 +13,20 @@ namespace py = pybind11;
 
 class PyScope {
 public:
+    // internal modules
     py::module annotations;
     py::module sys;
     py::module builtins;
+
+    // handy modules
     py::module inspect;
+    py::module numbers;
+
+    // pearl models
     py::module pearl_agent;
     py::module pearl_env;
     py::module pearl_method;
     py::module pearl_mask;
-
-    std::vector<py::module> modules;
-    std::vector<py::module> pythonModules;
-
 
     // lab types
     py::object param_type;
@@ -33,6 +35,7 @@ public:
     py::object int_type;
     py::object float_type;
     py::object str_type;
+    py::object number_type;
 
     // pearl types
     py::object pearl_agent_type;
@@ -44,11 +47,15 @@ public:
     py::object inspect_isabstrct;
     py::object issubclass;
 
+
     // output redirectors
     py::module redirect_msg_mod;
     py::module redirect_err_mod;
     py::object redirector_msg;
     py::object redirector_err;
+
+    std::vector<py::module> modules;
+    std::vector<py::module> pythonModules;
 
     static PyScope& getInstance();
     static void clearInstance();

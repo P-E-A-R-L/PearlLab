@@ -1,3 +1,7 @@
+import numbers
+
+from jinja2.nodes import Test
+
 from annotations import Param
 
 
@@ -22,3 +26,40 @@ from pearl.provided.AssaultEnv import AssaultEnvShapMask
 from pearl.mask import Mask
 
 print(issubclass(AssaultEnvShapMask, Mask))
+
+print(issubclass(int, numbers.Number))
+
+print(issubclass(numbers.Number, int))
+
+
+class silly_stuff:
+    def __init__(self, x: int, y = 0):
+        self.x = x
+        self.y = y
+        print("Hello from silly_stuff")
+
+
+def func(x: int, y):
+    """
+    A simple function that does nothing.
+
+    Args:
+        x: An integer parameter.
+        y: An optional string parameter with a default value.
+    """
+    pass
+
+print(func.__code__.co_varnames)
+
+def func_add(x: int, y: int) -> int:
+    """
+    Adds two integers together.
+
+    Args:
+        x: The first integer.
+        y: The second integer.
+
+    Returns:
+        The sum of x and y.
+    """
+    return x + y

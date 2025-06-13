@@ -18,6 +18,7 @@ void ObjectsPanel::render() {
     static bool showEnvironments = true;
     static bool showMethods = true;
     static bool showMasks = true;
+    static bool showFunctions = true;
     static bool showOthers = true;
 
     ImGui::Begin("Objects");
@@ -30,6 +31,7 @@ void ObjectsPanel::render() {
         ImGui::Checkbox("Environment (E)", &showEnvironments);
         ImGui::Checkbox("Method (M)", &showMethods);
         ImGui::Checkbox("Mask (K)", &showMasks);
+        ImGui::Checkbox("Function (F)", &showFunctions);
         ImGui::Checkbox("Other (U)", &showOthers);
         ImGui::EndPopup();
     }
@@ -60,6 +62,7 @@ void ObjectsPanel::render() {
                 (module.type == SharedUi::Environment && showEnvironments) ||
                 (module.type == SharedUi::Method && showMethods) ||
                 (module.type == SharedUi::Mask && showMasks) ||
+                (module.type == SharedUi::Function && showFunctions) ||
                 (module.type == SharedUi::Other && showOthers);
 
             if (!visibleByType)
@@ -76,13 +79,14 @@ void ObjectsPanel::render() {
             else if (module.type == SharedUi::Environment) typeName = "E";
             else if (module.type == SharedUi::Method) typeName = "M";
             else if (module.type == SharedUi::Mask) typeName = "K";
+            else if (module.type == SharedUi::Function) typeName = "F";
 
-            std::string label = typeName + " " + module.moduleName;
+            std::string label = typeName + "  " + module.moduleName;
             ImGui::Selectable(label.c_str());
 
             // Drag-and-drop support
             if (ImGui::BeginDragDropSource()) {
-                ImGui::SetDragDropPayload("OBJECT", &module, sizeof(SharedUi::LoadedModule));
+                ImGui::SetDragDropPayload("SharedUi::LoadedModule", &module, sizeof(SharedUi::LoadedModule));
                 ImGui::Text("Dragging: %s", module.moduleName.c_str());
                 ImGui::EndDragDropSource();
             }

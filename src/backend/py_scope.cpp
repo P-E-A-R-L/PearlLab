@@ -135,18 +135,23 @@ std::vector<py::object> PyScope::LoadModuleForClasses(const std::string &path) {
     for (auto item : mod_dict) {
         std::string class_name = py::str(item.first);
         pybind11::handle cls = item.second;
-        // 1. Must be a class
-        if (!py::hasattr(cls, "__bases__"))
-            continue;
-
-        // 2. Must not be abstract
-        if (py::bool_(instance.inspect_isabstrct(cls))) {
-            Logger::warning("Skipping abstract class: " + class_name);
+        // 1. a class and not abstract
+        if (py::hasattr(cls, "__bases__")) {
+            if (!py::bool_(instance.inspect_isabstrct(cls))) {
+                result.push_back(py::reinterpret_borrow<py::object>(cls));
+            } else {
+                Logger::warning("Skipping abstract class: " + class_name);
+            }
             continue;
         }
 
-        // Passed all checks
-        result.push_back(py::reinterpret_borrow<py::object>(cls));
+        // 2. a function
+        else if (py::isinstance<py::function>(cls)) {
+            result.push_back(py::reinterpret_borrow<py::object>(cls));
+            continue;
+        }
+
+        Logger::warning("Skipping element: " + class_name);
     }
 
     Logger::info("Module contains: " + std::to_string(result.size()) + " class(s).");
@@ -162,14 +167,16 @@ void PyScope::init() {
     }
 
     Logger::info("Initializing Python ...");
-    instance->sys = py::module_::import("sys");
-    instance->inspect = py::module_::import("inspect");
+    instance->sys          = py::module_::import("sys");
+    instance->inspect      = py::module_::import("inspect");
     instance->builtins     = py::module_::import("builtins");
+    instance->numbers      = py::module_::import("numbers");
 
     instance->int_type    = instance->builtins.attr("int");
     instance->float_type  = instance->builtins.attr("float");
     instance->str_type    = instance->builtins.attr("str");
-    instance->issubclass    = instance->builtins.attr("issubclass");
+    instance->issubclass  = instance->builtins.attr("issubclass");
+    instance->number_type = instance->numbers .attr("Number");
 
     instance->inspect_isabstrct = instance->inspect.attr("isabstract");
 
@@ -233,7 +240,7 @@ bool PyScope::isSubclass(py::handle obj, py::handle base) {
 }
 
 Param PyScope::parseParamFromAnnotation(py::handle value) {
-    std::string typ = py::str(value.attr("typ").attr("__name__"));
+    py::object typ = value.attr("typ");
     bool editable = py::bool_(value.attr("editable"));
     std::string rangeStart = py::str(value.attr("range_start"));
     std::string rangeEnd = py::str(value.attr("range_end"));
@@ -242,20 +249,9 @@ Param PyScope::parseParamFromAnnotation(py::handle value) {
     std::string def = py::str(value.attr("default"));
     std::string disc = py::str(value.attr("disc"));
 
-    ParamType o_type;
-
-    if (typ == "int")
-        o_type = INT;
-    else if (typ == "float")
-        o_type = FLOAT;
-    else if (typ == "str")
-        o_type = STRING;
-    else
-        o_type = OTHER;
-
     std::vector<std::string> choice_list;
     bool hasChoices = true;
-    if (o_type != OTHER) {
+    if (isPrimitive(typ)) {
         if (!choices.is_none()) {
             for (auto val: choices) {
                 choice_list.push_back(py::str(val));
@@ -266,7 +262,7 @@ Param PyScope::parseParamFromAnnotation(py::handle value) {
     }
 
     Param result;
-    result.type         = o_type;
+    result.type         = typ;
     result.choices      = choice_list;
     result.hasChoices   = hasChoices;
     result.editable     = editable;
@@ -276,7 +272,7 @@ Param PyScope::parseParamFromAnnotation(py::handle value) {
     result.defaultValue = "None";
     result.disc         = disc;
 
-    if (o_type != OTHER) {
+    if (isPrimitive(typ)) {
         result.rangeStart   = rangeStart;
         result.rangeEnd     = rangeEnd;
         result.isFilePath   = (isFilePath == "True");

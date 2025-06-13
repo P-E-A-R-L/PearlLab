@@ -19,11 +19,13 @@ namespace SharedUi {
         Environment,
         Method,
         Mask,
+        Function,
         Other
     };
 
     struct LoadedModule {
-        py::object module;
+        py::object  module;
+        py::object  returnType;  // for functions
         std::string moduleName;
         std::vector<Param> annotations;
         std::vector<Param> constructor;
@@ -34,14 +36,14 @@ namespace SharedUi {
     extern std::vector<LoadedModule> loadedModules;
 
     void init();
-    void pushModule(py::object module);
+    void pushModule(const py::object& module);
     void destroy();
 
 
     struct Pipeline {
 
     };
-};
+}
 
 
 

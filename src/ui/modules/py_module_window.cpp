@@ -35,7 +35,7 @@ namespace PyModuleWindow {
 
                 if (open) {
 
-                    for (const auto& param : obj.annotations) {
+                    for (auto& param : obj.annotations) {
                         std::string attrName = param.attrName;
 
                         ImGui::BulletText("%s", attrName.c_str());
@@ -47,7 +47,7 @@ namespace PyModuleWindow {
                             ImGui::Text("Editable: %s", param.editable ? "Yes" : "No");
                             if (param.rangeStart != "None" && param.rangeEnd != "None")
                                 ImGui::Text("Range: (%s, %s)", param.rangeStart.c_str(), param.rangeEnd.c_str());
-                            if (param.type == STRING) ImGui::Text("Is File Path: %s", param.isFilePath ? "Yes" : "No");
+                            if (isPrimitive(param.type)) ImGui::Text("Is File Path: %s", param.isFilePath ? "Yes" : "No");
 
                             if (param.hasChoices) {
                                 std::string choices = "[";
