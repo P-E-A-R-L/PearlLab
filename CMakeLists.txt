@@ -47,7 +47,10 @@ set(PEAR_LAB_SOURCES
         src/ui/shared_ui.cpp
         src/ui/shared_ui.hpp
         src/ui/modules/objects_panel.cpp
-        src/ui/modules/objects_panel.hpp)
+        src/ui/modules/objects_panel.hpp
+        src/ui/utility/drawing.h
+        src/ui/utility/drawing.cpp
+)
 
 # deps
 find_package(Boost REQUIRED COMPONENTS python)

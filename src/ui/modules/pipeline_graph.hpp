@@ -50,8 +50,11 @@ namespace PipelineGraph {
 
         bool _executed = false;
 
+        char _tag[256] = "value";
+        bool _editing_tag = false;
+
         virtual void init();
-        bool canExecute();
+        virtual bool canExecute();
         virtual void exec() = 0;
         virtual void render() = 0;
         virtual ~Node() = default;
@@ -65,10 +68,9 @@ namespace PipelineGraph {
 
     ed::NodeId addNode(Node*);
     void removeNode(ed::NodeId id);
+    void clearNode(ed::NodeId id);
     ed::LinkId addLink(ed::PinId inputPinId, ed::PinId outputPinId);
     void removeLink(ed::LinkId id);
-    Node* getNode(ed::NodeId id);
-    Link* getLink(ed::LinkId id);
 
     extern std::vector<PipelineGraph::Node*> nodes;
     extern std::vector<PipelineGraph::Link*> links;
@@ -86,9 +88,6 @@ namespace PipelineGraph {
 
     namespace Nodes {
         struct PrimitiveIntNode: public Node {
-            bool _editing = false;
-            char _buffer[128] = "value";
-
             int    value{};
             int    rangeStart{};
             int    rangeEnd{};
@@ -101,9 +100,6 @@ namespace PipelineGraph {
         };
 
         struct PrimitiveFloatNode: public Node {
-            bool _editing = false;
-            char _buffer[128] = "value";
-
             float    value{};
             float    rangeStart{};
             float    rangeEnd{};
@@ -116,12 +112,9 @@ namespace PipelineGraph {
         };
 
         struct PrimitiveStringNode: public Node {
-            bool _editing = false;
-            char _buffer[128] = "value";
 
             char _value[1024] = "";
             bool _file = false;
-
 
             explicit PrimitiveStringNode(bool file);
             void exec() override;
@@ -150,11 +143,38 @@ namespace PipelineGraph {
         struct PythonFunctionNode: public Node {
             SharedUi::LoadedModule* _type;
             std::string _name; // I have no idea why the SharedUi::LoadedModule->moduleName breaks
+            bool _pointer;
 
             explicit PythonFunctionNode(SharedUi::LoadedModule*);
+            explicit PythonFunctionNode(SharedUi::LoadedModule*, bool);
+            bool canExecute() override;
             void exec() override;
             void render() override;
             ~PythonFunctionNode() override;
+        };
+
+        struct AcceptorNode: public Node {
+            py::object _result;
+            explicit AcceptorNode();
+            void exec() override;
+            void render() override;
+            ~AcceptorNode() override;
+        };
+
+        struct AgentAcceptorNode: public AcceptorNode {
+            explicit AgentAcceptorNode();
+        };
+
+        struct EnvAcceptorNode: public AcceptorNode {
+            explicit EnvAcceptorNode();
+        };
+
+        struct MaskAcceptorNode: public AcceptorNode {
+            explicit MaskAcceptorNode();
+        };
+
+        struct MethodAcceptorNode: public AcceptorNode {
+            explicit MethodAcceptorNode();
         };
     }
 };

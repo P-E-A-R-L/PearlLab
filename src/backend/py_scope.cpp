@@ -175,10 +175,11 @@ void PyScope::init() {
     instance->int_type    = instance->builtins.attr("int");
     instance->float_type  = instance->builtins.attr("float");
     instance->str_type    = instance->builtins.attr("str");
-    instance->issubclass  = instance->builtins.attr("issubclass");
+    instance->object_type = instance->builtins.attr("object");
     instance->number_type = instance->numbers .attr("Number");
 
     instance->inspect_isabstrct = instance->inspect.attr("isabstract");
+    instance->issubclass          = instance->builtins.attr("issubclass");
 
     auto dummy = instance->sys.attr("path").attr("append")("./py");
 
@@ -235,7 +236,16 @@ void PyScope::init() {
     Logger::info("Done.");
 }
 
-bool PyScope::isSubclass(py::handle obj, py::handle base) {
+bool PyScope::isSubclassOrInstance(py::handle obj, py::handle base) {
+    if (obj.is_none() && base.is_none()) {
+        return true; // both are None, considered as same type
+    }
+
+    if (!pybind11::hasattr(obj, "__bases__")) {
+        // obj is an actual object not just a class type
+        return getInstance().issubclass(obj.attr("__class__"), base).cast<bool>();
+    }
+
     return getInstance().issubclass(obj, base).cast<bool>();
 }
 

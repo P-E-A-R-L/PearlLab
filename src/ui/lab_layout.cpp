@@ -70,6 +70,7 @@ void LabLayout::render() {
     /// MAIN MANU
     ///
     static bool open_modules_debugger = false;
+    static bool show_metrics          = false;
 
     if (ImGui::BeginMainMenuBar())
     {
@@ -98,6 +99,7 @@ void LabLayout::render() {
 
         if (ImGui::BeginMenu("Debug")) {
             ImGui::MenuItem("Modules Debugger", nullptr, &open_modules_debugger);
+            ImGui::MenuItem("Show Metrics", nullptr, &show_metrics);
             ImGui::EndMenu();
         }
 
@@ -201,8 +203,10 @@ void LabLayout::render() {
     renderPreviewModule();
     renderParamsModule();
 
-    Logger::render();
     if (open_modules_debugger) PyModuleWindow::render();
+    if (show_metrics) ImGui::ShowMetricsWindow();
+
+    Logger::render();
     PipelineGraph::render();
     ObjectsPanel::render();
 }

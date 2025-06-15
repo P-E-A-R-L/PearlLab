@@ -36,6 +36,7 @@ public:
     py::object float_type;
     py::object str_type;
     py::object number_type;
+    py::object object_type;
 
     // pearl types
     py::object pearl_agent_type;
@@ -64,7 +65,7 @@ public:
     static std::vector<py::object> LoadModuleForClasses(const std::string& path);
     static void init();
 
-    static bool isSubclass(py::handle obj, py::handle base);
+    static bool isSubclassOrInstance(py::handle obj, py::handle base);
 
     static Param parseParamFromAnnotation(py::handle annotation);
 private:

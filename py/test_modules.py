@@ -1,6 +1,7 @@
 import numbers
 
 from jinja2.nodes import Test
+from tensorflow.python.data.ops.optional_ops import Optional
 
 from annotations import Param
 
@@ -63,3 +64,20 @@ def func_add(x: int, y: int) -> int:
         The sum of x and y.
     """
     return x + y
+
+from builtins import object
+from typing import Optional
+print(isinstance(1, object().__class__))
+
+
+def preprocess(obs):
+    return obs
+
+from inspect import isfunction
+
+k = preprocess
+print(isinstance(preprocess, object))
+
+print(k.__class__)
+
+print(issubclass(str, Optional[str]))

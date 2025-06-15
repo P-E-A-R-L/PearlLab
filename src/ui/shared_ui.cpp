@@ -21,7 +21,7 @@ namespace SharedUi {
 
     void pushModule(const py::object& module) {
         LoadedModule l;
-        l.module = module;
+        l.module     = module;
         l.moduleName = std::string(py::str(module.attr("__module__"))) + std::string(".") + std::string(py::str(module.attr("__qualname__")));
 
         if (loadedModuleNames.find(l.moduleName) != loadedModuleNames.end()) {
@@ -34,13 +34,13 @@ namespace SharedUi {
         bool isClass = py::hasattr(module, "__bases__");
 
         if (isClass) {
-            if (PyScope::isSubclass(module, python.pearl_agent_type)) {
+            if (PyScope::isSubclassOrInstance(module, python.pearl_agent_type)) {
                 l.type = SharedUi::Agent;
-            } else if (PyScope::isSubclass(module, python.pearl_env_type)) {
+            } else if (PyScope::isSubclassOrInstance(module, python.pearl_env_type)) {
                 l.type = SharedUi::Environment;
-            } else if (PyScope::isSubclass(module, python.pearl_method_type)) {
+            } else if (PyScope::isSubclassOrInstance(module, python.pearl_method_type)) {
                 l.type = SharedUi::Method;
-            } else if (PyScope::isSubclass(module, python.pearl_mask_type)) {
+            } else if (PyScope::isSubclassOrInstance(module, python.pearl_mask_type)) {
                 l.type = SharedUi::Mask;
             } else {
                 l.type = SharedUi::Other;
@@ -72,13 +72,12 @@ namespace SharedUi {
 
             if (hasattr(module, "__init__")) {
                 py::object init = module.attr("__init__");
-                auto py_instance = PyScope::getInstance();
                 std::unordered_map<std::string, Param> annotations;
                 if (hasattr(init, "__annotations__")) {
                     py::dict init_annotations = init.attr("__annotations__");
                     for (auto& [key, value] : init_annotations) {
                         std::string attrName = py::str(key);
-                        if (py::isinstance(value, py_instance.param_type)) {
+                        if (py::isinstance(value, python.param_type)) {
                             try {
                                 auto param = PyScope::parseParamFromAnnotation(value);
                                 param.attrName = attrName;
@@ -115,7 +114,7 @@ namespace SharedUi {
                         } else {
                             Param param;
                             param.attrName = attrName;
-                            param.type = py::object();
+                            param.type = py::reinterpret_borrow<py::object>(python.object_type);
                             param.isFilePath = false;
                             param.editable = true;
                             param.hasChoices = false;
@@ -136,14 +135,13 @@ namespace SharedUi {
             }
         } else {
             // a function
-            auto py_instance = PyScope::getInstance();
             std::unordered_map<std::string, Param> annotations;
 
             if (hasattr(module, "__annotations__")) {
                 py::dict init_annotations = module.attr("__annotations__");
                 for (auto& [key, value] : init_annotations) {
                     std::string attrName = py::str(key);
-                    if (py::isinstance(value, py_instance.param_type)) {
+                    if (py::isinstance(value, python.param_type)) {
                         try {
                             auto param = PyScope::parseParamFromAnnotation(value);
                             param.attrName = attrName;
@@ -181,7 +179,7 @@ namespace SharedUi {
                     } else {
                         Param param;
                         param.attrName   = attrName;
-                        param.type       = py::object();
+                        param.type       = py::reinterpret_borrow<py::object>(python.object_type);
                         param.isFilePath = false;
                         param.editable   = true;
                         param.hasChoices = false;
@@ -203,7 +201,7 @@ namespace SharedUi {
             if (annotations.contains("return")) {
                 l.returnType = py::reinterpret_borrow<py::object>(annotations["return"].type);
             } else {
-                l.returnType = py::object();
+                l.returnType = py::reinterpret_borrow<py::object>(python.object_type);
             }
         }
 

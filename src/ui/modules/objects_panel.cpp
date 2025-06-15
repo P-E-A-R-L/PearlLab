@@ -86,7 +86,7 @@ void ObjectsPanel::render() {
 
             // Drag-and-drop support
             if (ImGui::BeginDragDropSource()) {
-                ImGui::SetDragDropPayload("SharedUi::LoadedModule", &module, sizeof(SharedUi::LoadedModule));
+                ImGui::SetDragDropPayload("SharedUi::LoadedModule", &i, sizeof(int));
                 ImGui::Text("Dragging: %s", module.moduleName.c_str());
                 ImGui::EndDragDropSource();
             }
