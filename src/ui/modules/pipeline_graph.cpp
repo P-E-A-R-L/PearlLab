@@ -193,7 +193,7 @@ namespace PipelineGraph {
                 } else {
                     ed::RejectNewItem();
                     try {
-                        if (last_err_pin_src != src && last_err_pin_dst != dst) { // sometimes the link check is repeated which spams the Logger
+                        if (last_err_pin_src != src || last_err_pin_dst != dst) { // sometimes the link check is repeated which spams the Logger
                             Logger::warning(
                             std::format("Link failed: input requires type {} while output is {}.",
                             std::string(py::str(*dst->type)),
@@ -487,7 +487,7 @@ namespace PipelineGraph {
         links.clear();
     }
 
-    static void renderNodeTag(Node* node) {
+    static int renderNodeTag(Node* node) {
         if (!node->_editing_tag) {
             ImGui::PushID("EditableText");
             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(168, 109, 50, 255));
@@ -508,10 +508,11 @@ namespace PipelineGraph {
                 node->_editing_tag = false;
             }
         }
+
+        return 200;
     }
 
     static void renderNodeAsTable(Node* node, int alloc_size = 0) {
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 2));
         int max_size_in = 0;
         for (auto& input : node->inputs) {
             max_size_in = std::max(max_size_in, static_cast<int>(ImGui::CalcTextSize(input.name.c_str()).x));
@@ -522,9 +523,10 @@ namespace PipelineGraph {
             max_size_out = std::max(max_size_out, static_cast<int>(ImGui::CalcTextSize(output.name.c_str()).x));
         }
 
-        // max_size_in = std::max(max_size_in, alloc_size - max_size_out - 60);
+        max_size_in = std::max(max_size_in, alloc_size - max_size_out - (60 + 5 * 4));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 2));
 
-        if (ImGui::BeginTable("pin_layout", 2, ImGuiTableFlags_SizingFixedFit, {static_cast<float>(max_size_in + max_size_out + 68), 0})) {
+        if (ImGui::BeginTable("pin_layout", 2, ImGuiTableFlags_SizingFixedFit, {static_cast<float>(max_size_in + max_size_out + 60 + 5 * 4), 0})) {
             // Column 0: auto-fit to content
             ImGui::TableSetupColumn("Inputs", ImGuiTableColumnFlags_WidthFixed, max_size_in + 44);
             // Column 1: fill remaining space
@@ -547,13 +549,12 @@ namespace PipelineGraph {
             ImGui::TableSetColumnIndex(1);
 
             // Align right
-            float availWidth = max_size_out + 20; // 20 for the icon / 20 for padding between columns
+            float availWidth = max_size_out + 20; // 20 for the icon
 
             for (auto& output: node->outputs) {
                 float textWidth = ImGui::CalcTextSize(output.name.c_str()).x;
                 float iconSize = 20.0f;
-                float iconSpacing = 4.0f;
-                float totalWidth = textWidth + iconSpacing + iconSize;
+                float totalWidth = textWidth + iconSize;
 
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + availWidth - totalWidth);
 
@@ -932,16 +933,21 @@ namespace PipelineGraph {
     }
 
     void Nodes::PythonModuleNode::render() {
+        int max_node_header_size = 0;
+
+        max_node_header_size = std::max(max_node_header_size, static_cast<int>(ImGui::CalcTextSize(this->name.c_str()).x));
         ImGui::Text(this->name.c_str());
 
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
         FontManager::pushFont("Light");
+        max_node_header_size = std::max(max_node_header_size, static_cast<int>(ImGui::CalcTextSize(this->_name.c_str()).x));
         ImGui::Text(this->_name.c_str());
         FontManager::popFont();
         ImGui::PopStyleColor();
 
-        renderNodeTag(this);
-        renderNodeAsTable(this);
+        max_node_header_size = std::max(max_node_header_size, renderNodeTag(this));
+
+        renderNodeAsTable(this, max_node_header_size);
     }
 
     Nodes::PythonModuleNode::~PythonModuleNode() = default;
@@ -959,7 +965,7 @@ namespace PipelineGraph {
 
         Pin output;
         output.id = GetNextId();
-        output.name = "self";
+        output.name = "ret";
         output.direction = OUTPUT;
         output.tooltip = "The Object";
         output.type = _type->returnType;
@@ -1015,6 +1021,13 @@ namespace PipelineGraph {
 
 
     void Nodes::PythonFunctionNode::exec() {
+
+        if (_pointer) {
+            outputs[0].value = _type->module;
+            _executed = true;
+            return;
+        }
+
         // Set parameters
         std::vector<py::object> constructor_args;
         for (auto & input : inputs) {
@@ -1047,7 +1060,7 @@ namespace PipelineGraph {
         FontManager::popFont();
         ImGui::PopStyleColor();
 
-        renderNodeTag(this);
+        max_node_header_size = std::max(max_node_header_size, renderNodeTag(this));
 
         bool _p = _pointer;
         ImGui::Checkbox("Pointer", &_pointer);
@@ -1080,53 +1093,6 @@ namespace PipelineGraph {
             ed::EndPin();
             switchFocus(&outputs[0]);
         }
-
-
-        // ImVec2 tableSize(150, 0);
-        // ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 2));
-        //
-        // if (ImGui::BeginTable("pin_layout", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoBordersInBody, tableSize)) {
-        //     ImGui::TableSetupColumn("Inputs", ImGuiTableColumnFlags_WidthFixed, 100.0f);
-        //     ImGui::TableSetupColumn("Outputs", ImGuiTableColumnFlags_WidthFixed, 50.0f);
-        //
-        //     ImGui::TableNextRow();
-        //
-        //     ImGui::TableSetColumnIndex(0);
-        //     if (!_pointer) {
-        //         // Left: Input pins
-        //         for (auto& input : inputs) {
-        //             // ed::BeginPin(input.id, ed::PinKind::Input);
-        //             // ImGui::Text("-> %s", input.name.c_str());
-        //             // ed::EndPin();
-        //             // renderPinTooltip(&input);
-        //
-        //             ed::BeginPin(input.id, ed::PinKind::Input);
-        //             ax::Drawing::DrawIcon(ImVec2(20, 20), ax::Drawing::IconType::Flow, pinLinkLookup.contains(input.id));
-        //             ImGui::Dummy({20, 20});
-        //             ed::EndPin();
-        //             ImGui::SameLine();
-        //             ImGui::Text("%s", input.name.c_str());
-        //             switchFocus(&input);
-        //         }
-        //     }
-        //
-        //     // Right: Output pin
-        //     ImGui::TableSetColumnIndex(1);
-        //     if (_pointer)
-        //         ImGui::Text("fun");
-        //     else
-        //         ImGui::Text("ret");
-        //     ImGui::SameLine();
-        //     ed::BeginPin(outputs[0].id, ed::PinKind::Output);
-        //     ax::Drawing::DrawIcon(ImVec2(20, 20), ax::Drawing::IconType::Circle, pinLinkLookup.contains(outputs[0].id));
-        //     ImGui::Dummy({20, 20});
-        //     ed::EndPin();
-        //     switchFocus(&outputs[0]);
-        //
-        //     ImGui::EndTable();
-        // }
-        //
-        // ImGui::PopStyleVar();
     }
 
     Nodes::PythonFunctionNode::~PythonFunctionNode() = default;

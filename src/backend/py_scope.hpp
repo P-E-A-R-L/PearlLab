@@ -21,6 +21,7 @@ public:
     // handy modules
     py::module inspect;
     py::module numbers;
+    py::module helper;
 
     // pearl models
     py::module pearl_agent;
@@ -47,6 +48,7 @@ public:
     // handy functions
     py::object inspect_isabstrct;
     py::object issubclass;
+    py::object isgeneric;
 
 
     // output redirectors

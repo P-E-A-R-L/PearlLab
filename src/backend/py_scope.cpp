@@ -172,6 +172,11 @@ void PyScope::init() {
     instance->builtins     = py::module_::import("builtins");
     instance->numbers      = py::module_::import("numbers");
 
+    instance->pythonModules.push_back(instance->sys);
+    instance->pythonModules.push_back(instance->inspect);
+    instance->pythonModules.push_back(instance->builtins);
+    instance->pythonModules.push_back(instance->numbers);
+
     instance->int_type    = instance->builtins.attr("int");
     instance->float_type  = instance->builtins.attr("float");
     instance->str_type    = instance->builtins.attr("str");
@@ -187,10 +192,17 @@ void PyScope::init() {
         instance->annotations = py::module_::import("annotations");
         instance->param_type = instance->annotations.attr("Param");
 
-        instance->pythonModules.push_back(instance->sys);
-        instance->pythonModules.push_back(instance->inspect);
-        instance->pythonModules.push_back(instance->builtins);
         instance->pythonModules.push_back(instance->annotations);
+    } catch (...) {
+        // nothing to do
+        Logger::error("[Lab Library] Failed to initialize Python (see errors)");
+    }
+
+    try {
+        instance->helper      = py::module_::import("lab_helpers");
+        instance->isgeneric  = instance->helper.attr("is_generic_type");
+
+        instance->pythonModules.push_back(instance->helper);
     } catch (...) {
         // nothing to do
         Logger::error("[Lab Library] Failed to initialize Python (see errors)");
@@ -202,6 +214,14 @@ void PyScope::init() {
 
     if (instance->param_type.is_none()) {
         Logger::error("  Failed to import 'annotations' from 'py/annotations' module.");
+    }
+
+    if (instance->helper.is_none()) {
+        Logger::error("  Failed to import 'py/lab_helper' module.");
+    }
+
+    if (instance->isgeneric.is_none()) {
+        Logger::error("  Failed to import 'is_generic_type' from 'py/lab_helper' module.");
     }
 
     try {
@@ -241,12 +261,19 @@ bool PyScope::isSubclassOrInstance(py::handle obj, py::handle base) {
         return true; // both are None, considered as same type
     }
 
-    if (!pybind11::hasattr(obj, "__bases__")) {
-        // obj is an actual object not just a class type
-        return getInstance().issubclass(obj.attr("__class__"), base).cast<bool>();
+    if (getInstance().isgeneric(obj).cast<bool>())
+        return true; // just treat any generic type as OBJECT
+
+    if (getInstance().isgeneric(base).cast<bool>())
+        return true; // just treat any generic type as OBJECT
+
+
+    if (py::isinstance<py::type>(obj)) {
+        return getInstance().issubclass(obj, base).cast<bool>();
     }
 
-    return getInstance().issubclass(obj, base).cast<bool>();
+    return py::isinstance(obj, base);
+    // std::cout << std::string(py::str(obj)) << " " <<  std::string(py::str(base)) << std::endl;
 }
 
 Param PyScope::parseParamFromAnnotation(py::handle value) {

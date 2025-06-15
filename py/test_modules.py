@@ -1,8 +1,6 @@
 import numbers
-
-from jinja2.nodes import Test
-from tensorflow.python.data.ops.optional_ops import Optional
-
+from typing import Optional, Callable
+import numpy as np
 from annotations import Param
 
 
@@ -19,26 +17,6 @@ class test:
         pass
 
 
-print(Param.__init__)
-print(test.__module__  + "." + test.__qualname__)
-print(Param.__module__ + "." + Param.__qualname__)
-
-from pearl.provided.AssaultEnv import AssaultEnvShapMask
-from pearl.mask import Mask
-
-print(issubclass(AssaultEnvShapMask, Mask))
-
-print(issubclass(int, numbers.Number))
-
-print(issubclass(numbers.Number, int))
-
-
-class silly_stuff:
-    def __init__(self, x: int, y = 0):
-        self.x = x
-        self.y = y
-        print("Hello from silly_stuff")
-
 
 def func(x: int, y):
     """
@@ -50,34 +28,13 @@ def func(x: int, y):
     """
     pass
 
-print(func.__code__.co_varnames)
+class A:
+    pass
 
-def func_add(x: int, y: int) -> int:
-    """
-    Adds two integers together.
+class B(A):
+    pass
 
-    Args:
-        x: The first integer.
-        y: The second integer.
+x = 45
 
-    Returns:
-        The sum of x and y.
-    """
-    return x + y
-
-from builtins import object
-from typing import Optional
-print(isinstance(1, object().__class__))
-
-
-def preprocess(obs):
-    return obs
-
-from inspect import isfunction
-
-k = preprocess
-print(isinstance(preprocess, object))
-
-print(k.__class__)
-
-print(issubclass(str, Optional[str]))
+print(issubclass(B, A))
+print(issubclass(x, list[int]))
