@@ -11,6 +11,7 @@
 #include "../backend/py_scope.hpp"
 #include "modules/logger.hpp"
 #include "modules/objects_panel.hpp"
+#include "modules/pipeline.hpp"
 #include "modules/pipeline_graph.hpp"
 #include "modules/py_module_window.hpp"
 
@@ -62,6 +63,7 @@ void LabLayout::init() {
     PipelineGraph::init();
     SharedUi::init();
     ObjectsPanel::init();
+    Pipeline::init();
 }
 
 void LabLayout::render() {
@@ -183,6 +185,7 @@ void LabLayout::render() {
         Logger::info("Docking windows...");
         // Dock windows
         ImGui::DockBuilderDockWindow("Objects", left_top);
+        ImGui::DockBuilderDockWindow("Recipes", left_mid);
         ImGui::DockBuilderDockWindow("Pipeline", left_bot);
 
         ImGui::DockBuilderDockWindow("Preview", center_top);
@@ -209,6 +212,7 @@ void LabLayout::render() {
     Logger::render();
     PipelineGraph::render();
     ObjectsPanel::render();
+    Pipeline::render();
 }
 
 void LabLayout::destroy() {
@@ -216,6 +220,7 @@ void LabLayout::destroy() {
     PipelineGraph::destroy();
     SharedUi::destroy();
     ObjectsPanel::destroy();
+    Pipeline::destroy();
 }
 
 

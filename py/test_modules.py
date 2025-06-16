@@ -35,6 +35,3 @@ class B(A):
     pass
 
 x = 45
-
-print(issubclass(B, A))
-print(issubclass(x, list[int]))

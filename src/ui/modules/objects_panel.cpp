@@ -81,8 +81,12 @@ void ObjectsPanel::render() {
             else if (module.type == SharedUi::Mask) typeName = "K";
             else if (module.type == SharedUi::Function) typeName = "F";
 
-            std::string label = typeName + "  " + module.moduleName;
-            ImGui::Selectable(label.c_str());
+            ImGui::Text(typeName.c_str());
+            ImGui::SameLine();
+
+            ImGui::SetCursorPos({30, ImGui::GetCursorPos().y});
+
+            ImGui::Selectable(module.moduleName.c_str());
 
             // Drag-and-drop support
             if (ImGui::BeginDragDropSource()) {

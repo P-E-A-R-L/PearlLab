@@ -50,6 +50,8 @@ set(PEAR_LAB_SOURCES
         src/ui/modules/objects_panel.hpp
         src/ui/utility/drawing.h
         src/ui/utility/drawing.cpp
+        src/ui/modules/pipeline.cpp
+        src/ui/modules/pipeline.hpp
 )
 
 # deps

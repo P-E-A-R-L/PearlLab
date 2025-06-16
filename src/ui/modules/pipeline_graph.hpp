@@ -72,6 +72,13 @@ namespace PipelineGraph {
     ed::LinkId addLink(ed::PinId inputPinId, ed::PinId outputPinId);
     void removeLink(ed::LinkId id);
 
+
+    struct ObjectRecipe;
+
+    // build objects recipes from Acceptor nodes and return a list of them
+    // if fails due to cycles, will output on console, and return a list of valid recipes (if any)
+    std::vector<ObjectRecipe> build();
+
     extern std::vector<PipelineGraph::Node*> nodes;
     extern std::vector<PipelineGraph::Link*> links;
 
@@ -87,7 +94,7 @@ namespace PipelineGraph {
     void destroy();
 
     namespace Nodes {
-        struct PrimitiveIntNode: public Node {
+        struct PrimitiveIntNode: virtual public Node {
             int    value{};
             int    rangeStart{};
             int    rangeEnd{};
@@ -99,7 +106,7 @@ namespace PipelineGraph {
             ~PrimitiveIntNode() override;
         };
 
-        struct PrimitiveFloatNode: public Node {
+        struct PrimitiveFloatNode: virtual public Node {
             float    value{};
             float    rangeStart{};
             float    rangeEnd{};
@@ -111,7 +118,7 @@ namespace PipelineGraph {
             ~PrimitiveFloatNode() override;
         };
 
-        struct PrimitiveStringNode: public Node {
+        struct PrimitiveStringNode: virtual public Node {
 
             char _value[1024] = "";
             bool _file = false;
@@ -122,7 +129,7 @@ namespace PipelineGraph {
             ~PrimitiveStringNode() override;
         };
 
-        struct AdderNode: public Node {
+        struct AdderNode: virtual public Node {
 
             explicit AdderNode();
             void exec() override;
@@ -130,7 +137,10 @@ namespace PipelineGraph {
             ~AdderNode() override;
         };
 
-        struct PythonModuleNode: public Node {
+        struct SingleOutputNode: virtual public Node { // nodes of this type, will only have one output
+        };
+
+        struct PythonModuleNode: virtual public SingleOutputNode {
             SharedUi::LoadedModule* _type;
             std::string _name; // I have no idea why the SharedUi::LoadedModule->moduleName breaks
 
@@ -140,14 +150,14 @@ namespace PipelineGraph {
             ~PythonModuleNode() override;
         };
 
-        struct PythonFunctionNode: public Node {
+        struct PythonFunctionNode: virtual public SingleOutputNode {
             SharedUi::LoadedModule* _type;
             std::string _name; // I have no idea why the SharedUi::LoadedModule->moduleName breaks
             bool _pointer;
+            std::vector<Pin> _inputs;
 
             explicit PythonFunctionNode(SharedUi::LoadedModule*);
             explicit PythonFunctionNode(SharedUi::LoadedModule*, bool);
-            bool canExecute() override;
             void exec() override;
             void render() override;
             ~PythonFunctionNode() override;
@@ -177,6 +187,12 @@ namespace PipelineGraph {
             explicit MethodAcceptorNode();
         };
     }
+
+    struct ObjectRecipe {
+        std::vector<Node*> plan;
+        Nodes::AcceptorNode* acceptor;
+        py::object create();
+    };
 };
 
 

@@ -14,6 +14,7 @@
 
 #include "ImGuiFileDialog.h"
 #include "logger.hpp"
+#include "pipeline.hpp"
 #include "../font_manager.hpp"
 #include "../shared_ui.hpp"
 #include "../../backend/py_scope.hpp"
@@ -243,6 +244,116 @@ namespace PipelineGraph {
         delete link_ptr;
     }
 
+
+    static bool _isPearlNode(Node* node) {
+        // is this node a pearl type node
+        auto m_node = dynamic_cast<Nodes::SingleOutputNode*>(node);
+        if (!m_node) return false;
+
+        auto& output = m_node->outputs[0];
+        auto& instance = PyScope::getInstance();
+
+        return
+            PyScope::isSubclassOrInstance(output.type, instance.pearl_agent_type)
+        ||  PyScope::isSubclassOrInstance(output.type, instance.pearl_env)
+        ||  PyScope::isSubclassOrInstance(output.type, instance.pearl_method_type);
+    }
+
+    static std::optional<ObjectRecipe> _buildFromSource(Node* start) {
+        if (!start) {
+            Logger::error("Tried to build from a null node");
+            return std::nullopt;
+        }
+
+
+        std::set<Node*> graph;
+        std::stack<Node*> stack;
+        stack.push(start);
+        while (!stack.empty()) {
+            auto top = stack.top(); stack.pop();
+            if (!graph.contains(top)) {
+                graph.insert(top);
+                for (auto& pin: top->inputs) {
+                    auto it = pinLinkLookup.find(pin.id);
+                    if (it != pinLinkLookup.end()) {
+                        for (auto& link: it->second) {
+                            auto src_node = pinNodeLookup[link->outputPinId];
+                            if (!graph.contains(src_node)) {
+                                stack.push(src_node);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        std::set<Node*> curr_itr;
+        std::set<Node*> next_itr;
+
+        for (const auto node: graph) {
+            node->_executed = false;
+        }
+
+        for (const auto node: graph) {
+            if (node->canExecute()) curr_itr.insert(node);
+        }
+
+        ObjectRecipe result;
+
+        while (!curr_itr.empty()) {
+            next_itr.clear();
+
+            for (const auto node: curr_itr) {
+                node->_executed = true;
+                result.plan.push_back(node);
+            }
+
+            for (const auto node: curr_itr) {
+                // now add any next node that is ready to execute
+                for (auto& pin: node->outputs) {
+                    auto it = pinLinkLookup.find(pin.id);
+                    if (it != pinLinkLookup.end()) {
+                        for (auto& link: it->second) {
+                            auto dst_node = pinNodeLookup[link->inputPinId];
+                            if (!dst_node->_executed && !next_itr.contains(dst_node) && dst_node->canExecute()) {
+                                next_itr.insert(dst_node);
+                            }
+                        }
+                    }
+                }
+            }
+
+            curr_itr = next_itr;
+        }
+
+        for (const auto node: graph) {
+            if (!node->_executed) {
+                Logger::error("Tried to build from node: " + std::string(start->_tag) + ", unable to construct a DAG.");
+                return std::nullopt;
+            }
+        }
+
+        result.acceptor = dynamic_cast<Nodes::AcceptorNode*>(start);
+
+        return result;
+    }
+
+    std::vector<ObjectRecipe> build() {
+        std::vector<ObjectRecipe> result;
+        for (const auto node: nodes) {
+            if (dynamic_cast<Nodes::AcceptorNode*>(node)) {
+                auto k = _buildFromSource(node);
+                if (k == std::nullopt) {
+                    Logger::error("Failed to create build recipe from node: " + std::string(node->_tag));
+                    continue;
+                }
+                result.push_back(*k);
+            }
+        }
+
+        return result;
+    }
+
     void init() {
         ed::Config config;
         config.SettingsFile = "Pipeline_Graph.json";
@@ -333,9 +444,9 @@ namespace PipelineGraph {
                 addNode(new Nodes::EnvAcceptorNode());
             }
 
-            if (ImGui::MenuItem("Mask")) {
-                addNode(new Nodes::MaskAcceptorNode());
-            }
+            // if (ImGui::MenuItem("Mask")) {
+            //     addNode(new Nodes::MaskAcceptorNode());
+            // }
 
             if (ImGui::MenuItem("Method")) {
                 addNode(new Nodes::MethodAcceptorNode());
@@ -390,7 +501,10 @@ namespace PipelineGraph {
         auto cursor = ImGui::GetCursorPos();
         cursor.x += space - size;
         ImGui::SetCursorPos(cursor);
-        ImGui::Button("Build");
+        if (ImGui::Button("Build")) {
+            auto _res = build();
+            Pipeline::recipes = _res;
+        }
 
         ImGui::Separator();
         ed::SetCurrentEditor(m_Context);
@@ -489,7 +603,7 @@ namespace PipelineGraph {
 
     static int renderNodeTag(Node* node) {
         if (!node->_editing_tag) {
-            ImGui::PushID("EditableText");
+            ImGui::PushID("##EditableText");
             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(168, 109, 50, 255));
             if (ImGui::Selectable(node->_tag, false, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(200, 0))) {
                 if (ImGui::IsMouseDoubleClicked(0)) {
@@ -513,12 +627,12 @@ namespace PipelineGraph {
     }
 
     static void renderNodeAsTable(Node* node, int alloc_size = 0) {
-        int max_size_in = 0;
+        int max_size_in = 1;
         for (auto& input : node->inputs) {
             max_size_in = std::max(max_size_in, static_cast<int>(ImGui::CalcTextSize(input.name.c_str()).x));
         }
 
-        int max_size_out = 0;
+        int max_size_out = 1;
         for (auto& output : node->outputs) {
             max_size_out = std::max(max_size_out, static_cast<int>(ImGui::CalcTextSize(output.name.c_str()).x));
         }
@@ -978,7 +1092,7 @@ namespace PipelineGraph {
             input.direction = INPUT;
             input.tooltip = param.disc;
             input.type = param.type;
-            inputs.push_back(input);
+            _inputs.push_back(input);
         }
     }
 
@@ -1008,17 +1122,9 @@ namespace PipelineGraph {
             input.direction = INPUT;
             input.tooltip = param.disc;
             input.type = param.type;
-            inputs.push_back(input);
+            _inputs.push_back(input);
         }
     }
-
-    bool Nodes::PythonFunctionNode::canExecute() {
-        if (_pointer)
-            return true;
-        else
-            return Node::canExecute(); // if it's not a pointer, then we need to check the inputs
-    }
-
 
     void Nodes::PythonFunctionNode::exec() {
 
@@ -1071,8 +1177,10 @@ namespace PipelineGraph {
 
         if (_pointer) {
             outputs[0].type = _type->module;
+            inputs = {};
         } else {
             outputs[0].type = _type->returnType;
+            inputs = _inputs;
         }
 
         if (!_pointer) {
