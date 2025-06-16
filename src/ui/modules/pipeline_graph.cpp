@@ -16,8 +16,7 @@
 #include "logger.hpp"
 #include "pipeline.hpp"
 #include "../font_manager.hpp"
-#include "../shared_ui.hpp"
-#include "../../backend/py_scope.hpp"
+
 #include "../utility/drawing.h"
 
 
@@ -334,6 +333,9 @@ namespace PipelineGraph {
         }
 
         result.acceptor = dynamic_cast<Nodes::AcceptorNode*>(start);
+        result.type     = Agent;
+        if (dynamic_cast<Nodes::EnvAcceptorNode*>(result.acceptor)) result.type = Environment;
+        if (dynamic_cast<Nodes::MethodAcceptorNode*>(result.acceptor)) result.type = Method;
 
         return result;
     }
@@ -457,7 +459,7 @@ namespace PipelineGraph {
             if (ImGui::BeginMenu("Objects")) {
                 for (auto& module : SharedUi::loadedModules) {
                     if (ImGui::MenuItem(module.moduleName.c_str())) {
-                        if (module.type == SharedUi::Function) {
+                        if (module.type == PyScope::Function) {
                             addNode(new Nodes::PythonFunctionNode(&module));
                         } else {
                             addNode(new Nodes::PythonModuleNode(&module));
@@ -503,7 +505,7 @@ namespace PipelineGraph {
         ImGui::SetCursorPos(cursor);
         if (ImGui::Button("Build")) {
             auto _res = build();
-            Pipeline::recipes = _res;
+            Pipeline::setRecipes(_res);
         }
 
         ImGui::Separator();
@@ -560,22 +562,22 @@ namespace PipelineGraph {
         // Create a full-window invisible button (must render something for drag-drop to bind)
         // Doesn't steal other events tho so that's nice
         ImGui::SetCursorScreenPos(abs_min);
-        ImGui::InvisibleButton("##FullWindowDropTarget", region_size);
+        ImGui::InvisibleButton("##Dropdown PyScope::LoadedModule", region_size);
 
         if (ImGui::BeginDragDropTarget()) {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SharedUi::LoadedModule")) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PyScope::LoadedModule")) {
                 Logger::info("Dropped a python object into view");
                 int index = *static_cast<int*>(payload->Data);
                 auto *module = &SharedUi::loadedModules[index];
                 if (module) {
                     // Create a new node for the dropped module
-                    if (module->type == SharedUi::Function) {
+                    if (module->type == PyScope::Function) {
                         PipelineGraph::addNode(new Nodes::PythonFunctionNode(module));
                     } else {
                         PipelineGraph::addNode(new Nodes::PythonModuleNode(module));
                     }
                 } else {
-                    Logger::error("Failed to cast payload data to SharedUi::LoadedModule");
+                    Logger::error("Failed to cast payload data to PyScope::LoadedModule");
                 }
             }
             ImGui::EndDragDropTarget();
@@ -599,6 +601,34 @@ namespace PipelineGraph {
             delete link;
         }
         links.clear();
+    }
+
+    py::object ObjectRecipe::create() {
+        for (auto node: plan) {
+            node->init();
+        }
+
+        try {
+            for (auto node: plan) {
+                if (node->canExecute()) {
+                    node->exec();
+                } else {
+                    Logger::error("Node " + std::string(node->_tag) + " cannot be executed, missing inputs or dependencies.");
+                    return py::none();
+                }
+            }
+        } catch (const std::exception& e) {
+            Logger::error("Exception while creating recipe: " + std::string(e.what()));
+            return py::none();
+        } catch (py::error_already_set& e) {
+            Logger::error("Python error while creating recipe: " + std::string(e.what()));
+            return py::none();
+        } catch (...) {
+            Logger::error("Unknown error while creating recipe");
+            return py::none();
+        }
+
+        return acceptor->_result;
     }
 
     static int renderNodeTag(Node* node) {
@@ -965,11 +995,6 @@ namespace PipelineGraph {
             // Left: Input pins
             ImGui::TableSetColumnIndex(0);
             for (auto& input : inputs) {
-                // ed::BeginPin(input.id, ed::PinKind::Input);
-                // ImGui::Text("-> %s", input.name.c_str());
-                // ed::EndPin();
-                // renderPinTooltip(&input);
-
                 ed::BeginPin(input.id, ed::PinKind::Input);
                 ax::Drawing::DrawIcon(ImVec2(20, 20), ax::Drawing::IconType::Flow, pinLinkLookup.contains(input.id));
                 ImGui::Dummy({20, 20});
@@ -997,7 +1022,7 @@ namespace PipelineGraph {
 
     Nodes::AdderNode::~AdderNode() = default;
 
-    Nodes::PythonModuleNode::PythonModuleNode(SharedUi::LoadedModule* type) {
+    Nodes::PythonModuleNode::PythonModuleNode(PyScope::LoadedModule* type) {
         _type = type;
 
         id = GetNextId();
@@ -1038,7 +1063,10 @@ namespace PipelineGraph {
         }
 
         try {
-            py::tuple args = py::cast(constructor_args);
+            py::tuple args(constructor_args.size());
+            for (size_t i = 0;i < constructor_args.size();i++) {
+                args[i] = constructor_args[i];
+            }
             outputs[0].value = _type->module(*args); // un-pack them into the python object
             _executed = true;
         } catch (...) {
@@ -1066,7 +1094,7 @@ namespace PipelineGraph {
 
     Nodes::PythonModuleNode::~PythonModuleNode() = default;
 
-    Nodes::PythonFunctionNode::PythonFunctionNode(SharedUi::LoadedModule* type) {
+    Nodes::PythonFunctionNode::PythonFunctionNode(PyScope::LoadedModule* type) {
         _type    = type;
         _pointer = false;
 
@@ -1081,7 +1109,7 @@ namespace PipelineGraph {
         output.id = GetNextId();
         output.name = "ret";
         output.direction = OUTPUT;
-        output.tooltip = "The Object";
+        output.tooltip = "Function return value or pointer (depending on the mode)";
         output.type = _type->returnType;
         outputs.push_back(output);
 
@@ -1096,7 +1124,7 @@ namespace PipelineGraph {
         }
     }
 
-    Nodes::PythonFunctionNode::PythonFunctionNode(SharedUi::LoadedModule* type, bool pointer) {
+    Nodes::PythonFunctionNode::PythonFunctionNode(PyScope::LoadedModule* type, bool pointer) {
         _type    = type;
         _pointer = pointer;
 
@@ -1145,7 +1173,10 @@ namespace PipelineGraph {
         }
 
         try {
-            py::tuple args = py::cast(constructor_args);
+            py::tuple args(constructor_args.size());
+            for (size_t i = 0;i < constructor_args.size();i++) {
+                args[i] = constructor_args[i];
+            }
             outputs[0].value = _type->module(*args); // un-pack them into the python object
             _executed = true;
         } catch (...) {

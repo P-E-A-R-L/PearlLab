@@ -9,11 +9,8 @@
 #include <imgui_node_editor.h>
 #include <pybind11/embed.h>
 #include <pybind11/pybind11.h>
-
-namespace SharedUi {
-    struct LoadedModule;
-}
-
+#include "../../backend/py_scope.hpp"
+#include "../../ui/shared_ui.hpp"
 namespace ed = ax::NodeEditor;
 namespace py = pybind11;
 
@@ -141,23 +138,23 @@ namespace PipelineGraph {
         };
 
         struct PythonModuleNode: virtual public SingleOutputNode {
-            SharedUi::LoadedModule* _type;
+            PyScope::LoadedModule* _type;
             std::string _name; // I have no idea why the SharedUi::LoadedModule->moduleName breaks
 
-            explicit PythonModuleNode(SharedUi::LoadedModule*);
+            explicit PythonModuleNode(PyScope::LoadedModule*);
             void exec() override;
             void render() override;
             ~PythonModuleNode() override;
         };
 
         struct PythonFunctionNode: virtual public SingleOutputNode {
-            SharedUi::LoadedModule* _type;
+            PyScope::LoadedModule* _type;
             std::string _name; // I have no idea why the SharedUi::LoadedModule->moduleName breaks
             bool _pointer;
             std::vector<Pin> _inputs;
 
-            explicit PythonFunctionNode(SharedUi::LoadedModule*);
-            explicit PythonFunctionNode(SharedUi::LoadedModule*, bool);
+            explicit PythonFunctionNode(PyScope::LoadedModule*);
+            explicit PythonFunctionNode(PyScope::LoadedModule*, bool);
             void exec() override;
             void render() override;
             ~PythonFunctionNode() override;
@@ -188,9 +185,16 @@ namespace PipelineGraph {
         };
     }
 
+    enum RecipeType {
+        Agent,
+        Environment,
+        Method
+    };
+
     struct ObjectRecipe {
         std::vector<Node*> plan;
         Nodes::AcceptorNode* acceptor;
+        RecipeType type;
         py::object create();
     };
 };

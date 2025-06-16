@@ -54,16 +54,16 @@ void ObjectsPanel::render() {
     } else {
         int visibleCount = 0;
         for (int i = 0; i < size; ++i) {
-            SharedUi::LoadedModule& module = objects[i];
+            PyScope::LoadedModule& module = objects[i];
 
             // Filter by type
             bool visibleByType =
-                (module.type == SharedUi::Agent && showAgents) ||
-                (module.type == SharedUi::Environment && showEnvironments) ||
-                (module.type == SharedUi::Method && showMethods) ||
-                (module.type == SharedUi::Mask && showMasks) ||
-                (module.type == SharedUi::Function && showFunctions) ||
-                (module.type == SharedUi::Other && showOthers);
+                (module.type == PyScope::Agent && showAgents) ||
+                (module.type == PyScope::Environment && showEnvironments) ||
+                (module.type == PyScope::Method && showMethods) ||
+                (module.type == PyScope::Mask && showMasks) ||
+                (module.type == PyScope::Function && showFunctions) ||
+                (module.type == PyScope::Other && showOthers);
 
             if (!visibleByType)
                 continue;
@@ -75,11 +75,11 @@ void ObjectsPanel::render() {
 
 
             std::string typeName = "U";
-            if (module.type == SharedUi::Agent) typeName = "A";
-            else if (module.type == SharedUi::Environment) typeName = "E";
-            else if (module.type == SharedUi::Method) typeName = "M";
-            else if (module.type == SharedUi::Mask) typeName = "K";
-            else if (module.type == SharedUi::Function) typeName = "F";
+            if (module.type == PyScope::Agent) typeName = "A";
+            else if (module.type == PyScope::Environment) typeName = "E";
+            else if (module.type == PyScope::Method) typeName = "M";
+            else if (module.type == PyScope::Mask) typeName = "K";
+            else if (module.type == PyScope::Function) typeName = "F";
 
             ImGui::Text(typeName.c_str());
             ImGui::SameLine();
@@ -90,7 +90,7 @@ void ObjectsPanel::render() {
 
             // Drag-and-drop support
             if (ImGui::BeginDragDropSource()) {
-                ImGui::SetDragDropPayload("SharedUi::LoadedModule", &i, sizeof(int));
+                ImGui::SetDragDropPayload("PyScope::LoadedModule", &i, sizeof(int));
                 ImGui::Text("Dragging: %s", module.moduleName.c_str());
                 ImGui::EndDragDropSource();
             }

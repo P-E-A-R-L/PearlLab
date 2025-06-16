@@ -35,3 +35,19 @@ class B(A):
     pass
 
 x = 45
+
+
+from pearl.agent import RLAgent
+
+class TorchDQN(RLAgent):
+    """
+    Simple DQN agent using PyTorch.
+    """
+    def __init__(self, model_path: str, module, device):
+        print("hello from agent!")
+
+    def predict(self, observation):
+        pass
+
+    def get_q_net(self):
+        pass

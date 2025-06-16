@@ -52,6 +52,8 @@ set(PEAR_LAB_SOURCES
         src/ui/utility/drawing.cpp
         src/ui/modules/pipeline.cpp
         src/ui/modules/pipeline.hpp
+        src/backend/py_agent.cpp
+        src/backend/py_agent.hpp
 )
 
 # deps

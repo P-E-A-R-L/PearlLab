@@ -8,10 +8,11 @@
 
 #include "../backend/py_scope.hpp"
 #include "modules/logger.hpp"
+#include "modules/pipeline.hpp"
 
 namespace SharedUi {
     std::vector<py::object> modules{};
-    std::vector<LoadedModule> loadedModules{};
+    std::vector<PyScope::LoadedModule> loadedModules{};
 
     static std::set<std::string> loadedModuleNames;
 
@@ -20,7 +21,7 @@ namespace SharedUi {
     }
 
     void pushModule(const py::object& module) {
-        LoadedModule l;
+        PyScope::LoadedModule l;
         l.module     = module;
         l.moduleName = std::string(py::str(module.attr("__module__"))) + std::string(".") + std::string(py::str(module.attr("__qualname__")));
 
@@ -35,24 +36,24 @@ namespace SharedUi {
 
         if (isClass) {
             if (PyScope::isSubclassOrInstance(module, python.pearl_agent_type)) {
-                l.type = SharedUi::Agent;
+                l.type = PyScope::Agent;
             } else if (PyScope::isSubclassOrInstance(module, python.pearl_env_type)) {
-                l.type = SharedUi::Environment;
+                l.type = PyScope::Environment;
             } else if (PyScope::isSubclassOrInstance(module, python.pearl_method_type)) {
-                l.type = SharedUi::Method;
+                l.type = PyScope::Method;
             } else if (PyScope::isSubclassOrInstance(module, python.pearl_mask_type)) {
-                l.type = SharedUi::Mask;
+                l.type = PyScope::Mask;
             } else {
-                l.type = SharedUi::Other;
+                l.type = PyScope::Other;
             }
         } else if (py::isinstance<py::function>(module)) {
-            l.type = SharedUi::Function;
+            l.type = PyScope::Function;
         } else {
             Logger::error("Unknown type for module: " + l.moduleName);
             return;
         }
 
-        if (l.type != Function) {
+        if (l.type != PyScope::Function) {
             // a class
             if (hasattr(module, "__annotations__")) {
                 py::dict dict = module.attr("__annotations__");

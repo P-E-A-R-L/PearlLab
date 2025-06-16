@@ -19,7 +19,6 @@ namespace LabLayout {
     // hidden because normally not other module would need these functions
     // these are just some demo functions to make the UI .. well .. do something
     // they are to be changed with the actual modules
-    void renderPipelineModule();
     void renderPreviewModule();
     void renderParamsModule();
 
@@ -27,14 +26,6 @@ namespace LabLayout {
 
 extern GLFWwindow* AppWindow;
 
-void LabLayout::renderPipelineModule() {
-    ImGui::Begin("Pipeline");
-    ImGui::Text("Environment: Env1");
-    ImGui::Text("Experiment: TestExp");
-    ImGui::Text("Agents: A, B");
-    ImGui::Text("Method: X");
-    ImGui::End();
-}
 
 void LabLayout::renderPreviewModule() {
     ImGui::Begin("Preview");
@@ -202,7 +193,6 @@ void LabLayout::render() {
     ImGui::End();
 
     // Render individual windows
-    renderPipelineModule();
     renderPreviewModule();
     renderParamsModule();
 

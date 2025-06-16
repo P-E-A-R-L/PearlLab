@@ -10,30 +10,14 @@
 #include <pybind11/pybind11.h>
 
 #include "../backend/py_param.hpp"
+#include "../backend/py_scope.hpp"
 
 namespace py = pybind11;
 
 namespace SharedUi {
-    enum ModuleType {
-        Agent,
-        Environment,
-        Method,
-        Mask,
-        Function,
-        Other
-    };
-
-    struct LoadedModule {
-        py::object  module;
-        py::object  returnType;  // for functions
-        std::string moduleName;
-        std::vector<Param> annotations;
-        std::vector<Param> constructor;
-        ModuleType type = Other; // default to Other
-    };
 
     extern std::vector<py::object> modules;
-    extern std::vector<LoadedModule> loadedModules;
+    extern std::vector<PyScope::LoadedModule> loadedModules;
 
     void init();
     void pushModule(const py::object& module);

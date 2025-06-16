@@ -4,9 +4,10 @@
 
 #ifndef PYSCOPE_HPP
 #define PYSCOPE_HPP
+
 #include <pybind11/embed.h>
 #include <pybind11/pybind11.h>
-
+#include <optional>
 #include "py_param.hpp"
 
 namespace py = pybind11;
@@ -70,6 +71,28 @@ public:
     static bool isSubclassOrInstance(py::handle obj, py::handle base);
 
     static Param parseParamFromAnnotation(py::handle annotation);
+
+    enum ModuleType {
+        Agent,
+        Environment,
+        Method,
+        Mask,
+        Function,
+        Other
+    };
+
+     struct LoadedModule {
+        py::object  module;
+        py::object  returnType;  // for functions
+        std::string moduleName;
+        std::vector<Param> annotations;
+        std::vector<Param> constructor;
+        ModuleType type = Other; // default to Other
+    };
+
+    static bool parseLoadedModule(py::object obj, PyScope::LoadedModule& l);
+
+
 private:
     PyScope();
 };
