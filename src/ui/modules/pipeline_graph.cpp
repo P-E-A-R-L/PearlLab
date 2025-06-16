@@ -1122,6 +1122,8 @@ namespace PipelineGraph {
             input.type = param.type;
             _inputs.push_back(input);
         }
+
+        inputs = _inputs;
     }
 
     Nodes::PythonFunctionNode::PythonFunctionNode(PyScope::LoadedModule* type, bool pointer) {
