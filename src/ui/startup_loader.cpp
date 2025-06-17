@@ -143,6 +143,4 @@ void StartupLoader::load_graph() {
     strcpy(methodAcceptor->_tag, methodTag.c_str());
     strcpy(agent1Acceptor->_tag, agent1Tag.c_str());
     strcpy(agent2Acceptor->_tag, agent2Tag.c_str());
-
-
 }
