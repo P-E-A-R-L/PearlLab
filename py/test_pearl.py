@@ -57,6 +57,10 @@ class Wrapper(ObservationWrapper):
         obs, reward_dict, terminated, truncated, info = self.env.step(action)
         return self.observation(obs), reward_dict, terminated, truncated, info
 
+
+def cudaDevice():
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     mask = AssaultEnvShapMask()

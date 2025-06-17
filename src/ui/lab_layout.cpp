@@ -8,6 +8,7 @@
 
 #include "ImGuiFileDialog.h"
 #include "shared_ui.hpp"
+#include "startup_loader.hpp"
 #include "../backend/py_scope.hpp"
 #include "modules/logger.hpp"
 #include "modules/objects_panel.hpp"
@@ -188,6 +189,8 @@ void LabLayout::render() {
 
 
         Logger::info("Done.");
+
+        StartupLoader::load_modules();
     }
 
     ImGui::End();
@@ -197,7 +200,7 @@ void LabLayout::render() {
     renderParamsModule();
 
     if (open_modules_debugger) PyModuleWindow::render();
-    if (show_metrics) ImGui::ShowMetricsWindow();
+    if (show_metrics)          ImGui::ShowMetricsWindow();
 
     Logger::render();
     PipelineGraph::render();

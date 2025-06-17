@@ -11,6 +11,7 @@
 #include <pybind11/pybind11.h>
 #include "../../backend/py_scope.hpp"
 #include "../../ui/shared_ui.hpp"
+
 namespace ed = ax::NodeEditor;
 namespace py = pybind11;
 
@@ -47,7 +48,7 @@ namespace PipelineGraph {
 
         bool _executed = false;
 
-        char _tag[256] = "value";
+        char _tag[256] = "<tag>";
         bool _editing_tag = false;
 
         virtual void init();
@@ -62,6 +63,7 @@ namespace PipelineGraph {
         ed::PinId inputPinId;
         ed::PinId outputPinId;
     };
+
 
     ed::NodeId addNode(Node*);
     void removeNode(ed::NodeId id);
@@ -121,6 +123,7 @@ namespace PipelineGraph {
             bool _file = false;
 
             explicit PrimitiveStringNode(bool file);
+            explicit PrimitiveStringNode(const std::string& );
             void exec() override;
             void render() override;
             ~PrimitiveStringNode() override;
@@ -168,6 +171,13 @@ namespace PipelineGraph {
             ~AcceptorNode() override;
         };
 
+        struct DeMuxNode: public Node {
+            explicit DeMuxNode(int numOutputs);
+            void exec() override;
+            void render() override;
+            ~DeMuxNode() override;
+        };
+
         struct AgentAcceptorNode: public AcceptorNode {
             explicit AgentAcceptorNode();
         };
@@ -183,6 +193,7 @@ namespace PipelineGraph {
         struct MethodAcceptorNode: public AcceptorNode {
             explicit MethodAcceptorNode();
         };
+
     }
 
     enum RecipeType {

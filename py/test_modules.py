@@ -17,7 +17,6 @@ class test:
         pass
 
 
-
 def func(x: int, y):
     """
     A simple function that does nothing.

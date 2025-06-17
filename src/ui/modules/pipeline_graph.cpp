@@ -16,6 +16,7 @@
 #include "logger.hpp"
 #include "pipeline.hpp"
 #include "../font_manager.hpp"
+#include "../startup_loader.hpp"
 
 #include "../utility/drawing.h"
 
@@ -63,6 +64,34 @@ namespace PipelineGraph {
     static std::vector<ed::LinkId> selectedLinkIds;
     static std::vector<PipelineGraph::Node> clipboardNodes;
 
+    void ShowIntegerInputDialog(bool* open, const char* popup_id, const std::function<void(int)>& on_confirm) {
+        static int input_value = 0;
+
+        if (*open) {
+            ImGui::OpenPopup(popup_id);
+            *open = false; // Reset the flag
+        }
+
+        if (ImGui::BeginPopupModal(popup_id, NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("Enter an integer value:");
+            ImGui::InputInt("##InputInt", &input_value);
+
+            ImGui::Separator();
+
+            if (ImGui::Button("OK", ImVec2(120, 0))) {
+                on_confirm(input_value); // Call the lambda with the input value
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SetItemDefaultFocus();
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndPopup();
+        }
+    }
+
     void Node::init() {
         _executed = false;
     }
@@ -95,7 +124,7 @@ namespace PipelineGraph {
         return py::none();
     }
 
-    ed::NodeId addNode(Node* n) {
+    ed::NodeId _addNode(Node* n) {
         nodes.push_back(n);
         nodeLookup[n->id] = n;
 
@@ -119,6 +148,21 @@ namespace PipelineGraph {
         return n->id;
     }
 
+
+    ed::NodeId addNode(Node * n) {
+        nodes.push_back(n);
+        nodeLookup[n->id] = n;
+
+        for (auto& pin : n->inputs) {
+            pinNodeLookup[pin.id] = n;
+            pinLookup[pin.id] = &pin;
+        }
+        for (auto& pin : n->outputs) {
+            pinNodeLookup[pin.id] = n;
+            pinLookup[pin.id] = &pin;
+        }
+        return n->id;
+    }
 
     void removeNode(ed::NodeId id) {
         auto node = nodeLookup.find(id);
@@ -168,9 +212,50 @@ namespace PipelineGraph {
             auto src = pinLookup[outputPinId];
             auto dst = pinLookup[inputPinId];
             if (src->direction != OUTPUT || dst->direction != INPUT) {
+                // ed::RejectNewItem();
+            } else if (src->type.is_none() == false && dst->type.is_none() == false) {
+                // no need to check for types if it's from a function call
+                if (true) {
+                    auto input_pin_link = pinLinkLookup.find(inputPinId);
+                    auto output_pin_link = pinLinkLookup.find(outputPinId);
+                    if (input_pin_link != pinLinkLookup.end()) {
+                    } else {
+                        auto link = new Link{ ed::LinkId(GetNextId()), inputPinId, outputPinId };
+                        links.push_back( link );
+
+                        linkLookup[link->id]       = link;
+
+                        if (output_pin_link == pinLinkLookup.end()) {
+                            pinLinkLookup[outputPinId] = {};
+                        }
+
+                        pinLinkLookup[inputPinId]  = { link };
+                        pinLinkLookup[outputPinId].push_back(link);
+                        return link->id;
+                    }
+                }
+            } else {
+                Logger::warning("Linking a pin where the input / output type is not defined.");
+            }
+        }
+
+        return ed::LinkId(-1);
+    }
+
+
+
+    // same as AddLink, but this one is called from UI
+    ed::LinkId _addLink(ed::PinId inputPinId, ed::PinId outputPinId) {
+        if (inputPinId && outputPinId){// ed::AcceptNewItem() return true when user release mouse button.
+            auto src = pinLookup[outputPinId];
+            auto dst = pinLookup[inputPinId];
+            if (src->direction != OUTPUT || dst->direction != INPUT) {
                 ed::RejectNewItem();
             } else if (src->type.is_none() == false && dst->type.is_none() == false) {
-                if (PyScope::isSubclassOrInstance(*src->type, *dst->type)) {
+                //fixme: I added an object-type pypass rule to avoid drawing the entire graph each time I debug
+                //       run the application, I may need to remove it one day.
+                if (PyScope::isSubclassOrInstance(*src->type, *dst->type) || src->type.is(PyScope::getInstance().object_type)) {
+
                     auto input_pin_link = pinLinkLookup.find(inputPinId);
                     auto output_pin_link = pinLinkLookup.find(outputPinId);
                     if (input_pin_link != pinLinkLookup.end()) {
@@ -402,48 +487,60 @@ namespace PipelineGraph {
         ImGui::EndTooltip();
     }
 
-    static void renderMenu() {
+    static void renderDialogs(bool* open_demux_popup) {
+
+        ShowIntegerInputDialog(open_demux_popup, "De-Mux Output Count", [](int count) {
+                    if (count > 0) {
+                        // addNode(new Nodes::DeMuxNode(count));
+                    } else {
+                        Logger::error("De-Mux input count must be greater than 0");
+                    }
+                });
+    }
+
+    static void renderMenu(bool* open_demux_popup) {
         {
             ImGui::TextDisabled("Primitives:");
             if (ImGui::MenuItem("Integer")) {
-                addNode(new Nodes::PrimitiveIntNode(0));
+                _addNode(new Nodes::PrimitiveIntNode(0));
             }
 
             if (ImGui::MenuItem("Integer (ranged)")) {
-                addNode(new Nodes::PrimitiveIntNode(0, 0, 100));
+                _addNode(new Nodes::PrimitiveIntNode(0, 0, 100));
             }
 
             if (ImGui::MenuItem("Float")) {
-                addNode(new Nodes::PrimitiveFloatNode(0));
+                _addNode(new Nodes::PrimitiveFloatNode(0));
             }
 
             if (ImGui::MenuItem("Float (ranged)")) {
-                addNode(new Nodes::PrimitiveFloatNode(0, 0.0f, 100.0f));
+                _addNode(new Nodes::PrimitiveFloatNode(0, 0.0f, 100.0f));
             }
 
             if (ImGui::MenuItem("String")) {
-                addNode(new Nodes::PrimitiveStringNode(false));
+                _addNode(new Nodes::PrimitiveStringNode(false));
             }
 
             if (ImGui::MenuItem("File")) {
-                addNode(new Nodes::PrimitiveStringNode(true));
+                _addNode(new Nodes::PrimitiveStringNode(true));
             }
 
-            // ImGui::Separator();
-            // ImGui::TextDisabled("Arithmetic:");
-            // if (ImGui::MenuItem("Adder")) {
-            //     addNode(new Nodes::AdderNode());
-            // }
+
+            ImGui::Separator();
+            ImGui::TextDisabled("Functional:");
+            if (ImGui::MenuItem("De-Mux")) {
+                *open_demux_popup = true;
+            }
 
             ImGui::Separator();
             ImGui::TextDisabled("Pipeline:");
 
             if (ImGui::MenuItem("Agent")) {
-                addNode(new Nodes::AgentAcceptorNode());
+                _addNode(new Nodes::AgentAcceptorNode());
             }
 
             if (ImGui::MenuItem("Environment")) {
-                addNode(new Nodes::EnvAcceptorNode());
+                _addNode(new Nodes::EnvAcceptorNode());
             }
 
             // if (ImGui::MenuItem("Mask")) {
@@ -451,7 +548,7 @@ namespace PipelineGraph {
             // }
 
             if (ImGui::MenuItem("Method")) {
-                addNode(new Nodes::MethodAcceptorNode());
+                _addNode(new Nodes::MethodAcceptorNode());
             }
 
             ImGui::Separator();
@@ -460,9 +557,9 @@ namespace PipelineGraph {
                 for (auto& module : SharedUi::loadedModules) {
                     if (ImGui::MenuItem(module.moduleName.c_str())) {
                         if (module.type == PyScope::Function) {
-                            addNode(new Nodes::PythonFunctionNode(&module));
+                            _addNode(new Nodes::PythonFunctionNode(&module));
                         } else {
-                            addNode(new Nodes::PythonModuleNode(&module));
+                            _addNode(new Nodes::PythonModuleNode(&module));
                         }
                     }
                 }
@@ -476,18 +573,21 @@ namespace PipelineGraph {
 
 
     void render() {
-        static bool m_FirstFrame = true;
         curr_focus_pin = nullptr;
-
+        static bool first_frame = true;
         ImGui::Begin("Pipeline Graph");
 
+        // dialogs control
+        static bool open_demux_popup = false;
+        renderDialogs(&open_demux_popup);
+
         if (ImGui::BeginPopupContextItem("Pipeline Graph Context Menu", ImGuiPopupFlags_MouseButtonRight)) {
-            renderMenu();
+            renderMenu(&open_demux_popup);
             ImGui::EndPopup();
         }
 
         if (ImGui::BeginPopupContextWindow("Pipeline Graph Context Menu - rc", ImGuiPopupFlags_MouseButtonRight)) {
-            renderMenu();
+            renderMenu(&open_demux_popup);
             ImGui::EndPopup();
         }
 
@@ -512,6 +612,12 @@ namespace PipelineGraph {
         ed::SetCurrentEditor(m_Context);
         ed::Begin("Pipeline Graph - Editor", ImVec2(0, 0));
 
+        if (first_frame) {
+            first_frame = false;
+            StartupLoader::load_graph();
+        }
+
+
         for (auto& node : nodes) {
             ed::BeginNode(node->id);
             ImGui::PushID(node->id.AsPointer());
@@ -527,7 +633,7 @@ namespace PipelineGraph {
         if (ed::BeginCreate()) {
             ed::PinId inputPinId, outputPinId;
             if (ed::QueryNewLink(&outputPinId, &inputPinId)){
-                addLink(inputPinId, outputPinId);
+                _addLink(inputPinId, outputPinId);
             }
         }
         ed::EndCreate();
@@ -572,9 +678,9 @@ namespace PipelineGraph {
                 if (module) {
                     // Create a new node for the dropped module
                     if (module->type == PyScope::Function) {
-                        PipelineGraph::addNode(new Nodes::PythonFunctionNode(module));
+                        PipelineGraph::_addNode(new Nodes::PythonFunctionNode(module));
                     } else {
-                        PipelineGraph::addNode(new Nodes::PythonModuleNode(module));
+                        PipelineGraph::_addNode(new Nodes::PythonModuleNode(module));
                     }
                 } else {
                     Logger::error("Failed to cast payload data to PyScope::LoadedModule");
@@ -586,7 +692,6 @@ namespace PipelineGraph {
         renderPinTooltip();
 
         ImGui::End();
-        m_FirstFrame = false;
     }
 
     void destroy() {
@@ -884,6 +989,27 @@ namespace PipelineGraph {
         outputs.push_back(output);
     }
 
+    Nodes::PrimitiveStringNode::PrimitiveStringNode(const std::string& val) {
+        _file = false;
+
+        id = GetNextId();
+        this->name = "Primitive String";
+
+        // fixme: Not safe
+        strcpy(_value, val.c_str());
+
+        inputs.clear();
+        Pin output;
+
+        output.id    = GetNextId();
+        output.name    = "value";
+        output.tooltip = "String value";
+        output.direction = OUTPUT;
+        output.type = PyScope::getInstance().str_type;
+
+        outputs.push_back(output);
+    }
+
     void Nodes::PrimitiveStringNode::exec() {
         outputs[0].value = PyScope::getInstance().str_type(_value);
         _executed = true;
@@ -1064,13 +1190,27 @@ namespace PipelineGraph {
 
         try {
             py::tuple args(constructor_args.size());
-            for (size_t i = 0;i < constructor_args.size();i++) {
+            for (size_t i = 0; i < constructor_args.size(); i++) {
                 args[i] = constructor_args[i];
             }
-            outputs[0].value = _type->module(*args); // un-pack them into the python object
+
+            outputs[0].value = _type->module(*args); // Unpack arguments into Python constructor
             _executed = true;
+
+        } catch (const py::error_already_set& e) {
+            Logger::error(std::format("Python exception occurred: {}", e.what()));
+            if (e.matches(PyExc_TypeError)) {
+                Logger::error("TypeError in Python call");
+            } else if (e.matches(PyExc_RuntimeError)) {
+                Logger::error("RuntimeError in Python call");
+            }
+            // Print full traceback, if needed
+            py::print(e.trace());
+
+        } catch (const std::exception& e) {
+            Logger::error(std::format("Standard exception during Python call: {}", e.what()));
         } catch (...) {
-            Logger::error("Python Module returned an error");
+            Logger::error("Unknown exception during Python call");
         }
     }
 
@@ -1157,7 +1297,6 @@ namespace PipelineGraph {
     }
 
     void Nodes::PythonFunctionNode::exec() {
-
         if (_pointer) {
             outputs[0].value = _type->module;
             _executed = true;
@@ -1176,13 +1315,27 @@ namespace PipelineGraph {
 
         try {
             py::tuple args(constructor_args.size());
-            for (size_t i = 0;i < constructor_args.size();i++) {
+            for (size_t i = 0; i < constructor_args.size(); i++) {
                 args[i] = constructor_args[i];
             }
-            outputs[0].value = _type->module(*args); // un-pack them into the python object
+
+            outputs[0].value = _type->module(*args); // Unpack arguments into Python constructor
             _executed = true;
+
+        } catch (const py::error_already_set& e) {
+            Logger::error(std::format("Python exception occurred: {}", e.what()));
+            if (e.matches(PyExc_TypeError)) {
+                Logger::error("TypeError in Python call");
+            } else if (e.matches(PyExc_RuntimeError)) {
+                Logger::error("RuntimeError in Python call");
+            }
+            // Print full traceback, if needed
+            py::print(e.trace());
+
+        } catch (const std::exception& e) {
+            Logger::error(std::format("Standard exception during Python call: {}", e.what()));
         } catch (...) {
-            Logger::error("Python function returned an error");
+            Logger::error("Unknown exception during Python call");
         }
     }
 
@@ -1255,6 +1408,62 @@ namespace PipelineGraph {
     }
 
     Nodes::AcceptorNode::~AcceptorNode() = default;
+
+    Nodes::DeMuxNode::DeMuxNode(int numOutputs) {
+        id = GetNextId();
+        this->name = "Demux";
+
+        Pin input;
+        input.id = GetNextId();
+        input.name = "obj";
+        input.direction = INPUT;
+        input.tooltip = "The type / list / indexed-object to demux";
+        input.type = PyScope::getInstance().object_type;
+        inputs.push_back(input);
+
+        for (int i = 0; i < numOutputs; ++i) {
+            Pin output;
+            output.id = GetNextId();
+            output.name = std::format("obj[{}]", i + 1);
+            output.direction = OUTPUT;
+            output.tooltip = std::format("Output #{}", i + 1);
+            output.type = PyScope::getInstance().object_type;
+            outputs.push_back(output);
+        }
+    }
+
+    void Nodes::DeMuxNode::exec() {
+        py::object inputValue = getPinValue(inputs[0]);
+        if (inputValue.is_none()) {
+            Logger::warning("DeMux input is None, cannot demux.");
+            return;
+        }
+
+
+        try {
+            if (py::isinstance<py::list>(inputValue) || py::isinstance<py::tuple>(inputValue)) {
+                py::sequence seq = inputValue;
+                for (size_t i = 0; i < std::min(seq.size(), outputs.size()); ++i) {
+                    py::object item = seq[i];
+                    outputs[i].value = item;
+                }
+            } else {
+                Logger::error("DeMux input is not iterable.");
+            }
+        } catch (...) {
+            Logger::error("DeMux failed due to unknown error.");
+        }
+    }
+
+    void Nodes::DeMuxNode::render() {
+        int max_node_header_size = 0;
+        max_node_header_size = std::max(max_node_header_size, static_cast<int>(ImGui::CalcTextSize(this->name.c_str()).x));
+        ImGui::Text(this->name.c_str());
+        max_node_header_size = std::max(max_node_header_size, renderNodeTag(this));
+        renderNodeAsTable(this, max_node_header_size);
+    }
+
+    Nodes::DeMuxNode::~DeMuxNode() = default;
 
     Nodes::AgentAcceptorNode::AgentAcceptorNode() {
 

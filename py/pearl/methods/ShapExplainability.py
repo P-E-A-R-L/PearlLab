@@ -21,18 +21,16 @@ class ShapExplainability(ExplainabilityMethod):
         self.explainer = None
         self.background = None
         self.mask = mask
-        self.agents = None
+        self.agent = None
 
     def set(self, env: RLEnvironment):
         super().set(env)
         self.background = torch.zeros(env.get_observations().shape).to(self.device)
 
-    def prepare(self, agents: list[RLAgent]):
-        self.explainer = []
-        self.agents = agents
-        for agent in agents:
-            model = agent.get_q_net().to(self.device)
-            self.explainer.append(shap.DeepExplainer(model, self.background))
+    def prepare(self, agent: RLAgent):
+        model = agent.get_q_net().to(self.device)
+        self.explainer = shap.DeepExplainer(model, self.background)
+        self.agent = agent
 
     def onStep(self, action: Any):
         # nothing for shap
@@ -47,19 +45,12 @@ class ShapExplainability(ExplainabilityMethod):
             raise ValueError("Explainer not set. Please call prepare() first.")
 
         obs_tensor = torch.as_tensor(obs, dtype=torch.float, device=self.device)
-        result = []
-        for explainer in self.explainer:
-            result.append(explainer.shap_values(obs_tensor, check_additivity=False)) # Fixme: check_additivity should be true .. but I set it to false for now
-        return result
+        return self.explainer.shap_values(obs_tensor, check_additivity=False) # Fixme: check_additivity should be true .. but I set it to false for now
 
-    def value(self, obs) -> list[float]:
-        explains = self.explain(obs)
-        values = []
+    def value(self, obs) -> float:
+        explain = self.explain(obs)
         obs_tensor = torch.as_tensor(obs, dtype=torch.float, device=self.device)
-        for i, explain in enumerate(explains):
-            agent = self.agents[i]
-            self.mask.update(obs)
-            scores = self.mask.compute(explain)
-            action = agent.predict(obs_tensor)
-            values.append(scores[action])
-        return values
+        self.mask.update(obs)
+        scores = self.mask.compute(explain)
+        action = self.agent.predict(obs_tensor)
+        return scores[action]

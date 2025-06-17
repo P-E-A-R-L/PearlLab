@@ -54,6 +54,8 @@ set(PEAR_LAB_SOURCES
         src/ui/modules/pipeline.hpp
         src/backend/py_agent.cpp
         src/backend/py_agent.hpp
+        src/ui/startup_loader.cpp
+        src/ui/startup_loader.hpp
 )
 
 # deps

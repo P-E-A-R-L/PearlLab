@@ -21,7 +21,7 @@ class ExplainabilityMethod(ABC):
         self.env = env
 
     @abstractmethod
-    def prepare(self, agents: list[RLAgent]):
+    def prepare(self, agents: RLAgent):
         """
         Called once, when the method is attached to an agent
         """
@@ -52,8 +52,8 @@ class ExplainabilityMethod(ABC):
         pass
 
     @abstractmethod
-    def value(self, obs) -> list[float]:
+    def value(self, obs) -> float:
         """
-        Should return one value for each agent, that indicates how well the agent preformed according to this method
+        Should return one the agent, that indicates how well the agent preformed according to this method
         """
         pass
