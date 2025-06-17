@@ -64,7 +64,8 @@ def cudaDevice():
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     mask = AssaultEnvShapMask()
-    explainer = ShapExplainability(device, mask)
+    explainer1 = ShapExplainability(device, mask)
+    explainer2 = ShapExplainability(device, mask)
     env = Wrapper(GymRLEnv(
         env_name='ALE/Assault-v5',
         stack_size=4,
@@ -81,19 +82,24 @@ if __name__ == "__main__":
     policy_net_bad = DQN(n_actions)
     agent_bad = TorchDQN('models/models/dqn_assault_1k.pth', policy_net_bad, device)
 
-    agents = [agent_good, agent_bad]
     env.reset()
-    explainer.set(env)
-    explainer.prepare(agents)
+    explainer1.set(env)
+    explainer1.prepare(agent_good)
+
+    explainer2.set(env)
+    explainer2.prepare(agent_bad)
     scores = [0, 0]
+    agents = [agent_good, agent_bad]
 
     for i in tqdm(range(2000)):  # max 2000 steps for now
         obs = env.get_observations()
         obs_tensor = torch.as_tensor(obs, dtype=torch.float, device=device)
 
-        new_scores = explainer.value(obs)
-        scores[0] += new_scores[0]
-        scores[1] += new_scores[1]
+        new_scores_1 = explainer1.value(obs)
+        new_scores_2 = explainer2.value(obs)
+
+        scores[0] += new_scores_1
+        scores[1] += new_scores_2
 
         best_agent = np.argmax(scores)
         agent = agents[best_agent]

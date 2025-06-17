@@ -7,11 +7,16 @@ import torch
 from pearl.agent import RLAgent
 from pearl.env import RLEnvironment
 from pearl.mask import Mask
-from pearl.method import ExplainabilityMethod
+from pearl.method import ExplainabilityMethod, VisualizationMethod
+
+from annotations import Param
 
 # A little hack to fix the issue of shap not being able to handle Flatten layer
 from shap.explainers._deep import deep_pytorch
 deep_pytorch.op_handler['Flatten'] = deep_pytorch.passthrough
+
+class ShapVisualizationParams:
+    action: Param(int) = 0
 
 class ShapExplainability(ExplainabilityMethod):
 
@@ -22,6 +27,7 @@ class ShapExplainability(ExplainabilityMethod):
         self.background = None
         self.mask = mask
         self.agent = None
+        self.last_explain = None
 
     def set(self, env: RLEnvironment):
         super().set(env)
@@ -53,4 +59,21 @@ class ShapExplainability(ExplainabilityMethod):
         self.mask.update(obs)
         scores = self.mask.compute(explain)
         action = self.agent.predict(obs_tensor)
+        self.last_explain = explain
         return scores[action]
+
+    def supports(self, m: VisualizationMethod) -> bool:
+        return m == VisualizationMethod.Image
+
+    def getVisualizationParamsType(self, m: VisualizationMethod) -> type | None:
+        if m == VisualizationMethod.Image:
+            return ShapVisualizationParams
+        return None
+
+    def getVisualization(self, m: VisualizationMethod, params: Any) -> np.ndarray | None:
+        if m == VisualizationMethod.Image:
+            idx = 0
+            if params is not None and isinstance(params, ShapVisualizationParams):
+                idx = params.action
+            return self.last_explain[idx]
+        return None

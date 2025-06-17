@@ -1,9 +1,16 @@
 from abc import ABC, abstractmethod
+from enum import Enum
+
 import numpy as np
 from typing import Any
 
 from pearl.agent import RLAgent
 from pearl.env import RLEnvironment
+
+
+class VisualizationMethod(Enum):
+    Image    = 0
+    Features = 1
 
 
 class ExplainabilityMethod(ABC):
@@ -26,7 +33,8 @@ class ExplainabilityMethod(ABC):
         Called once, when the method is attached to an agent
         """
         pass
-    
+
+
     @abstractmethod
     def onStep(self, action: Any):
         """
@@ -57,3 +65,12 @@ class ExplainabilityMethod(ABC):
         Should return one the agent, that indicates how well the agent preformed according to this method
         """
         pass
+
+    def supports(self, m: VisualizationMethod) -> bool:
+        return False
+
+    def getVisualizationParamsType(self, m: VisualizationMethod) -> type | None:
+        return None
+
+    def getVisualization(self, m: VisualizationMethod, params: Any) -> np.ndarray | None:
+        return None
