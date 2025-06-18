@@ -70,7 +70,7 @@ class ShapExplainability(ExplainabilityMethod):
             return ShapVisualizationParams
         return None
 
-    def getVisualization(self, m: VisualizationMethod, params: Any) -> np.ndarray | None:
+    def getVisualization(self, m: VisualizationMethod, params: Any) -> np.ndarray | dict | None:
         if m == VisualizationMethod.Image:
             idx = 0
             if params is not None and isinstance(params, ShapVisualizationParams):

@@ -72,5 +72,5 @@ class ExplainabilityMethod(ABC):
     def getVisualizationParamsType(self, m: VisualizationMethod) -> type | None:
         return None
 
-    def getVisualization(self, m: VisualizationMethod, params: Any) -> np.ndarray | None:
+    def getVisualization(self, m: VisualizationMethod, params: Any) -> np.ndarray | dict | None:
         return None

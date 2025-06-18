@@ -8,7 +8,10 @@
 #include <vector>
 
 #include "pipeline_graph.hpp"
+
 #include "../../backend/py_agent.hpp"
+#include "../../backend/py_method.hpp"
+#include "../../backend/py_env.hpp"
 
 namespace Pipeline {
     extern std::vector<PipelineGraph::ObjectRecipe> envs;
@@ -20,6 +23,8 @@ namespace Pipeline {
         PyAgent* agent   = nullptr;
         PyEnv* env       = nullptr;
         std::vector<PyMethod*> methods;
+        std::vector<float>     scores;
+        float reward     = 0;
     };
 
     struct PipelineAgent {
@@ -47,10 +52,17 @@ namespace Pipeline {
         extern int maxSteps;    // default max steps for an agent
         extern int maxEpisodes; // default max episodes for an agent
         extern int activeEnv;   // the index of the current active env
-        extern std::vector<ActiveAgent> activeAgents;
 
         extern std::vector<PipelineAgent>  pipelineAgents;
         extern std::vector<PipelineMethod> pipelineMethods;
+    }
+
+    namespace PipelineState {
+        extern bool Experimenting;
+        extern bool Simulating;
+        extern int  StepSimFrames;
+
+        extern std::vector<ActiveAgent> activeAgents;
     }
 
     // simulation control

@@ -14,26 +14,18 @@
 #include "modules/objects_panel.hpp"
 #include "modules/pipeline.hpp"
 #include "modules/pipeline_graph.hpp"
+#include "modules/preview.hpp"
 #include "modules/py_module_window.hpp"
 
 namespace LabLayout {
     // hidden because normally not other module would need these functions
     // these are just some demo functions to make the UI .. well .. do something
     // they are to be changed with the actual modules
-    void renderPreviewModule();
     void renderParamsModule();
 
 }
 
 extern GLFWwindow* AppWindow;
-
-
-void LabLayout::renderPreviewModule() {
-    ImGui::Begin("Preview");
-    ImGui::Text("Tried to write a3a3a3a3a3a3a3a3a but Arabic is not supported :\")");
-    ImGui::TextWrapped("Preview area for agents in environment...");
-    ImGui::End();
-}
 
 void LabLayout::renderParamsModule() {
     static char modelPath[128] = "models/agent_a.model";
@@ -56,6 +48,7 @@ void LabLayout::init() {
     SharedUi::init();
     ObjectsPanel::init();
     Pipeline::init();
+    Preview::init();
 }
 
 void LabLayout::render() {
@@ -196,7 +189,6 @@ void LabLayout::render() {
     ImGui::End();
 
     // Render individual windows
-    renderPreviewModule();
     renderParamsModule();
 
     if (open_modules_debugger) PyModuleWindow::render();
@@ -206,6 +198,7 @@ void LabLayout::render() {
     PipelineGraph::render();
     ObjectsPanel::render();
     Pipeline::render();
+    Preview::render();
 }
 
 void LabLayout::destroy() {
@@ -214,6 +207,7 @@ void LabLayout::destroy() {
     SharedUi::destroy();
     ObjectsPanel::destroy();
     Pipeline::destroy();
+    Preview::destroy();
 }
 
 

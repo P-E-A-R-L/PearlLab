@@ -4,21 +4,31 @@
 
 #ifndef PY_AGENT_HPP
 #define PY_AGENT_HPP
+
 #include "../backend/py_scope.hpp"
 
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+#include <optional>
 
-struct PyAgent: public PyScope::LoadedModule {
-    // I'll implement the actual agent logic here
+namespace py = pybind11;
+
+struct PyAgent : public PyScope::LoadedModule {
     py::object object;
-};
 
+    // Predict method: returns np.ndarray (action probabilities)
+    py::array predict(const py::object& observation) const;
 
-struct PyEnv: public PyScope::LoadedModule {
-    // I'll implement the actual agent logic here
-};
+    // get_q_net: returns any Python object (usually a model)
+    py::object get_q_net() const;
 
-struct PyMethod: public PyScope::LoadedModule {
+    // Optional: close()
+    void close() const;
 
+    // Accessors for spaces (may not be needed if passed only at construction)
+    std::optional<py::object> get_observation_space() const;
+
+    std::optional<py::object> get_action_space() const;
 };
 
 

@@ -79,6 +79,7 @@ void StartupLoader::load_graph() {
     auto preprocessNode = new PipelineGraph::Nodes::PythonFunctionNode(modules["Preprocess"], true);
     auto wrapperNode    = new PipelineGraph::Nodes::PythonModuleNode(modules["Wrapper"]);
     auto envAcceptor    = new PipelineGraph::Nodes::EnvAcceptorNode();
+    auto int1Node       = new PipelineGraph::Nodes::PrimitiveIntNode(1);
 
     PipelineGraph::addNode(gymEnv);
     PipelineGraph::addNode(int4Node);
@@ -87,12 +88,14 @@ void StartupLoader::load_graph() {
     PipelineGraph::addNode(preprocessNode);
     PipelineGraph::addNode(wrapperNode);
     PipelineGraph::addNode(envAcceptor);
+    PipelineGraph::addNode(int1Node);
 
     PipelineGraph::addLink(gymEnv->inputs[0].id, envNameNode->outputs[0].id);
     PipelineGraph::addLink(gymEnv->inputs[1].id, int4Node->outputs[0].id);
     PipelineGraph::addLink(gymEnv->inputs[2].id, int4Node->outputs[0].id);
     PipelineGraph::addLink(gymEnv->inputs[3].id, renderModeNode->outputs[0].id);
     PipelineGraph::addLink(gymEnv->inputs[7].id, preprocessNode->outputs[0].id);
+    PipelineGraph::addLink(gymEnv->inputs[13].id, int1Node->outputs[0].id);
 
     PipelineGraph::addLink(wrapperNode->inputs[0].id, gymEnv->outputs[0].id);
     PipelineGraph::addLink(envAcceptor->inputs[0].id, wrapperNode->outputs[0].id);
@@ -100,6 +103,7 @@ void StartupLoader::load_graph() {
 
     // Agents
     auto int7Node       = new PipelineGraph::Nodes::PrimitiveIntNode(7);
+
     auto DQNNode        = new PipelineGraph::Nodes::PythonModuleNode(modules["DQN"]);
 
     auto agent1PathNode  = new PipelineGraph::Nodes::PrimitiveStringNode(std::string("./py/models/models/dqn_assault_5m.pth"));

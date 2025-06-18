@@ -58,6 +58,19 @@ set(PEAR_LAB_SOURCES
         src/ui/startup_loader.hpp
         src/backend/py_safe_wrapper.cpp
         src/backend/py_safe_wrapper.hpp
+        src/backend/py_env.cpp
+        src/backend/py_env.hpp
+        src/backend/py_method.cpp
+        src/backend/py_method.hpp
+        src/ui/modules/inspector.cpp
+        src/ui/modules/inspector.hpp
+        src/ui/modules/preview.cpp
+        src/ui/modules/preview.hpp
+        src/ui/utility/layout.hpp
+        src/ui/utility/layout.cpp
+        src/ui/utility/layout.hpp
+        src/ui/utility/gl_texture.cpp
+        src/ui/utility/gl_texture.hpp
 )
 
 # deps

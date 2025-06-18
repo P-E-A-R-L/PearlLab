@@ -9,7 +9,7 @@
 
 
 namespace SafeWrapper {
-    void execute(const std::function<void()> &);
+    bool execute(const std::function<void()> &);
 }
 
 
