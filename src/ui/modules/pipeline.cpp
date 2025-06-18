@@ -6,6 +6,7 @@
 
 #include "logger.hpp"
 #include "../font_manager.hpp"
+#include "imgui_internal.h"
 
 namespace Pipeline {
 
@@ -20,6 +21,9 @@ namespace Pipeline {
         int maxEpisodes = 4000;    // default max episodes for an agent
         int activeEnv   = 0;       // the index of the current active env
         std::vector<ActiveAgent> activeAgents {};
+
+        std::vector<PipelineAgent>  pipelineAgents  {};
+        std::vector<PipelineMethod> pipelineMethods {};
     }
 
     std::vector<PipelineGraph::ObjectRecipe> envs;
@@ -52,6 +56,9 @@ namespace Pipeline {
         for (int i = 0; i < recipes.size(); ++i) {
             auto& recipe = recipes[i];
 
+            std::string id = "recipe_" + std::to_string(i);
+            ImGui::PushID(id.c_str());
+
             std::string typeName = "A";
             if (recipe.type == PipelineGraph::Environment) typeName = "E";
             if (recipe.type == PipelineGraph::Method)      typeName = "M";
@@ -75,6 +82,8 @@ namespace Pipeline {
                 ImGui::Text("Dragging: %s", recipe.acceptor->_tag);
                 ImGui::EndDragDropSource();
             }
+
+            ImGui::PopID();
 
             visibleCount++;
         }
@@ -103,12 +112,14 @@ namespace Pipeline {
             size += name.length() + 1;
         }
 
-        char* data = new char[size];
+        char* data = new char[size + 1];
         size_t offset = 0;
         for (int i = 0;i < names.size();i++) {
             strcpy(data + offset, names[i].c_str());
             offset += names[i].size() + 1;
         }
+
+        data[size] = '\0'; // Null-terminate the for list
 
         if (ImGui::Combo("##<empty>", &PipelineConfig::activeEnv, data, size)) {
             // nothing to do here
@@ -123,25 +134,14 @@ namespace Pipeline {
         ImGui::Separator();
         ImGui::TextDisabled("Agents");
 
-        static int select_agent = 0;
-        static int counter = 200;
         static int rename_agent_index = -1;
 
-        if (PipelineConfig::activeAgents.empty()) {
+        if (PipelineConfig::pipelineAgents.empty()) {
             ImGui::Text("<drag agents from recipes>");
         } else {
-            // simulate selection until inspector is active
-
-            counter--;
-            if (counter <= 0) {
-                select_agent = (select_agent + 1) % PipelineConfig::activeAgents.size();
-                counter = 200;
-            }
-
-            for (int i = 0; i < PipelineConfig::activeAgents.size(); ++i) {
-                auto& agent = PipelineConfig::activeAgents[i];
-
+            for (int i = 0; i < PipelineConfig::pipelineAgents.size(); ++i) {
                 ImGui::PushID(i);
+                auto& agent = PipelineConfig::pipelineAgents[i];
 
                 // Handle rename input field
                 if (rename_agent_index == i) {
@@ -150,10 +150,21 @@ namespace Pipeline {
                         rename_agent_index = -1; // Done renaming
                     }
                 } else {
-                    // Selectable item
-                    if (ImGui::Selectable(agent.name, select_agent == i)) {
-                        select_agent = i;
-                    }
+
+
+                    ImVec2 group_start = ImGui::GetCursorScreenPos();
+                    ImGui::BeginGroup();
+
+                    ImGui::Checkbox("", &agent.active);
+                    ImGui::SameLine();
+                    ImGui::Text("%s", agent.name);
+
+                    ImGui::EndGroup();
+
+                    ImVec2 group_end = ImGui::GetItemRectMax();
+                    ImVec2 g_size(group_end.x - group_start.x, group_end.y - group_start.y);
+                    ImGui::SetCursorScreenPos(group_start);
+                    ImGui::InvisibleButton("##context_target", g_size);
 
                     // Right-click context menu
                     if (ImGui::BeginPopupContextItem()) {
@@ -162,7 +173,79 @@ namespace Pipeline {
                         }
                         if (ImGui::MenuItem("Delete")) {
                             PipelineConfig::activeAgents.erase(PipelineConfig::activeAgents.begin() + i);
-                            if (select_agent == i) select_agent = -1;
+                            if (rename_agent_index == i) rename_agent_index = -1;
+                            ImGui::PopID();
+                            ImGui::EndPopup();
+                            break; // Exit now (one frame will be corrupted, but well it is what it is).
+                        }
+                        ImGui::EndPopup();
+                    }
+
+                    if (ImGui::IsItemHovered()) {
+                        std::string id = "recipe_" + std::to_string(agent.recipe_index);
+                        ImGui::BeginTooltip();
+                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
+                        FontManager::pushFont("Light");
+                        std::string py_type_name = py::str(agent.recipe->acceptor->_tag);
+                        ImGui::Text(py_type_name.c_str());
+                        FontManager::popFont();
+                        ImGui::PopStyleColor();
+                        ImGui::EndTooltip();
+
+                        // fixme: find a way to draw a rect around the recipe that creates this object
+                        auto mId = ImGui::GetID(id.c_str());
+
+                    }
+                }
+
+                ImGui::PopID();
+            }
+        }
+
+        ImGui::Separator();
+        ImGui::TextDisabled("Methods");
+
+        static int rename_method_index = -1;
+
+        if (PipelineConfig::pipelineMethods.empty()) {
+            ImGui::Text("<drag methods from recipes>");
+        } else {
+            for (int i = 0; i < PipelineConfig::pipelineMethods.size(); ++i) {
+                ImGui::PushID(i + PipelineConfig::pipelineAgents.size());
+
+                auto& method = PipelineConfig::pipelineMethods[i];
+
+                // Handle rename input field
+                if (rename_method_index == i) {
+                    ImGui::SetNextItemWidth(150);
+                    if (ImGui::InputText("##rename", method.name, IM_ARRAYSIZE(method.name), ImGuiInputTextFlags_EnterReturnsTrue)) {
+                        rename_agent_index = -1; // Done renaming
+                    }
+                } else {
+                    ImVec2 group_start = ImGui::GetCursorScreenPos();
+                    ImGui::BeginGroup();
+
+                    ImGui::Checkbox("##box", &method.active);
+                    ImGui::SameLine();
+                    ImGui::Text("%s", method.name);
+                    ImGui::SameLine();
+                    ImGui::SetNextItemWidth(std::min(150, (int) ImGui::GetContentRegionAvail().x));
+                    ImGui::SliderFloat("##slider", &method.weight, 0, 1, "Weight: %.2f");
+
+                    ImGui::EndGroup();
+
+                    ImVec2 group_end = ImGui::GetItemRectMax();
+                    ImVec2 g_size(group_end.x - group_start.x, group_end.y - group_start.y);
+                    ImGui::SetCursorScreenPos(group_start);
+                    ImGui::InvisibleButton("##context_target", g_size);
+
+                    // Right-click context menu
+                    if (ImGui::BeginPopupContextItem()) {
+                        if (ImGui::MenuItem("Rename")) {
+                            rename_agent_index = i;
+                        }
+                        if (ImGui::MenuItem("Delete")) {
+                            PipelineConfig::activeAgents.erase(PipelineConfig::activeAgents.begin() + i);
                             if (rename_agent_index == i) rename_agent_index = -1;
                             ImGui::EndPopup();
                             ImGui::PopID();
@@ -172,24 +255,25 @@ namespace Pipeline {
                     }
 
                     if (ImGui::IsItemHovered()) {
+                        std::string id = "recipe_" + std::to_string(method.recipe_index);
                         ImGui::BeginTooltip();
                         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
                         FontManager::pushFont("Light");
-                        std::string py_type_name = py::str(agent.agent->module);
+                        std::string py_type_name = py::str(method.recipe->acceptor->_tag);
                         ImGui::Text(py_type_name.c_str());
-                        ImGui::Text(agent.agent->moduleName.c_str());
                         FontManager::popFont();
                         ImGui::PopStyleColor();
                         ImGui::EndTooltip();
-                    }
 
+                        // fixme: find a way to draw a rect around the recipe that creates this object
+                        auto mId = ImGui::GetID(id.c_str());
+
+                    }
                 }
 
                 ImGui::PopID();
             }
-
         }
-
 
         ImVec2 region_min = ImGui::GetWindowContentRegionMin();
         ImVec2 region_max = ImGui::GetWindowContentRegionMax();
@@ -210,29 +294,24 @@ namespace Pipeline {
                 int   index  = *static_cast<int*>(payload->Data);
                 auto& recipe = recipes[index];
                 if (recipe.type == PipelineGraph::Agent) {
-                    ActiveAgent activeAgent;
-                    strcpy(activeAgent.name, recipe.acceptor->_tag);
-                    try {
-                        py::object agentObject = recipe.create();
-                        if (agentObject.is_none()) {
-                            Logger::error("Failed to create agent from recipe: " + std::string(recipe.acceptor->_tag));
-                        } else {
-                            activeAgent.agent = new PyAgent();
-                            if (PyScope::parseLoadedModule(getattr(agentObject, "__class__"), *activeAgent.agent)) {
-                                activeAgent.agent->object = agentObject;
-                                activeAgent.env   = nullptr;
-                                activeAgent.methods.clear();
-                                PipelineConfig::activeAgents.push_back(activeAgent);
-                                Logger::info("Added new agent");
-                            } else {
-                                delete activeAgent.agent;
-                            }
-                        }
-                    } catch (...) {
-                        Logger::error("Unknown error while trying to instantiating Agent");
-                    }
+
+                    PipelineAgent agent;
+                    agent.recipe = &recipe;
+                    agent.active = true;
+                    strcpy(agent.name, recipe.acceptor->_tag);
+                    agent.recipe_index = index;
+                    PipelineConfig::pipelineAgents.push_back(agent);
+
+                } else if (recipe.type == PipelineGraph::Method) {
+                    PipelineMethod method;
+                    method.recipe = &recipe;
+                    method.active = true;
+                    method.weight = 1.0;
+                    strcpy(method.name, recipe.acceptor->_tag);
+                    method.recipe_index = index;
+                    PipelineConfig::pipelineMethods.push_back(method);
                 } else {
-                    Logger::warning("Dropped a non-agent recipe, ignoring.");
+                    Logger::warning("Drop Agents / Methods, You can select the environment from the drop down list.");
                 }
             }
             ImGui::EndDragDropTarget();
