@@ -56,6 +56,8 @@ set(PEAR_LAB_SOURCES
         src/backend/py_agent.hpp
         src/ui/startup_loader.cpp
         src/ui/startup_loader.hpp
+        src/backend/py_safe_wrapper.cpp
+        src/backend/py_safe_wrapper.hpp
 )
 
 # deps

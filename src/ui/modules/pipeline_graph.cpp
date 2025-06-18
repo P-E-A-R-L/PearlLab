@@ -17,6 +17,7 @@
 #include "pipeline.hpp"
 #include "../font_manager.hpp"
 #include "../startup_loader.hpp"
+#include "../../backend/py_safe_wrapper.hpp"
 
 #include "../utility/drawing.h"
 
@@ -1188,7 +1189,7 @@ namespace PipelineGraph {
             constructor_args.push_back(val);
         }
 
-        try {
+        SafeWrapper::execute([&] {
             py::tuple args(constructor_args.size());
             for (size_t i = 0; i < constructor_args.size(); i++) {
                 args[i] = constructor_args[i];
@@ -1196,22 +1197,7 @@ namespace PipelineGraph {
 
             outputs[0].value = _type->module(*args); // Unpack arguments into Python constructor
             _executed = true;
-
-        } catch (const py::error_already_set& e) {
-            Logger::error(std::format("Python exception occurred: {}", e.what()));
-            if (e.matches(PyExc_TypeError)) {
-                Logger::error("TypeError in Python call");
-            } else if (e.matches(PyExc_RuntimeError)) {
-                Logger::error("RuntimeError in Python call");
-            }
-            // Print full traceback, if needed
-            py::print(e.trace());
-
-        } catch (const std::exception& e) {
-            Logger::error(std::format("Standard exception during Python call: {}", e.what()));
-        } catch (...) {
-            Logger::error("Unknown exception during Python call");
-        }
+        });
     }
 
     void Nodes::PythonModuleNode::render() {
@@ -1313,7 +1299,7 @@ namespace PipelineGraph {
             constructor_args.push_back(val);
         }
 
-        try {
+        SafeWrapper::execute([&] {
             py::tuple args(constructor_args.size());
             for (size_t i = 0; i < constructor_args.size(); i++) {
                 args[i] = constructor_args[i];
@@ -1321,22 +1307,7 @@ namespace PipelineGraph {
 
             outputs[0].value = _type->module(*args); // Unpack arguments into Python constructor
             _executed = true;
-
-        } catch (const py::error_already_set& e) {
-            Logger::error(std::format("Python exception occurred: {}", e.what()));
-            if (e.matches(PyExc_TypeError)) {
-                Logger::error("TypeError in Python call");
-            } else if (e.matches(PyExc_RuntimeError)) {
-                Logger::error("RuntimeError in Python call");
-            }
-            // Print full traceback, if needed
-            py::print(e.trace());
-
-        } catch (const std::exception& e) {
-            Logger::error(std::format("Standard exception during Python call: {}", e.what()));
-        } catch (...) {
-            Logger::error("Unknown exception during Python call");
-        }
+        });
     }
 
     void Nodes::PythonFunctionNode::render() {
