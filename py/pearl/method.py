@@ -1,19 +1,14 @@
 from abc import ABC, abstractmethod
-from enum import Enum
 
 import numpy as np
 from typing import Any
 
 from pearl.agent import RLAgent
 from pearl.env import RLEnvironment
+from pearl.visualizable import Visualizable
 
 
-class VisualizationMethod(Enum):
-    Image    = 0
-    Features = 1
-
-
-class ExplainabilityMethod(ABC):
+class ExplainabilityMethod(Visualizable):
     def __init__(self):
         """
         Initialize any variables needed for the method
@@ -66,11 +61,3 @@ class ExplainabilityMethod(ABC):
         """
         pass
 
-    def supports(self, m: VisualizationMethod) -> bool:
-        return False
-
-    def getVisualizationParamsType(self, m: VisualizationMethod) -> type | None:
-        return None
-
-    def getVisualization(self, m: VisualizationMethod, params: Any) -> np.ndarray | dict | None:
-        return None

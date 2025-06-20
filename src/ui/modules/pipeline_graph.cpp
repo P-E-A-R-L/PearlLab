@@ -444,7 +444,7 @@ namespace PipelineGraph {
 
     void init() {
         ed::Config config;
-        config.SettingsFile = "Pipeline_Graph.json";
+        config.SettingsFile = "pipeline_graph.json";
         m_Context = ed::CreateEditor(&config);
     }
 

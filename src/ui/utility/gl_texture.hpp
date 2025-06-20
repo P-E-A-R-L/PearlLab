@@ -15,9 +15,12 @@ public:
     GLTexture();
     ~GLTexture();
 
-    void set(pybind11::array_t<float> data, int width, int height, int channels);
-    void set(std::vector<unsigned char> data, int width, int height, int channels);
-    void update(pybind11::array_t<float> data);
+    void set(const pybind11::array_t<float> &data, const int width, const int height, const int channels);
+    void set(const std::vector<unsigned char> &data, const int width, const int height, const int channels);
+    void set(const unsigned char* data, const int width, const int height, const int channels);
+    void update(const pybind11::array_t<float> &data) const;
+    void update(const std::vector<unsigned char> &data) const;
+    void update(unsigned char* data) const;
     void bind(GLenum texture_unit = GL_TEXTURE0) const;
     void unbind() const;
     void destroy();

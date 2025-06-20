@@ -5,17 +5,17 @@
 #ifndef PY_ENV_HPP
 #define PY_ENV_HPP
 
-#include "../backend/py_scope.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <optional>
 #include <vector>
 #include <string>
 
+#include "py_visualizable.hpp"
+
 namespace py = pybind11;
 
-struct PyEnv : public PyScope::LoadedModule {
-    py::object object;
+struct PyEnv : public PyVisualizable {
 
     // Call: env.reset(seed=..., options=...)
     std::pair<py::object, py::dict> reset(std::optional<int> seed = std::nullopt,

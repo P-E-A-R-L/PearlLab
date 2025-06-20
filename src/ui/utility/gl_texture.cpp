@@ -15,7 +15,7 @@ GLTexture::~GLTexture() {
     destroy();
 }
 
-void GLTexture::set(py::array_t<float> data, int width, int height, int channels) {
+void GLTexture::set(const py::array_t<float> &data, const int width, const int height, const int channels) {
     width_ = width;
     height_ = height;
     channels_ = channels;
@@ -35,7 +35,11 @@ void GLTexture::set(py::array_t<float> data, int width, int height, int channels
     unbind();
 }
 
-void GLTexture::set(std::vector<unsigned char> data, int width, int height, int channels) {
+void GLTexture::set(const std::vector<unsigned char> &data, const int width, const int height, const int channels) {
+    set(data.data(), width, height, channels);
+}
+
+void GLTexture::set(const unsigned char *data, const int width, const int height, const int channels) {
     width_ = width;
     height_ = height;
     channels_ = channels;
@@ -49,15 +53,27 @@ void GLTexture::set(std::vector<unsigned char> data, int width, int height, int 
     }
 
     bind();
-    glTexImage2D(GL_TEXTURE_2D, 0, format_, width_, height_, 0, format_, GL_UNSIGNED_BYTE, data.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, format_, width_, height_, 0, format_, GL_UNSIGNED_BYTE, data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     unbind();
 }
 
-void GLTexture::update(py::array_t<float> data) {
+void GLTexture::update(const py::array_t<float> &data) const {
     bind();
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width_, height_, format_, GL_FLOAT, data.data());
+    unbind();
+}
+
+void GLTexture::update(const std::vector<unsigned char> &data) const {
+    bind();
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width_, height_, format_, GL_UNSIGNED_BYTE, data.data());
+    unbind();
+}
+
+void GLTexture::update(unsigned char *data) const {
+    bind();
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width_, height_, format_, GL_UNSIGNED_BYTE, data);
     unbind();
 }
 

@@ -11,11 +11,11 @@
 #include <pybind11/numpy.h>
 #include <optional>
 
+#include "py_object.hpp"
+
 namespace py = pybind11;
 
-struct PyAgent : public PyScope::LoadedModule {
-    py::object object;
-
+struct PyAgent : public PyLiveObject {
     // Predict method: returns np.ndarray (action probabilities)
     py::array predict(const py::object& observation) const;
 

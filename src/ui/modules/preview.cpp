@@ -6,8 +6,191 @@
 
 #include <imgui.h>
 
+#include "logger.hpp"
 #include "pipeline.hpp"
+#include "../../backend/py_safe_wrapper.hpp"
 #include "../utility/gl_texture.hpp"
+#include "../utility/image_store.hpp"
+
+void Preview::VisualizedObject::init(PyVisualizable * obj) {
+    this->visualizable = obj;
+
+    if (visualizable->supports(VisualizationMethod::RGB_ARRAY)) {
+        _init_rgb_array();
+    }
+}
+
+bool Preview::VisualizedObject::supports(VisualizationMethod method) const {
+    switch (method) {
+        case VisualizationMethod::RGB_ARRAY:
+            return rgb_array != nullptr;
+        case VisualizationMethod::GRAY_SCALE:
+            return gray != nullptr;
+        case VisualizationMethod::HEAT_MAP:
+            return heat_map != nullptr;
+        case VisualizationMethod::FEATURES:
+            return features_params != nullptr;
+        default:
+            return false;
+    }
+}
+
+void Preview::VisualizedObject::update() const {
+    if (rgb_array) _update_rgb_array();
+}
+
+Preview::VisualizedObject::~VisualizedObject() {
+    visualizable = nullptr;
+
+    delete rgb_array;
+    delete rgb_array_params;
+
+    delete gray;
+    delete gray_params;
+
+    delete heat_map;
+    delete heat_map_params;
+
+    delete features_params;
+
+    rgb_array = nullptr;
+    rgb_array_params = nullptr;
+
+    gray = nullptr;
+    gray_params = nullptr;
+
+    heat_map = nullptr;
+    heat_map_params = nullptr;
+
+    features_params = nullptr;
+}
+
+void Preview::VisualizedObject::_init_rgb_array() {
+    if (!SafeWrapper::execute([&]{
+        auto type = visualizable->getVisualizationParamsType(VisualizationMethod::RGB_ARRAY);
+        rgb_array_params = new PyLiveObject();
+        if (type != std::nullopt && !type->is_none() && py::hasattr(*type, "__bases__")) {
+            py::tuple args(0);
+            rgb_array_params->object = (*type)(*args);
+            PyScope::parseLoadedModule(py::getattr(rgb_array_params->object, "__class__"), *rgb_array_params);
+        } else {
+            rgb_array_params->object = py::none();
+        }
+    })) {
+        Logger::error("Failed to initialize RGB Array visualization (params) for object: " + std::string(visualizable->moduleName));
+        delete rgb_array_params;
+        rgb_array_params = nullptr;
+        return;
+    }
+
+    if (!SafeWrapper::execute([&] {
+        rgb_array = new GLTexture();
+
+        auto data = visualizable->getVisualization(VisualizationMethod::RGB_ARRAY);
+        if (data.has_value()) {
+            py::array_t<float> arr = data->cast<py::array>();
+            if (arr.ndim() == 3 || arr.ndim() == 4) { // assuming RGB image / RGBA image
+                int width = arr.shape(1);
+                int height = arr.shape(0);
+                int channels = arr.shape(2);
+                if (channels == 3 || channels == 4) {
+                    std::vector<unsigned char> rgbData(width * height * channels);
+                    auto data_ptr = arr.data();
+                    for (int i = 0; i < width * height; i++) {
+                        rgbData[i * channels + 0]     = static_cast<unsigned char>(data_ptr[i * channels + 0] * 255.0f);
+                        rgbData[i * channels + 1]     = static_cast<unsigned char>(data_ptr[i * channels + 1] * 255.0f);
+                        rgbData[i * channels + 2]     = static_cast<unsigned char>(data_ptr[i * channels + 2] * 255.0f);
+
+                        if (channels == 4)
+                            rgbData[i * channels + 3] = static_cast<unsigned char>(data_ptr[i * channels + 3] * 255.0f);
+                    }
+                    rgb_array->set(rgbData, width, height, channels);
+                } else {
+                    Logger::error("Unsupported number of channels: " + std::to_string(channels));
+                }
+            } else {
+                Logger::error("Unsupported visualization shape: " + std::to_string(arr.ndim()) + "D");
+            }
+        } else {
+            Logger::warning("No RGB Array visualization available for object: " + std::string(visualizable->moduleName));
+        }
+    })) {
+        Logger::error("Failed to initialize RGB Array visualization (buffer) for object: " + std::string(visualizable->moduleName));
+        delete rgb_array_params;
+        rgb_array_params = nullptr;
+        delete rgb_array;
+        rgb_array = nullptr;
+        return;
+    }
+}
+
+void Preview::VisualizedObject::_update_rgb_array() const {
+    auto data = visualizable->getVisualization(VisualizationMethod::RGB_ARRAY);
+    if (data.has_value()) {
+        py::array_t<float> arr = data->cast<py::array>();
+        if (arr.ndim() == 3 || arr.ndim() == 4) { // assuming RGB image / RGBA image
+            int width = arr.shape(1);
+            int height = arr.shape(0);
+            int channels = arr.shape(2);
+            if (channels == 3 || channels == 4) {
+                std::vector<unsigned char> rgbData(width * height * channels);
+                auto data_ptr = arr.data();
+                for (int i = 0; i < width * height; i++) {
+                    rgbData[i * channels + 0]     = static_cast<unsigned char>(data_ptr[i * channels + 0] * 255.0f);
+                    rgbData[i * channels + 1]     = static_cast<unsigned char>(data_ptr[i * channels + 1] * 255.0f);
+                    rgbData[i * channels + 2]     = static_cast<unsigned char>(data_ptr[i * channels + 2] * 255.0f);
+
+                    if (channels == 4)
+                        rgbData[i * channels + 3] = static_cast<unsigned char>(data_ptr[i * channels + 3] * 255.0f);
+                }
+                rgb_array->update(rgbData);
+            } else {
+                Logger::error("Unsupported number of channels: " + std::to_string(channels));
+            }
+        } else {
+            Logger::error("Unsupported visualization shape: " + std::to_string(arr.ndim()) + "D");
+        }
+    } else {
+        Logger::warning("No RGB Array visualization available for object: " + std::string(visualizable->moduleName));
+    }
+}
+
+void Preview::VisualizedAgent::init(Pipeline::ActiveAgent *agent) {
+
+    this->agent = agent;
+    if (agent->env) {
+        env_visualization = new VisualizedObject();
+        env_visualization->init(agent->env);
+    }
+
+    for (auto& method : agent->methods) {
+        if (method) {
+            auto vis_obj = new VisualizedObject();
+            vis_obj->init(method);
+            method_visualizations.push_back(vis_obj);
+        }
+    }
+}
+
+void Preview::VisualizedAgent::update() {
+    if (env_visualization) {
+        env_visualization->update();
+    }
+
+    for (auto& method_vis : method_visualizations) {
+        method_vis->update();
+    }
+}
+
+Preview::VisualizedAgent::~VisualizedAgent() {
+    delete env_visualization;
+    for (auto& method_vis : method_visualizations) {
+        delete method_vis;
+    }
+
+    method_visualizations.clear();
+    env_visualization = nullptr;
+}
 
 void Preview::init() {
 
@@ -17,36 +200,18 @@ static int active_preview            = 0; // 0 -> Env, 1 -> Methods
 static int active_preview_method     = 0; // the index of the active method in the preview
 static int agents_per_row = 3;
 
-static std::vector<GLTexture*> preview_textures;
-
 static void _render_agent(const Pipeline::ActiveAgent& agent, float width, int index) {
     ImGui::BeginChild(agent.name, ImVec2(width, 0), true);
-    ImGui::Text("Agent: %s", agent.name);
+    ImGui::Text("Agent: %s"   , agent.name);
     ImGui::Text("Reward: %.2f", agent.reward);
+
+    Preview::previews[index]->update(); // update the visualizations (textures, features, etc ..)
+
     if (active_preview == 0) { // draw env
         if (agent.env) {
-            auto obs = agent.env->render("rbg_array");
-            if (obs != std::nullopt) {
-                py::array_t<float> arr = obs->cast<py::array>();
-                if (arr.ndim() == 3) { // assuming RGB image
-                    int width = arr.shape(1);
-                    int height = arr.shape(0);
-                    int channels = arr.shape(2);
-                    if (channels == 3 || channels == 4) {
-                        GLTexture* texture = preview_textures[index];
-                        std::vector<unsigned char> rgbData(width * height * channels);
-                        auto data_ptr = arr.data();
-                        for (int i = 0;i < width * height * channels; i++) {
-                            rgbData[i] = static_cast<unsigned char>(data_ptr[i] * 255.0f);
-                        }
-                        texture->set(rgbData, width, height, channels);
-                        ImGui::Image(texture->id(), ImVec2(width, height));
-                    } else {
-                        ImGui::Text("Unsupported number of channels: %d", channels);
-                    }
-                } else {
-                    ImGui::Text("Unsupported observation shape: %dD", arr.ndim());
-                }
+            auto obs = Preview::previews[index]->env_visualization->rgb_array;
+            if (obs) {
+                ImGui::Image(obs->id(), ImVec2(obs->width(), obs->height()));
             } else {
                 ImGui::Text("No observations available.");
             }
@@ -54,26 +219,7 @@ static void _render_agent(const Pipeline::ActiveAgent& agent, float width, int i
             ImGui::Text("No environment available.");
         }
     } else { // draw methods
-        if (index < agent.methods.size()) {
-            auto method = agent.methods[index];
-            if (method) {
-                // auto vis = method->getVisualization(Pipeline::VisualizationMethod::IMAGE, py::dict());
-                // if (vis.has_value()) {
-                //     GLTexture* texture = new GLTexture();
-                //     texture->set(vis.value().cast<py::array>(), 320, 240, 3); // assuming RGB image
-                //     preview_textures.push_back(texture);
-                //     texture->bind();
-                //     ImGui::Image((void*)(intptr_t)texture->id(), ImVec2(320, 240));
-                //     texture->unbind();
-                // } else {
-                //     ImGui::Text("No visualization available for this method.");
-                // }
-            } else {
-                ImGui::Text("No method available.");
-            }
-        } else {
-            ImGui::Text("Invalid method index.");
-        }
+
     }
     ImGui::EndChild();
 }
@@ -103,6 +249,7 @@ static void _render_preview() {
 
 void Preview::render() {
     ImGui::Begin("Preview");
+    ImGui::Image(ImageStore::idOf("./assets/icons/play.png"), {64, 64});
     if (!Pipeline::isExperimenting()) {
 
         auto size = ImGui::GetContentRegionAvail();
@@ -121,23 +268,27 @@ void Preview::render() {
     ImGui::End();
 }
 
+std::vector<Preview::VisualizedAgent*> Preview::previews;
+
 void Preview::onStart() {
     for (auto& agent: Pipeline::PipelineState::activeAgents) {
-        // Create a texture for each agent
-        GLTexture* texture = new GLTexture();
-        preview_textures.push_back(texture);
+        previews.push_back(new Preview::VisualizedAgent());
+        previews.back()->init(&agent);
     }
 }
 
 void Preview::onStop() {
-    for (auto& texture : preview_textures) {
-        delete texture;
+    for (auto prev : previews) {
+        delete prev;
     }
-    preview_textures.clear();
+
+    previews.clear();
 }
 
 void Preview::destroy() {
-    for (auto& texture : preview_textures) {
-        delete texture;
+    for (auto prev : previews) {
+        delete prev;
     }
+
+    previews.clear();
 }

@@ -10,17 +10,13 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <optional>
-#include <string>
+
+#include "py_visualizable.hpp"
 
 namespace py = pybind11;
 
-enum class VisualizationMethod {
-    Image = 0,
-    Features = 1
-};
 
-struct PyMethod : public PyScope::LoadedModule {
-    py::object object;
+struct PyMethod : public PyVisualizable {
 
     // Calls: self.set(env)
     void set(const py::object& env) const;
@@ -39,15 +35,6 @@ struct PyMethod : public PyScope::LoadedModule {
 
     // Calls: self.value(obs)
     double value(const py::object& obs) const;
-
-    // Optional: self.supports(method) -> bool
-    bool supports(VisualizationMethod m) const;
-
-    // Optional: self.getVisualizationParamsType(method) -> type | None
-    [[nodiscard]] std::optional<py::object> getVisualizationParamsType(VisualizationMethod m) const;
-
-    // Optional: self.getVisualization(method, params) -> np.ndarray | None
-    [[nodiscard]] std::optional<py::object> getVisualization(VisualizationMethod m, const py::object& params) const;
 };
 
 

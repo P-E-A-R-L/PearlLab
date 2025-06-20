@@ -71,6 +71,13 @@ set(PEAR_LAB_SOURCES
         src/ui/utility/layout.hpp
         src/ui/utility/gl_texture.cpp
         src/ui/utility/gl_texture.hpp
+        src/backend/visualization_method.hpp
+        src/backend/py_visualizable.cpp
+        src/backend/py_visualizable.hpp
+        src/backend/py_object.cpp
+        src/backend/py_object.hpp
+        src/ui/utility/image_store.cpp
+        src/ui/utility/image_store.hpp
 )
 
 # deps
@@ -97,6 +104,8 @@ include_directories(${GLAD_DIR}/include)
 include_directories(${IMGUI_NODE_DIR})
 
 add_subdirectory(libs/ImGuiFileDialog)
+
+include_directories(libs/stb)
 include_directories(libs/ImGuiFileDialog)
 
 add_executable(PearlLab

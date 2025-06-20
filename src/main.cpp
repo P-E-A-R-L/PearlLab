@@ -51,8 +51,7 @@ int main() {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
 
-    // Initialize OpenGL loader (e.g., glad, glew, or manual)
-    // Example for glad:
+
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cerr << "Failed to initialize OpenGL loader!" << std::endl;
         return -1;

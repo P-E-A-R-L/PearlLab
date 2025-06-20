@@ -5,6 +5,8 @@ import numpy as np
 import gymnasium as gym
 import ale_py
 
+from visual import VisualizationMethod
+
 gym.register_envs(ale_py)
 
 class GymRLEnv(RLEnvironment):
@@ -110,3 +112,20 @@ class GymRLEnv(RLEnvironment):
 
     def get_observations(self) -> np.ndarray:
         return np.concatenate(self.frames, axis=-1)
+
+    def supports(self, m: VisualizationMethod) -> bool:
+        if not isinstance(m, VisualizationMethod):
+            m = VisualizationMethod(m)
+
+        return m == VisualizationMethod.RGB_ARRAY
+
+    def getVisualization(self, m: VisualizationMethod, params: Any = None) -> np.ndarray | dict | None:
+        if not isinstance(m, VisualizationMethod):
+            m = VisualizationMethod(m)
+
+        if m == VisualizationMethod.RGB_ARRAY:
+            return self.render("rgb_array")
+        return None
+
+    def getVisualizationParamsType(self, m: VisualizationMethod) -> type | None:
+        return None

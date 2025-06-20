@@ -2,8 +2,10 @@ import numpy as np
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple
 
+from pearl.visualizable import Visualizable
 
-class RLEnvironment(ABC):
+
+class RLEnvironment(Visualizable):
     """
     Abstract base class for Reinforcement Learning environments.
 

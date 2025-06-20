@@ -425,12 +425,12 @@ void PyScope::init() {
     }
 
     // Redirect Python output
-    instance->redirect_msg_mod = py::module_::import("python_redirect_msg");
-    instance->redirector_msg = instance->redirect_msg_mod.attr("Redirector_msg")();
-    instance->redirect_err_mod = py::module_::import("python_redirect_err");
-    instance->redirector_err = instance->redirect_err_mod.attr("Redirector_err")();
-    instance->sys.attr("stdout") = instance->redirector_msg;
-    instance->sys.attr("stderr") = instance->redirector_err;
+    // instance->redirect_msg_mod = py::module_::import("python_redirect_msg");
+    // instance->redirector_msg = instance->redirect_msg_mod.attr("Redirector_msg")();
+    // instance->redirect_err_mod = py::module_::import("python_redirect_err");
+    // instance->redirector_err = instance->redirect_err_mod.attr("Redirector_err")();
+    // instance->sys.attr("stdout") = instance->redirector_msg;
+    // instance->sys.attr("stderr") = instance->redirector_err;
 
 
     Logger::info("Done.");

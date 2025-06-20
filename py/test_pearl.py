@@ -11,6 +11,7 @@ from pearl.enviroments.GymRLEnv import GymRLEnv
 from pearl.enviroments.ObservationWrapper import ObservationWrapper
 from pearl.provided.AssaultEnv import AssaultEnvShapMask
 from pearl.methods.ShapExplainability import ShapExplainability
+from visual import VisualizationMethod
 
 
 class DQN(nn.Module):
@@ -94,6 +95,11 @@ if __name__ == "__main__":
     for i in tqdm(range(2000)):  # max 2000 steps for now
         obs = env.get_observations()
         obs_tensor = torch.as_tensor(obs, dtype=torch.float, device=device)
+
+        rgb_image = env.getVisualization(VisualizationMethod.RGB_ARRAY, None)
+        bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
+        cv2.imshow("Observation", bgr_image)
+        cv2.waitKey(1)
 
         new_scores_1 = explainer1.value(obs)
         new_scores_2 = explainer2.value(obs)

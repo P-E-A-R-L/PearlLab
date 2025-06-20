@@ -1,7 +1,10 @@
 from abc import abstractmethod
 from typing import Optional, Dict, Any
 
+import numpy as np
+
 from pearl.env import RLEnvironment
+from visual import VisualizationMethod
 
 
 class ObservationWrapper(RLEnvironment):
@@ -38,3 +41,12 @@ class ObservationWrapper(RLEnvironment):
     @abstractmethod
     def get_observations(self):
         pass
+
+    def supports(self, m: VisualizationMethod) -> bool:
+        return self.env.supports(m)
+
+    def getVisualization(self, m: VisualizationMethod, params: Any = None) -> np.ndarray | dict | None:
+        return self.env.getVisualization(m, params)
+
+    def getVisualizationParamsType(self, m: VisualizationMethod) -> type | None:
+        return self.env.getVisualizationParamsType(m)

@@ -84,9 +84,11 @@ namespace Pipeline {
 
                 activeAgent.agent            = new PyAgent();
                 activeAgent.agent->object    = agent.recipe->create();
+
                 if (activeAgent.agent->object.is_none()) {
                     throw std::runtime_error("Failed to create agent: " + std::string(activeAgent.name));
                 }
+
                 PyScope::parseLoadedModule(
                     py::getattr(activeAgent.agent->object, "__class__"), *activeAgent.agent
                 );
