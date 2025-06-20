@@ -107,20 +107,32 @@ namespace Pipeline {
                     py::getattr(activeAgent.agent->object, "__class__"), *activeAgent.env
                 );
 
-                activeAgent.reward = 0;
+                activeAgent.reward_total = 0;
+                activeAgent.reward_ep    = 0;
+
+                activeAgent.steps_current_episode = 0;
+                activeAgent.total_episodes        = 0;
+                activeAgent.total_steps           = 0;
+
+                activeAgent.last_move_reward      = 0;
+                activeAgent.env_terminated        = false;
+                activeAgent.env_truncated         = false;
 
                 for (auto& method: PipelineConfig::pipelineMethods) {
                     const auto methodPtr          = new PyMethod();
                     methodPtr->object             = method.recipe->create();
+
                     if (methodPtr->object.is_none()) {
                         throw std::runtime_error("Failed to create method for agent: " + std::string(activeAgent.name));
                     }
+
                     PyScope::parseLoadedModule(
                         py::getattr(methodPtr->object, "__class__"), *methodPtr
                     );
 
-                    activeAgent.methods.push_back(methodPtr);
-                    activeAgent.scores .push_back(0);
+                    activeAgent.methods      .push_back(methodPtr);
+                    activeAgent.scores_total .push_back(0);
+                    activeAgent.scores_ep    .push_back(0);
                 }
 
                 PipelineState::activeAgents.push_back(activeAgent);
@@ -186,9 +198,20 @@ namespace Pipeline {
             }
 
             // reset scores and rewards
-            active.reward = 0;
-            for (auto& score: active.scores) {
-                score = 0;
+            active.reward_total = 0;
+            active.reward_ep    = 0;
+
+            active.steps_current_episode = 0;
+            active.total_episodes        = 0;
+            active.total_steps           = 0;
+
+            active.last_move_reward      = 0;
+            active.env_terminated        = false;
+            active.env_truncated         = false;
+
+            for (int i = 0;i < active.scores_ep.size();i++) {
+                active.scores_ep[i]    = 0;
+                active.scores_total[i] = 0;
             }
         }
     }
@@ -213,6 +236,9 @@ namespace Pipeline {
         }
 
         auto& target_agent = PipelineState::activeAgents[agent];
+
+        if (target_agent.env_terminated || target_agent.env_truncated) { return; } // nothing to do
+
         auto actions = target_agent.env->get_available_actions();
         if (!actions) {
             Logger::error("Unable to retrieve actions, agent[" + std::to_string(agent) + "] environment didn't provide actions, unable to step.");
@@ -243,7 +269,7 @@ namespace Pipeline {
                     auto& best = PipelineState::activeAgents[best_agent];
                     SafeWrapper::execute([&]{
                         auto prediction = best.agent->predict(target_agent.env->get_observations());
-                        action = prediction.cast<int>();
+                        action = PyScope::argmax( prediction);
                     });
                 }
                 break;
@@ -263,7 +289,7 @@ namespace Pipeline {
                     auto& worst = PipelineState::activeAgents[worst_agent];
                     SafeWrapper::execute([&]{
                         auto prediction = worst.agent->predict(target_agent.env->get_observations());
-                        action = prediction.cast<int>();
+                        action = PyScope::argmax( prediction);
                     });
                 }
                 break;
@@ -271,7 +297,7 @@ namespace Pipeline {
                 case PipelineState::INDEPENDENT: {
                     SafeWrapper::execute([&]{
                         auto prediction = target_agent.agent->predict(target_agent.env->get_observations());
-                        action = prediction.cast<int>();
+                        action = PyScope::argmax( prediction);
                     });
                 }
                 break;
@@ -283,11 +309,35 @@ namespace Pipeline {
 
         if (action != -1) {
             SafeWrapper::execute([&]{
-                target_agent.env->step((*actions)[action]);
+                // get the observations
+                auto ops = target_agent.env->get_observations();
+
+                // notify all explainability methods
+                for (auto& method: target_agent.methods) {
+                    method->onStep(py::int_(action));
+                }
+
+                // do the action
+                auto result = target_agent.env->step(py::int_(action));
+
+                for (auto& method: target_agent.methods) {
+                    method->onStepAfter(py::int_(action), std::get<1>(result), std::get<2>(result) || std::get<3>(result), std::get<4>(result));
+                }
+
+                // update agent analytics
+                target_agent.total_steps           += 1;
+                target_agent.steps_current_episode += 1;
+                target_agent.env_terminated = std::get<2>(result);
+                target_agent.env_truncated  = std::get<3>(result);
+
+                for (int i = 0; i < target_agent.methods.size(); ++i) {
+                    auto value = target_agent.methods[i]->value(ops);
+                    target_agent.scores_total[i] += value;
+                    target_agent.scores_ep   [i] += value;
+                }
             });
         }
     }
-
 
     void stepSim(int action_index) {
         _do_one_step(action_index);
@@ -307,13 +357,13 @@ namespace Pipeline {
         switch (PipelineState::scorePolicy) {
             case PipelineState::PEARL: {
                 float result = 0;
-                for (int i = 0;i < agent.scores.size(); ++i) {
-                    result += agent.scores[i] * (PipelineConfig::pipelineMethods[i].active ? PipelineConfig::pipelineMethods[i].weight : 0);
+                for (int i = 0;i < agent.scores_total.size(); ++i) {
+                    result += agent.scores_total[i] * (PipelineConfig::pipelineMethods[i].active ? PipelineConfig::pipelineMethods[i].weight : 0);
                 }
-                return result;
+                return result / agent.total_steps;
             }
             case PipelineState::REWARD: {
-                return agent.reward;
+                return agent.reward_total / agent.total_steps;
             }
         }
 

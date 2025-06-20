@@ -28,7 +28,7 @@ struct PyMethod : public PyVisualizable {
     void onStep(const py::object& action) const;
 
     // Calls: self.onStepAfter(action)
-    void onStepAfter(const py::object& action) const;
+    void onStepAfter(const py::object& action, const py::dict& reward, const bool done, const py::dict& info) const;
 
     // Calls: self.explain(obs)
     py::object explain(const py::object& obs) const;

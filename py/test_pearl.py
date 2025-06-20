@@ -110,7 +110,7 @@ if __name__ == "__main__":
         agent = agents[best_agent]
 
         action = agent.predict(obs)
-        state, reward_dict, terminated, truncated, info = env.step(action)
+        state, reward_dict, terminated, truncated, info = env.step(np.argmax(action))
         if terminated:
             break
 

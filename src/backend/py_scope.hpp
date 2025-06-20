@@ -94,7 +94,7 @@ public:
 
 
     template <typename T>
-    ssize_t argmax_impl(py::array_t<T> array) {
+    static ssize_t argmax_impl(py::array_t<T> array) {
 
         auto buf = array.unchecked();
         if (buf.size() == 0)
@@ -111,7 +111,7 @@ public:
         return max_index;
     }
 
-    ssize_t argmax(const py::array& array);
+    static ssize_t argmax(const py::array& array);
 private:
     PyScope();
 };

@@ -1,4 +1,7 @@
 from typing import Optional, Tuple, Callable, Dict, Any, Union
+
+import cv2
+
 from pearl.env import RLEnvironment
 import collections
 import numpy as np
@@ -119,12 +122,19 @@ class GymRLEnv(RLEnvironment):
 
         return m == VisualizationMethod.RGB_ARRAY
 
+
     def getVisualization(self, m: VisualizationMethod, params: Any = None) -> np.ndarray | dict | None:
         if not isinstance(m, VisualizationMethod):
             m = VisualizationMethod(m)
 
         if m == VisualizationMethod.RGB_ARRAY:
             return self.render("rgb_array")
+        # if m == VisualizationMethod.HEAT_MAP:
+        #     return cv2.cvtColor(self.render("rgb_array"), cv2.COLOR_RGB2GRAY)
+        # if m == VisualizationMethod.GRAY_SCAL:
+        #     return cv2.cvtColor(self.render("rgb_array"), cv2.COLOR_RGB2GRAY)
+        # if m == VisualizationMethod.FEATURES:
+        #     return {"test": "hello from python"} # the other 3 if-s are example
         return None
 
     def getVisualizationParamsType(self, m: VisualizationMethod) -> type | None:

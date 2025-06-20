@@ -1,3 +1,5 @@
+import numpy as np
+
 from pearl.agent import RLAgent
 import torch
 
@@ -17,8 +19,8 @@ class TorchDQN(RLAgent):
         observation = torch.as_tensor(observation, dtype=torch.float, device=self.device)
         with torch.no_grad():
             q_vals = self.m_agent(observation)
-            action = q_vals.argmax(1).item()
-            return action
+            q_vals = q_vals.cpu().numpy() if q_vals.is_cuda else q_vals.numpy()
+            return q_vals.reshape(-1)
 
     def get_q_net(self):
         return self.q_net

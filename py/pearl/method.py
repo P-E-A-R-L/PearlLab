@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 import numpy as np
-from typing import Any
+from typing import Any, Dict
 
 from pearl.agent import RLAgent
 from pearl.env import RLEnvironment
@@ -39,7 +39,7 @@ class ExplainabilityMethod(Visualizable):
         pass
 
     @abstractmethod
-    def onStepAfter(self, action: Any):
+    def onStepAfter(self, action: Any, reward: Dict[str, np.ndarray], done: bool, info: dict):
         """
         Called once when a step is taken into the environment
         (after it's taken)
@@ -57,7 +57,7 @@ class ExplainabilityMethod(Visualizable):
     @abstractmethod
     def value(self, obs) -> float:
         """
-        Should return one the agent, that indicates how well the agent preformed according to this method
+        Should return one value for the agent, that indicates how well the agent preformed according to this method
         """
         pass
 

@@ -16,8 +16,8 @@ void PyMethod::onStep(const py::object& action) const {
     object.attr("onStep")(action);
 }
 
-void PyMethod::onStepAfter(const py::object& action) const {
-    object.attr("onStepAfter")(action);
+void PyMethod::onStepAfter(const py::object &action, const py::dict& reward, const bool done, const py::dict &info) const {
+    object.attr("onStepAfter")(action, reward, done, info);
 }
 
 py::object PyMethod::explain(const py::object& obs) const {

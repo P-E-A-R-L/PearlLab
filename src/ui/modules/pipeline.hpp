@@ -20,11 +20,24 @@ namespace Pipeline {
 
     struct ActiveAgent {
         char name[256]   = "Agent";
+
         PyAgent* agent   = nullptr;
         PyEnv* env       = nullptr;
         std::vector<PyMethod*> methods;
-        std::vector<float>     scores;
-        float reward     = 0;
+
+        std::vector<double>     scores_total;
+        std::vector<double>     scores_ep;
+
+        double reward_total    = 0;
+        double reward_ep       = 0;
+
+        int64_t steps_current_episode;
+        int64_t total_episodes;
+        int64_t total_steps;
+
+        bool env_terminated;
+        bool env_truncated;
+        double last_move_reward = 0;
     };
 
     struct PipelineAgent {

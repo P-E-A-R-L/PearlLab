@@ -18,8 +18,6 @@ class DQNAgent(RLAgent):
                 observation = torch.tensor(observation).to(next(self.q_net.parameters()).device,
                                                            next(self.q_net.parameters()).dtype)
             values = self.q_net(observation)
-            if isinstance(values, torch.Tensor):
-                values = values.cpu().numpy()
             exp_q = np.exp(values)
             return exp_q / np.sum(exp_q, axis=1, keepdims=True)
 

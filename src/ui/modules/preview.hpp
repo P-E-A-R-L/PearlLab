@@ -17,7 +17,7 @@ namespace Preview {
         GLTexture* rgb_array           = nullptr;
         GLTexture* gray                = nullptr;
         GLTexture* heat_map            = nullptr;
-        std::map<std::string, float>   features;
+        std::map<std::string, std::string>   features;
 
         PyLiveObject* rgb_array_params = nullptr;
         PyLiveObject* gray_params      = nullptr;
@@ -26,13 +26,23 @@ namespace Preview {
 
         void init(PyVisualizable*);
         [[nodiscard]] bool supports(VisualizationMethod method) const;
-        void update() const;
+        void update();
 
         ~VisualizedObject();
 
     private:
         void _init_rgb_array();
         void _update_rgb_array() const;
+
+        void _init_gray();
+        void _update_gray() const;
+
+        void _init_heat_map();
+        void _update_heat_map() const;
+
+        void _init_features();
+        void _update_features();
+
     };
 
     struct VisualizedAgent {
@@ -41,7 +51,7 @@ namespace Preview {
         std::vector<VisualizedObject*> method_visualizations;
 
         void init(Pipeline::ActiveAgent* agent);
-        void update();
+        void update() const;
 
         ~VisualizedAgent();
     };

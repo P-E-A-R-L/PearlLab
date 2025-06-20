@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict
 
 import numpy as np
 import shap
@@ -45,7 +45,7 @@ class ShapExplainability(ExplainabilityMethod):
         # nothing for shap
         pass
 
-    def onStepAfter(self, action: Any):
+    def onStepAfter(self, action: Any, reward: Dict[str, np.ndarray], done: bool, info: dict):
         # nothing for shap
         pass
 
@@ -61,22 +61,33 @@ class ShapExplainability(ExplainabilityMethod):
         obs_tensor = torch.as_tensor(obs, dtype=torch.float, device=self.device)
         self.mask.update(obs)
         scores = self.mask.compute(explain)
-        action = self.agent.predict(obs_tensor)
+        action = np.argmax(self.agent.predict(obs_tensor))
         self.last_explain = explain
         return scores[action]
 
     def supports(self, m: VisualizationMethod) -> bool:
+        if not isinstance(m, VisualizationMethod):
+            m = VisualizationMethod(m)
+
         return m == VisualizationMethod.HEAT_MAP
 
     def getVisualizationParamsType(self, m: VisualizationMethod) -> type | None:
+        if not isinstance(m, VisualizationMethod):
+            m = VisualizationMethod(m)
+
         if m == VisualizationMethod.HEAT_MAP:
             return ShapVisualizationParams
         return None
 
     def getVisualization(self, m: VisualizationMethod, params: Any = None) -> np.ndarray | dict | None:
+        if not isinstance(m, VisualizationMethod):
+            m = VisualizationMethod(m)
+
         if m == VisualizationMethod.HEAT_MAP:
             idx = 0
             if params is not None and isinstance(params, ShapVisualizationParams):
                 idx = params.action
-            return self.last_explain[idx]
+            if idx < 0: idx = 0
+            idx = idx % len(self.last_explain)
+            return self.last_explain[..., idx].mean(axis=(0, 1))
         return None

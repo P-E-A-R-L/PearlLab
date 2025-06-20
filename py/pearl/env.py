@@ -49,7 +49,7 @@ class RLEnvironment(Visualizable):
         Take a step in the environment with the given action.
 
         Args:
-            action: The action to take
+            action: The action to take (index of the action)
 
         Returns:
             observation: The next observation (N, H, W, C)
