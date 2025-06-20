@@ -339,6 +339,21 @@ bool PyScope::parseLoadedModule(py::object module, PyScope::LoadedModule& l) {
     return true;
 }
 
+ssize_t PyScope::argmax(const py::array& array)  {
+    auto dtype = array.dtype();
+
+    if (py::isinstance<py::array_t<float>>(array))
+        return argmax_impl<float>(array.cast<py::array_t<float>>());
+    else if (py::isinstance<py::array_t<double>>(array))
+        return argmax_impl<double>(array.cast<py::array_t<double>>());
+    else if (py::isinstance<py::array_t<int>>(array))
+        return argmax_impl<int>(array.cast<py::array_t<int>>());
+    else if (py::isinstance<py::array_t<long>>(array))
+        return argmax_impl<long>(array.cast<py::array_t<long>>());
+    else
+        throw std::runtime_error("Unsupported data type");
+}
+
 PyScope::PyScope() {}
 
 void PyScope::init() {

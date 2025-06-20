@@ -94,7 +94,6 @@ if __name__ == "__main__":
 
     for i in tqdm(range(2000)):  # max 2000 steps for now
         obs = env.get_observations()
-        obs_tensor = torch.as_tensor(obs, dtype=torch.float, device=device)
 
         rgb_image = env.getVisualization(VisualizationMethod.RGB_ARRAY, None)
         bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
@@ -110,7 +109,7 @@ if __name__ == "__main__":
         best_agent = np.argmax(scores)
         agent = agents[best_agent]
 
-        action = agent.predict(obs_tensor)
+        action = agent.predict(obs)
         state, reward_dict, terminated, truncated, info = env.step(action)
         if terminated:
             break

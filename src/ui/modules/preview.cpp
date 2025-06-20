@@ -225,31 +225,57 @@ static void _render_agent(const Pipeline::ActiveAgent& agent, float width, int i
 }
 
 static void _render_preview() {
-    auto child_width = ( ImGui::GetContentRegionAvail().x - (agents_per_row + 1) * 10 ) / agents_per_row;
-    child_width = std::max(child_width, 320.0f);
 
-    float y = 60;
-    float max_height = 0;
-    for (int i = 0;i < Pipeline::PipelineState::activeAgents.size();i++) {
-        auto& agent = Pipeline::PipelineState::activeAgents[i];
-        ImGui::PushID(i);
-        ImGui::SetCursorPos({(i % agents_per_row) * ( child_width + 10 ) + 10, y});
-        ImGui::BeginGroup();
-        _render_agent(agent, child_width, i);
-        ImGui::EndGroup();
-        ImGui::PopID();
-        auto size = ImGui::GetItemRectSize();
-        max_height = std::max(max_height, size.y);
-        if (i % agents_per_row == 0 && i != 0) {
-            y += max_height + 10; // add some spacing
-            max_height = 0; // reset for next row
+    { // control zone
+        auto playing = Pipeline::isSimRunning();
+        auto size  = ImGui::GetContentRegionAvail();
+        auto control_size = 16 * 2 + ImGui::GetStyle().ItemSpacing.x;
+        auto x = (size.x - control_size) / 2;
+
+        std::string Icon = "./assets/icons/play-grad.png";
+        if (playing) Icon = "./assets/icons/pause-grad.png";
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 4));
+        ImGui::SetCursorPosX(x);
+        if (ImGui::ImageButton("##play_btn" ,ImageStore::idOf(Icon), {20, 20})) {
+            if (!playing) Pipeline::continueSim();
+            else Pipeline::pauseSim();
+        }
+
+        ImGui::SameLine();
+        if (ImGui::ImageButton("##step_btn" ,ImageStore::idOf("./assets/icons/step-grad.png"), {20, 20})) {
+            Pipeline::stepSim();
+        }
+        ImGui::PopStyleVar();
+    }
+
+    { // agents previews
+        auto child_width = ( ImGui::GetContentRegionAvail().x - (agents_per_row + 1) * 10 ) / agents_per_row;
+        child_width = std::max(child_width, 320.0f);
+
+        float y = 60;
+        float max_height = 0;
+        for (int i = 0;i < Pipeline::PipelineState::activeAgents.size();i++) {
+            auto& agent = Pipeline::PipelineState::activeAgents[i];
+            ImGui::PushID(i);
+            ImGui::SetCursorPos({(i % agents_per_row) * ( child_width + 10 ) + 10, y});
+            ImGui::BeginGroup();
+            _render_agent(agent, child_width, i);
+            ImGui::EndGroup();
+            ImGui::PopID();
+            auto size = ImGui::GetItemRectSize();
+            max_height = std::max(max_height, size.y);
+            if (i % agents_per_row == 0 && i != 0) {
+                y += max_height + 10; // add some spacing
+                max_height = 0; // reset for next row
+            }
         }
     }
 }
 
 void Preview::render() {
     ImGui::Begin("Preview");
-    ImGui::Image(ImageStore::idOf("./assets/icons/play.png"), {64, 64});
+
     if (!Pipeline::isExperimenting()) {
 
         auto size = ImGui::GetContentRegionAvail();

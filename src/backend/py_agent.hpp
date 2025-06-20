@@ -17,7 +17,7 @@ namespace py = pybind11;
 
 struct PyAgent : public PyLiveObject {
     // Predict method: returns np.ndarray (action probabilities)
-    py::array predict(const py::object& observation) const;
+    py::object predict(const py::object& observation) const;
 
     // get_q_net: returns any Python object (usually a model)
     py::object get_q_net() const;

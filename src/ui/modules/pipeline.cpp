@@ -24,6 +24,8 @@ namespace Pipeline {
 
         std::vector<PipelineAgent>  pipelineAgents  {};
         std::vector<PipelineMethod> pipelineMethods {};
+
+
     }
 
     std::vector<PipelineGraph::ObjectRecipe> envs;
@@ -39,6 +41,9 @@ namespace Pipeline {
         int  StepSimFrames = 0;
 
         std::vector<ActiveAgent> activeAgents {};
+
+        StepPolicy  stepPolicy  = INDEPENDENT;
+        ScorePolicy scorePolicy = PEARL;
 
     }
 
@@ -148,6 +153,7 @@ namespace Pipeline {
     void stopExperiment() {
         if (!isExperimenting()) return;
         PipelineState::Experimenting = false;
+        PipelineState::Simulating = false;
         _clearActiveAgents();
         Logger::info("Experiment stopped.");
         Preview::onStop();
@@ -185,6 +191,133 @@ namespace Pipeline {
                 score = 0;
             }
         }
+    }
+
+
+    static void _do_one_step(int action = -1, int agent = -1) {
+        if (!isExperimenting()) {
+            Logger::info("Unable to step, Experiment is not running.");
+            return;
+        }
+
+        if (agent == -1) {
+            for (int i = 0;i < PipelineState::activeAgents.size(); ++i) {
+                _do_one_step(action, i);
+            }
+            return;
+        }
+
+        if (agent < 0 || agent >= PipelineState::activeAgents.size()) {
+            Logger::error("Invalid agent index, tried to update state for agent[" + std::to_string(agent) + "] which doesn't exist.");
+            return;
+        }
+
+        auto& target_agent = PipelineState::activeAgents[agent];
+        auto actions = target_agent.env->get_available_actions();
+        if (!actions) {
+            Logger::error("Unable to retrieve actions, agent[" + std::to_string(agent) + "] environment didn't provide actions, unable to step.");
+            return;
+        }
+
+        if (action == -1) {
+            // we need to select an action based on some criteria
+            switch (PipelineState::stepPolicy) {
+                case PipelineState::RANDOM:
+                    action = rand() % actions->size();
+                break;
+
+                case PipelineState::BEST_AGENT: {
+                    int best_agent = -1;
+                    float best_score = std::numeric_limits<float>::min();
+                    for (int i = 0;i < PipelineState::activeAgents.size(); ++i) {
+                        if (best_agent == -1) { best_agent = i; continue; }
+                        auto score = evalAgent(i);
+                        if (best_score < score) {
+                            best_score = score;
+                            best_agent = i;
+                        }
+                    }
+
+                    // now we have the best agent
+                    // time we select its action
+                    auto& best = PipelineState::activeAgents[best_agent];
+                    SafeWrapper::execute([&]{
+                        auto prediction = best.agent->predict(target_agent.env->get_observations());
+                        action = prediction.cast<int>();
+                    });
+                }
+                break;
+
+                case PipelineState::WORST_AGENT: {
+                    int worst_agent = -1;
+                    float worst_score = std::numeric_limits<float>::min();
+                    for (int i = 0;i < PipelineState::activeAgents.size(); ++i) {
+                        if (worst_agent == -1) { worst_agent = i; continue; }
+                        auto score = evalAgent(i);
+                        if (worst_score > score) {
+                            worst_score = score;
+                            worst_agent = i;
+                        }
+                    }
+
+                    auto& worst = PipelineState::activeAgents[worst_agent];
+                    SafeWrapper::execute([&]{
+                        auto prediction = worst.agent->predict(target_agent.env->get_observations());
+                        action = prediction.cast<int>();
+                    });
+                }
+                break;
+
+                case PipelineState::INDEPENDENT: {
+                    SafeWrapper::execute([&]{
+                        auto prediction = target_agent.agent->predict(target_agent.env->get_observations());
+                        action = prediction.cast<int>();
+                    });
+                }
+                break;
+
+                default:
+                    action = 0; // default to just the first action
+            }
+        }
+
+        if (action != -1) {
+            SafeWrapper::execute([&]{
+                target_agent.env->step((*actions)[action]);
+            });
+        }
+    }
+
+
+    void stepSim(int action_index) {
+        _do_one_step(action_index);
+    }
+
+    void stepSim(int action_index, int agent_index) {
+        _do_one_step(action_index, agent_index);
+    }
+
+    float evalAgent(int agent_index) {
+        if (agent_index < 0 || agent_index >= PipelineState::activeAgents.size()) {
+            Logger::error("Invalid agent index, tried to get scores for agent[" + std::to_string(agent_index) + "] which doesn't exist.");
+            return - 1;
+        }
+
+        auto& agent = PipelineState::activeAgents[agent_index];
+        switch (PipelineState::scorePolicy) {
+            case PipelineState::PEARL: {
+                float result = 0;
+                for (int i = 0;i < agent.scores.size(); ++i) {
+                    result += agent.scores[i] * (PipelineConfig::pipelineMethods[i].active ? PipelineConfig::pipelineMethods[i].weight : 0);
+                }
+                return result;
+            }
+            case PipelineState::REWARD: {
+                return agent.reward;
+            }
+        }
+
+        return -1;
     }
 
     void setRecipes(std::vector<PipelineGraph::ObjectRecipe> r) {
@@ -510,6 +643,20 @@ namespace Pipeline {
     void render() {
         render_recipes();
         render_pipeline();
+    }
+
+    void update() {
+        if (isExperimenting()) {
+            for (int i = 0;i < PipelineState::StepSimFrames;i++) {
+                _do_one_step();
+            }
+
+            PipelineState::StepSimFrames = 0;
+
+            if (isSimRunning()) {
+                _do_one_step();
+            }
+        }
     }
 
     void destroy() {

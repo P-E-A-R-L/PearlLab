@@ -16,6 +16,7 @@
 #include "modules/pipeline_graph.hpp"
 #include "modules/preview.hpp"
 #include "modules/py_module_window.hpp"
+#include "utility/image_store.hpp"
 
 namespace LabLayout {
     // hidden because normally not other module would need these functions
@@ -41,6 +42,7 @@ void LabLayout::renderParamsModule() {
 
 
 void LabLayout::init() {
+    ImageStore::init();
     Logger::init();
     PyScope::init();
     PyModuleWindow::init();
@@ -188,6 +190,9 @@ void LabLayout::render() {
 
     ImGui::End();
 
+    // before we render any content
+    Pipeline::update();
+
     // Render individual windows
     renderParamsModule();
 
@@ -208,6 +213,8 @@ void LabLayout::destroy() {
     ObjectsPanel::destroy();
     Pipeline::destroy();
     Preview::destroy();
+
+    ImageStore::destroy();
 }
 
 

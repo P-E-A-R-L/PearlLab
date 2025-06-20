@@ -7,7 +7,7 @@
 
 #include <pybind11/embed.h>
 #include <pybind11/pybind11.h>
-#include <optional>
+#include <pybind11/numpy.h>
 #include "py_param.hpp"
 
 namespace py = pybind11;
@@ -93,6 +93,25 @@ public:
     static bool parseLoadedModule(py::object obj, PyScope::LoadedModule& l);
 
 
+    template <typename T>
+    ssize_t argmax_impl(py::array_t<T> array) {
+
+        auto buf = array.unchecked();
+        if (buf.size() == 0)
+            throw std::runtime_error("Input array is empty");
+
+        ssize_t max_index = 0;
+        T max_value = *buf.data(0);
+        for (ssize_t i = 1; i < buf.size(); ++i) {
+            if (*buf.data(i) > max_value) {
+                max_value = *buf.data(i);
+                max_index = i;
+            }
+        }
+        return max_index;
+    }
+
+    ssize_t argmax(const py::array& array);
 private:
     PyScope();
 };

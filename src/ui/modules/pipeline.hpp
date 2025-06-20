@@ -53,6 +53,8 @@ namespace Pipeline {
         extern int maxEpisodes; // default max episodes for an agent
         extern int activeEnv;   // the index of the current active env
 
+
+
         extern std::vector<PipelineAgent>  pipelineAgents;
         extern std::vector<PipelineMethod> pipelineMethods;
     }
@@ -61,6 +63,22 @@ namespace Pipeline {
         extern bool Experimenting;
         extern bool Simulating;
         extern int  StepSimFrames;
+
+        enum StepPolicy {
+            RANDOM        ,  // each agent steps randomly
+            // RANDOM_UNIFORM,  // steps randomly but all agents does the same
+            BEST_AGENT    ,  // the best agent is followed by all other agents
+            WORST_AGENT   ,  // the worst agent is followed by all other agents
+            INDEPENDENT   ,  // each agent takes it's action independently based on it's decision
+        };
+
+        enum ScorePolicy {
+            PEARL  ,         // Pearl score is what determines the criteria
+            REWARD ,         // agent's reward is what determines the criteria
+        };
+
+        extern StepPolicy  stepPolicy;
+        extern ScorePolicy scorePolicy;
 
         extern std::vector<ActiveAgent> activeAgents;
     }
@@ -85,10 +103,17 @@ namespace Pipeline {
     void continueSim();
     void stepSim();
     void resetSim();
+    void stepSim(int action_index);
+    void stepSim(int action_index, int agent_index);
+    float evalAgent(int agent_index);
 
     void setRecipes(std::vector<PipelineGraph::ObjectRecipe>);
     void init();
     void render();
+
+    // called before render
+    void update();
+
     void destroy();
 }
 

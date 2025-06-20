@@ -4,8 +4,8 @@
 
 #include "py_agent.hpp"
 
-py::array PyAgent::predict(const py::object &observation) const {
-    return object.attr("predict")(observation).cast<py::array>();
+py::object PyAgent::predict(const py::object &observation) const {
+    return object.attr("predict")(observation);
 }
 
 py::object PyAgent::get_q_net() const {
