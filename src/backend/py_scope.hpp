@@ -58,7 +58,7 @@ public:
     py::object redirector_msg;
     py::object redirector_err;
 
-    std::vector<py::module> modules;
+    std::vector<std::string> modulesPaths;
     std::vector<py::module> pythonModules;
 
     static PyScope& getInstance();

@@ -96,8 +96,11 @@ py::module* PyScope::LoadModule(const std::string &module_path) {
             Logger::error("Module '" + name + "' was imported as None.");
             return nullptr;
         }
+
         instance.pythonModules.push_back(module);
+        instance.modulesPaths.push_back(module_path);
         Logger::info("Module: " + name + " loaded successfully.");
+
         return &instance.pythonModules.back();
 
     } catch (py::error_already_set& e) {

@@ -43,18 +43,14 @@ int application_init(const std::string& project_path) {
     glfwSetWindowSize(window, width, height);
 
     pybind11::initialize_interpreter();
+
+    LabLayout::init(project_path);
+
     return 0;
 }
 
 
 int application_loop() {
-    static bool _first_render = true;
-
-    if (_first_render) {
-        LabLayout::init();
-        _first_render = false;
-    }
-
     LabLayout::render(); // render the main app
     return 0;
 }

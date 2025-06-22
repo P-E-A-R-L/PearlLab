@@ -18,6 +18,7 @@
 static std::map<std::string, PyScope::LoadedModule*> modules;
 
 void StartupLoader::load_modules() {
+    if (true) return;
     // modules loading
     std::vector<std::string> filePaths = {
         "./py/test_pearl.py",
@@ -54,6 +55,7 @@ void StartupLoader::load_modules() {
 }
 
 void StartupLoader::load_graph() {
+    if (true) return;
     // graph - adding recipes
 
     // device

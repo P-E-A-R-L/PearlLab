@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 
 #include "ImGuiFileDialog.h"
+#include "project_manager.hpp"
 #include "shared_ui.hpp"
 #include "startup_loader.hpp"
 #include "../backend/py_scope.hpp"
@@ -23,6 +24,8 @@ namespace LabLayout {
     // these are just some demo functions to make the UI .. well .. do something
     // they are to be changed with the actual modules
     void renderParamsModule();
+
+    ProjectManager::ProjectDetails project_details;
 
 }
 
@@ -41,12 +44,15 @@ void LabLayout::renderParamsModule() {
 }
 
 
-void LabLayout::init() {
-
+void LabLayout::init(const std::string& project_path) {
     Logger::init();
     PyScope::init();
+
+    project_details = ProjectManager::loadProject(project_path);
+    ImGui::LoadIniSettingsFromDisk(project_details.imgui_file.c_str());
+
     PyModuleWindow::init();
-    PipelineGraph::init();
+    PipelineGraph::init(project_details.graph_file);
     SharedUi::init();
     ObjectsPanel::init();
     Pipeline::init();
@@ -68,6 +74,19 @@ void LabLayout::render() {
             if (ImGui::MenuItem("Load Module")) {
                 ImGuiFileDialog::Instance()->OpenDialog("FileDlgKey", "Select module file", ".py" );
             }
+
+            if (ImGui::MenuItem("Quick Save")) {
+                if (ProjectManager::saveProject(project_details.project_path)) {
+                    Logger::info("Project saved successfully.");
+                } else {
+                    Logger::error("Failed to save project.");
+                }
+            }
+
+            if (ImGui::MenuItem("Save Project")) {
+                ImGuiFileDialog::Instance()->OpenDialog("FileDlgKey", "Select module file", ".py" );
+            }
+
             ImGui::Separator();
             if (ImGui::MenuItem("Exit")) {
                 glfwSetWindowShouldClose(AppWindow, GLFW_TRUE);

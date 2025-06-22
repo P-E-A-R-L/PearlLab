@@ -4,10 +4,14 @@
 
 #ifndef LAB_LAYOUT_HPP
 #define LAB_LAYOUT_HPP
+#include <string>
+
+#include "project_manager.hpp"
 
 
 namespace LabLayout {
-    void init();
+    extern ProjectManager::ProjectDetails project_details;
+    void init(const std::string& project_path);
     void render();
     void destroy();
 }

@@ -16,14 +16,27 @@
 #include <string>
 
 #include "ui/utility/image_store.hpp"
+#include <filesystem>
 
+namespace fs = std::filesystem;
 static bool _run_application         = false;
 static bool _application_initialized = false;
 static std::string project_path             = "";
 
-void OpenProject(const std::string& folderPath) {
+bool OpenProject(const std::string& folderPath) {
+    if (!fs::exists(folderPath)) {
+        fs::path p = folderPath;
+        if (!fs::exists(p.parent_path())) {
+            return false; //
+        }
+
+        fs::create_directories(p); // create the directory if it doesn't exist
+    }
+
     _run_application = true;
     project_path     = folderPath;
+
+    return true;
 }
 
 GLFWwindow* AppWindow;

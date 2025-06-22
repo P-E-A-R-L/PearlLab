@@ -7,6 +7,7 @@
 
 
 #include <imgui_node_editor.h>
+#include <nlohmann/json.hpp>
 #include <pybind11/embed.h>
 #include <pybind11/pybind11.h>
 #include "../../backend/py_scope.hpp"
@@ -56,6 +57,9 @@ namespace PipelineGraph {
         virtual void exec() = 0;
         virtual void render() = 0;
         virtual ~Node() = default;
+
+        virtual void save(nlohmann::json& custom_data);
+        virtual void load(nlohmann::json& custom_data);
     };
 
     struct Link {
@@ -86,9 +90,11 @@ namespace PipelineGraph {
     extern std::unordered_map<ed::PinId , Node*> pinNodeLookup;
     extern std::unordered_map<ed::LinkId, Link*> linkLookup;
 
+    extern size_t nextId;
     int GetNextId();
 
-    void init();
+    void init(const std::string& graph_file);
+    void saveSettings(const std::string& graph_file);
     void render();
     void destroy();
 
@@ -98,11 +104,15 @@ namespace PipelineGraph {
             int    rangeStart{};
             int    rangeEnd{};
 
+            PrimitiveIntNode();
             explicit PrimitiveIntNode(int val);
             PrimitiveIntNode(int val, int rangeStart, int rangeEnd);
             void exec() override;
             void render() override;
             ~PrimitiveIntNode() override;
+
+            void save(nlohmann::json& custom_data) override;
+            void load(nlohmann::json& custom_data) override;
         };
 
         struct PrimitiveFloatNode: virtual public Node {
@@ -110,11 +120,15 @@ namespace PipelineGraph {
             float    rangeStart{};
             float    rangeEnd{};
 
+            PrimitiveFloatNode();
             explicit PrimitiveFloatNode(float val);
             PrimitiveFloatNode(float val, float rangeStart, float rangeEnd);
             void exec() override;
             void render() override;
             ~PrimitiveFloatNode() override;
+
+            void save(nlohmann::json& custom_data) override;
+            void load(nlohmann::json& custom_data) override;
         };
 
         struct PrimitiveStringNode: virtual public Node {
@@ -122,15 +136,18 @@ namespace PipelineGraph {
             char _value[1024] = "";
             bool _file = false;
 
+            PrimitiveStringNode();
             explicit PrimitiveStringNode(bool file);
             explicit PrimitiveStringNode(const std::string& );
             void exec() override;
             void render() override;
             ~PrimitiveStringNode() override;
+
+            void save(nlohmann::json& custom_data) override;
+            void load(nlohmann::json& custom_data) override;
         };
 
         struct AdderNode: virtual public Node {
-
             explicit AdderNode();
             void exec() override;
             void render() override;
@@ -142,25 +159,37 @@ namespace PipelineGraph {
 
         struct PythonModuleNode: virtual public SingleOutputNode {
             PyScope::LoadedModule* _type;
-            std::string _name; // I have no idea why the SharedUi::LoadedModule->moduleName breaks
 
+            PythonModuleNode();
             explicit PythonModuleNode(PyScope::LoadedModule*);
             void exec() override;
             void render() override;
             ~PythonModuleNode() override;
+
+            void save(nlohmann::json& custom_data) override;
+            void load(nlohmann::json& custom_data) override;
+
+        private:
+            void _preparePins();
         };
 
         struct PythonFunctionNode: virtual public SingleOutputNode {
             PyScope::LoadedModule* _type;
-            std::string _name; // I have no idea why the SharedUi::LoadedModule->moduleName breaks
             bool _pointer;
             std::vector<Pin> _inputs;
 
+            PythonFunctionNode();
             explicit PythonFunctionNode(PyScope::LoadedModule*);
             explicit PythonFunctionNode(PyScope::LoadedModule*, bool);
             void exec() override;
             void render() override;
             ~PythonFunctionNode() override;
+
+            void save(nlohmann::json& custom_data) override;
+            void load(nlohmann::json& custom_data) override;
+
+        private:
+            void _preparePins();
         };
 
         struct AcceptorNode: public Node {
@@ -176,6 +205,11 @@ namespace PipelineGraph {
             void exec() override;
             void render() override;
             ~DeMuxNode() override;
+
+            void save(nlohmann::json& custom_data) override;
+            void load(nlohmann::json& custom_data) override;
+        private:
+            void _preparePins(int numOutputs);
         };
 
         struct AgentAcceptorNode: public AcceptorNode {

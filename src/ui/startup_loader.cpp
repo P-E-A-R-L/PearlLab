@@ -9,9 +9,15 @@
 #include "modules/logger.hpp"
 #include "modules/pipeline_graph.hpp"
 
+// #define LOAD_INITIAL
+
 static std::map<std::string, PyScope::LoadedModule*> modules;
 
 void StartupLoader::load_modules() {
+#ifndef LOAD_INITIAL
+    if (true) return;
+#endif
+
     std::vector<std::string> filePaths = {
         "./py/test_lunarlander.py",
     };
@@ -44,6 +50,10 @@ void StartupLoader::load_modules() {
 }
 
 void StartupLoader::load_graph() {
+#ifndef LOAD_INITIAL
+    if (true) return;
+#endif
+
     // Device
     auto deviceNode = new PipelineGraph::Nodes::PythonFunctionNode(modules["Device"]);
     PipelineGraph::addNode(deviceNode);

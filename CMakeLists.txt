@@ -3,6 +3,10 @@ project(PearlLab)
 
 set(CMAKE_CXX_STANDARD 20)
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-Wno-attributes)
+endif()
+
 # Load environment
 set(ENV_FILE "${CMAKE_SOURCE_DIR}/.env.local")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -97,6 +101,8 @@ set(PEAR_LAB_SOURCES
         src/backend/py_object.hpp
         src/ui/utility/image_store.cpp
         src/ui/utility/image_store.hpp
+        src/ui/project_manager.cpp
+        src/ui/project_manager.hpp
 
 )
 
@@ -124,6 +130,7 @@ include_directories(${GLAD_DIR}/include)
 include_directories(${IMGUI_NODE_DIR})
 include_directories(libs/stb)
 include_directories(libs/ImGuiFileDialog)
+include_directories(libs/nlohmannjson)
 include_directories(${TINY_FILE_DIALOGS_DIR})
 
 add_subdirectory(libs/ImGuiFileDialog)
