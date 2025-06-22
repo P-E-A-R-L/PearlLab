@@ -22,6 +22,7 @@ set(Python3_EXECUTABLE "${VENV_PATH}/bin/python3")
 set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/libs/imgui")
 set(IMGUI_NODE_DIR "${CMAKE_SOURCE_DIR}/libs/imgui-node-editor")
 set(GLAD_DIR "${CMAKE_SOURCE_DIR}/libs/glad")
+set(TINY_FILE_DIALOGS_DIR "${CMAKE_SOURCE_DIR}/libs/tinyfiledialogs")
 
 set(IMGUI_SOURCES
         ${IMGUI_DIR}/imgui.cpp
@@ -41,6 +42,10 @@ set(IMGUI_NODE_SOURCES
         ${IMGUI_NODE_DIR}/imgui_canvas.cpp
         ${IMGUI_NODE_DIR}/imgui_node_editor.cpp
         ${IMGUI_NODE_DIR}/imgui_node_editor_api.cpp
+)
+
+set(TINY_FILE_DIALOGS_SOURCES
+        ${TINY_FILE_DIALOGS_DIR}/tinyfiledialogs.c
 )
 
 set(PEAR_LAB_SOURCES
@@ -92,6 +97,7 @@ set(PEAR_LAB_SOURCES
         src/backend/py_object.hpp
         src/ui/utility/image_store.cpp
         src/ui/utility/image_store.hpp
+
 )
 
 # deps
@@ -116,18 +122,20 @@ include_directories(${Boost_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS} ${NUMPY_INCLUD
 include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends)
 include_directories(${GLAD_DIR}/include)
 include_directories(${IMGUI_NODE_DIR})
+include_directories(libs/stb)
+include_directories(libs/ImGuiFileDialog)
+include_directories(${TINY_FILE_DIALOGS_DIR})
 
 add_subdirectory(libs/ImGuiFileDialog)
 
-include_directories(libs/stb)
-include_directories(libs/ImGuiFileDialog)
-
 add_executable(PearlLab
-        src/main.cpp
+        src/application.cpp
+        src/launcher.cpp
         ${PEAR_LAB_SOURCES}
         ${IMGUI_SOURCES}
         ${GLAD_SOURCES}
         ${IMGUI_NODE_SOURCES}
+        ${TINY_FILE_DIALOGS_SOURCES}
 )
 
 target_link_libraries(PearlLab

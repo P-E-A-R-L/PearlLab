@@ -42,7 +42,7 @@ void LabLayout::renderParamsModule() {
 
 
 void LabLayout::init() {
-    ImageStore::init();
+
     Logger::init();
     PyScope::init();
     PyModuleWindow::init();
@@ -213,8 +213,7 @@ void LabLayout::destroy() {
     ObjectsPanel::destroy();
     Pipeline::destroy();
     Preview::destroy();
-
-    ImageStore::destroy();
+    PyScope::clearInstance();
 }
 
 
