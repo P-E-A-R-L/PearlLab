@@ -9,7 +9,7 @@
 #include <imgui.h>
 #include <map>
 #include <string>
-
+#include <vector>
 
 namespace Logger {
     enum Level {

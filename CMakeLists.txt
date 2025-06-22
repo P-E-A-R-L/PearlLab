@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.28)
 project(PearlLab)
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(VENV_PATH "/home/xabdomo/tf-env")
+set(VENV_PATH "/home/youssef/pearl/Pearl")
 set(Python3_EXECUTABLE "${VENV_PATH}/bin/python3")
 set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/libs/imgui")
 set(IMGUI_NODE_DIR "${CMAKE_SOURCE_DIR}/libs/imgui-node-editor")
