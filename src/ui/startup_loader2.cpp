@@ -148,7 +148,7 @@ void StartupLoader::load_graph() {
     PipelineGraph::addLink(agent2Acceptor->inputs[0].id, agent2TorchNode->outputs[0].id);
 
     // Some QoL
-    std::string methodTag = "ShapExplainability";
+    std::string methodTag  = "ShapExplainability";
     std::string methodTag2 = "LimeExplainability";
     std::string agent1Tag = "TorchDQN (5m)";
     std::string agent2Tag = "TorchDQN (1k)";
