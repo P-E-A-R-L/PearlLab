@@ -1,7 +1,5 @@
 from typing import Optional, Tuple, Callable, Dict, Any, Union
 
-import cv2
-
 from pearl.env import RLEnvironment
 import collections
 import numpy as np
@@ -28,25 +26,39 @@ class GymRLEnv(RLEnvironment):
         record_video: bool = False,
         video_path: Optional[str] = None,
         normalize_observations: bool = False,
-        num_envs: int = 1
+        num_envs: int = 1,
+        tabular: bool = False
     ):
         super().__init__()
         # Create vectorized or single env
         if num_envs > 1:
-            self.env = gym.vector.make(
-                env_name,
-                num_envs=num_envs,
-                frameskip=frame_skip,
-                render_mode=render_mode
-            )
+            if tabular:
+                self.env = gym.vector.make(
+                    env_name,
+                    num_envs=num_envs,
+                    render_mode=render_mode
+                )
+            else:
+                self.env = gym.vector.make(
+                    env_name,
+                    num_envs=num_envs,
+                    frameskip=frame_skip,
+                    render_mode=render_mode
+                )
             self.observation_space = self.env.single_observation_space
             self.action_space = self.env.single_action_space
         else:
-            self.env = gym.make(
-                env_name,
-                frameskip=frame_skip,
-                render_mode=render_mode
-            )
+            if tabular:
+                self.env = gym.make(
+                    env_name,
+                    render_mode=render_mode,
+                )
+            else: 
+                self.env = gym.make(
+                    env_name,
+                    frameskip=frame_skip,
+                    render_mode=render_mode
+                )
             self.observation_space = self.env.observation_space
             self.action_space = self.env.action_space
         # Time limit wrapper
@@ -84,6 +96,8 @@ class GymRLEnv(RLEnvironment):
         self.frames.clear()
         for _ in range(self.stack_size):
             self.frames.append(self._process_frame(raw))
+        if self.stack_size <= 1:
+            return obs, info
         stacked = np.concatenate(self.frames, axis=-1)
         return stacked, info
 
@@ -91,6 +105,7 @@ class GymRLEnv(RLEnvironment):
         self,
         action: Union[int, np.ndarray]
     ) -> Tuple[np.ndarray, Dict[str, np.ndarray], bool, bool, Dict[str, Any]]:
+        print("step called with action:", action)
         total_reward = 0.0
         terminated = False
         truncated = False
@@ -102,7 +117,10 @@ class GymRLEnv(RLEnvironment):
         raw = obs if not isinstance(obs, tuple) else obs[0]
         processed = self._process_frame(raw)
         self.frames.append(processed)
-        stacked = np.concatenate(self.frames, axis=-1)
+        if self.stack_size > 1:
+            stacked = np.concatenate(self.frames, axis=-1)
+        else:
+            stacked = processed
         if self.reward_clipping:
             total_reward = float(np.clip(total_reward, *self.reward_clipping))
         if self.reward_scaling:
@@ -114,7 +132,9 @@ class GymRLEnv(RLEnvironment):
         return self.env.render()
 
     def get_observations(self) -> np.ndarray:
-        return np.concatenate(self.frames, axis=-1)
+        if self.stack_size <= 1:
+            return np.squeeze(list(self.frames)[0], axis=-1)
+        return np.concatenate(list(self.frames), axis=-1)
 
     def supports(self, m: VisualizationMethod) -> bool:
         if not isinstance(m, VisualizationMethod):

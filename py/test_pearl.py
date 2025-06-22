@@ -11,6 +11,7 @@ from pearl.enviroments.GymRLEnv import GymRLEnv
 from pearl.enviroments.ObservationWrapper import ObservationWrapper
 from pearl.provided.AssaultEnv import AssaultEnvShapMask
 from pearl.methods.ShapExplainability import ShapExplainability
+from pearl.methods.LimeExplainability import LimeExplainability
 from visual import VisualizationMethod
 
 
@@ -67,6 +68,8 @@ if __name__ == "__main__":
     mask = AssaultEnvShapMask()
     explainer1 = ShapExplainability(device, mask)
     explainer2 = ShapExplainability(device, mask)
+    explainer3 = LimeExplainability(device, mask)
+    explainer4 = LimeExplainability(device, mask)
     env = Wrapper(GymRLEnv(
         env_name='ALE/Assault-v5',
         stack_size=4,
@@ -89,7 +92,14 @@ if __name__ == "__main__":
 
     explainer2.set(env)
     explainer2.prepare(agent_bad)
+    
+    explainer3.set(env)
+    explainer3.prepare(agent_good)
+    explainer4.set(env)
+    explainer4.prepare(agent_bad)
+    
     scores = [0, 0]
+    scores_lime = [0, 0]
     agents = [agent_good, agent_bad]
 
     for i in tqdm(range(2000)):  # max 2000 steps for now
@@ -100,11 +110,10 @@ if __name__ == "__main__":
         cv2.imshow("Observation", bgr_image)
         cv2.waitKey(1)
 
-        new_scores_1 = explainer1.value(obs)
-        new_scores_2 = explainer2.value(obs)
-
-        scores[0] += new_scores_1
-        scores[1] += new_scores_2
+        scores[0] += explainer1.value(obs)
+        scores[1] += explainer2.value(obs)
+        scores_lime[0] += explainer3.value(obs)
+        scores_lime[1] += explainer4.value(obs)
 
         best_agent = np.argmax(scores)
         agent = agents[best_agent]
@@ -114,5 +123,6 @@ if __name__ == "__main__":
         if terminated:
             break
 
-    print(f"5M Model: {float(scores[0])}     1K Model: {float(scores[1])}")
+    print(f"SHAP 5M Model: {float(scores[0])}     1K Model: {float(scores[1])}")
+    print(f"LIME 5M Model: {float(scores_lime[0])}     LIME 1K Model: {float(scores_lime[1])}")
 

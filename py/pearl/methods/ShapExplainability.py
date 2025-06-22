@@ -80,9 +80,12 @@ class ShapExplainability(ExplainabilityMethod):
         return None
 
     def getVisualization(self, m: VisualizationMethod, params: Any = None) -> np.ndarray | dict | None:
+        if self.last_explain is None:
+            return np.zeros((84, 84), dtype=np.float32)
+
         if not isinstance(m, VisualizationMethod):
             m = VisualizationMethod(m)
-
+            
         if m == VisualizationMethod.HEAT_MAP:
             idx = 0
             if params is not None and isinstance(params, ShapVisualizationParams):

@@ -1,1 +1,6 @@
-
+build
+assets
+libs
+__pycache__
+Pipeline_Graph.json
+.vscode

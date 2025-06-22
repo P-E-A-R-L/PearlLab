@@ -1133,27 +1133,6 @@ namespace PipelineGraph
         outputs.push_back(output);
     }
 
-    Nodes::PrimitiveStringNode::PrimitiveStringNode(const std::string& val) {
-        _file = false;
-
-        id = GetNextId();
-        this->name = "Primitive String";
-
-        // fixme: Not safe
-        strcpy(_value, val.c_str());
-
-        inputs.clear();
-        Pin output;
-
-        output.id    = GetNextId();
-        output.name    = "value";
-        output.tooltip = "String value";
-        output.direction = OUTPUT;
-        output.type = PyScope::getInstance().str_type;
-
-        outputs.push_back(output);
-    }
-
     void Nodes::PrimitiveStringNode::exec()
     {
         outputs[0].value = PyScope::getInstance().str_type(_value);
@@ -1580,9 +1559,11 @@ namespace PipelineGraph
         for (int i = 0; i < numOutputs; ++i) {
             Pin output;
             output.id = GetNextId();
-            output.name = std::format("obj[{}]", i + 1);
+            //output.name = std::format("obj[{}]", i + 1);
+            output.name = "obj[" + std::to_string(i + 1) + "]";
             output.direction = OUTPUT;
-            output.tooltip = std::format("Output #{}", i + 1);
+            //output.tooltip = std::format("Output #{}", i + 1);
+            output.tooltip = "Output #" + std::to_string(i + 1);
             output.type = PyScope::getInstance().object_type;
             outputs.push_back(output);
         }

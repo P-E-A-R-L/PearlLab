@@ -114,7 +114,8 @@ void Preview::VisualizedObject::_init_rgb_array() {
                 int width = arr.shape(1);
                 int height = arr.shape(0);
                 int channels = arr.shape(2);
-                Logger::info(std::format("RGB Array Size: <{}, {}>", width, height));
+                //Logger::info(std::format("RGB Array Size: <{}, {}>", width, height));
+                Logger::info("RGB Array Size: <" + std::to_string(width) + ", " + std::to_string(height) + ">");
                 if (channels == 3 || channels == 4) {
                     std::vector<unsigned char> rgbData(width * height * channels);
                     auto data_ptr = arr.data();
@@ -207,7 +208,8 @@ void Preview::VisualizedObject::_init_gray() {
                 int width = arr.shape(1);
                 int height = arr.shape(0);
                 int channels = 1;
-                Logger::info(std::format("Gray Size: <{}, {}>", width, height));
+                //Logger::info(std::format("Gray Size: <{}, {}>", width, height));
+                Logger::info("Gray Size: <" + std::to_string(width) + ", " + std::to_string(height) + ">");
 
                 std::vector<unsigned char> rgbData(width * height * 3);
                 auto data_ptr = arr.data();
@@ -288,7 +290,8 @@ void Preview::VisualizedObject::_init_heat_map() {
                 int width = arr.shape(1);
                 int height = arr.shape(0);
                 int channels = 1;
-                Logger::info(std::format("Heat map Size: <{}, {}>", width, height));
+                //Logger::info(std::format("Heat map Size: <{}, {}>", width, height));
+                Logger::info("Heat map Size: <" + std::to_string(width) + ", " + std::to_string(height) + ">");
 
                 std::vector<unsigned char> rgbData(width * height * 3);
                 auto data_ptr = arr.data();
