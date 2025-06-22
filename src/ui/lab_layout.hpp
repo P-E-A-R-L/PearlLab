@@ -1,21 +1,15 @@
-//
-// Created by xabdomo on 6/11/25.
-//
-
 #ifndef LAB_LAYOUT_HPP
 #define LAB_LAYOUT_HPP
 #include <string>
 
 #include "project_manager.hpp"
 
-
-namespace LabLayout {
+namespace LabLayout
+{
     extern ProjectManager::ProjectDetails project_details;
-    void init(const std::string& project_path);
+    void init(const std::string &project_path);
     void render();
     void destroy();
 }
 
-
-
-#endif //LAB_LAYOUT_HPP
+#endif // LAB_LAYOUT_HPP

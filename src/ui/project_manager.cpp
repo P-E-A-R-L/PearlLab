@@ -1,7 +1,3 @@
-//
-// Created by xabdomo on 6/22/25.
-//
-
 #include "project_manager.hpp"
 
 #include <filesystem>
@@ -16,10 +12,12 @@
 
 namespace fs = std::filesystem;
 
-static std::string ReadFileToString(const std::string& filepath) {
+static std::string ReadFileToString(const std::string &filepath)
+{
     std::ifstream file(filepath, std::ios::in | std::ios::binary);
 
-    if (!file) {
+    if (!file)
+    {
         throw std::runtime_error("Failed to open file: " + filepath);
     }
 
@@ -28,7 +26,8 @@ static std::string ReadFileToString(const std::string& filepath) {
     return contents.str();
 }
 
-ProjectManager::ProjectDetails ProjectManager::loadProject(const std::string &p_path) {
+ProjectManager::ProjectDetails ProjectManager::loadProject(const std::string &p_path)
+{
     ProjectDetails projectDetails;
     fs::path base_path = p_path;
     projectDetails.graph_file = base_path / std::string("graph.json");
@@ -36,13 +35,17 @@ ProjectManager::ProjectDetails ProjectManager::loadProject(const std::string &p_
     projectDetails.project_path = base_path.string();
 
     fs::path graph_details = base_path / std::string("graph.json.d");
-    fs::path modules_file  = base_path / "modules.json";
+    fs::path modules_file = base_path / "modules.json";
 
-    if (!fs::exists(modules_file)) {
+    if (!fs::exists(modules_file))
+    {
         Logger::error("Didn't find modules.json in the project directory: " + base_path.string());
-    } else {
+    }
+    else
+    {
         // now load modules
-        if (!SafeWrapper::execute([&] {
+        if (!SafeWrapper::execute([&]
+                                  {
             auto modules_json = ReadFileToString(modules_file.string());
             auto modules_data = nlohmann::json::parse(modules_json);
 
@@ -52,17 +55,21 @@ ProjectManager::ProjectDetails ProjectManager::loadProject(const std::string &p_
                     SharedUi::pushModule(obj);
                     Logger::info("Loaded module: " + std::string(py::str(obj.attr("__name__"))));
                 }
-            }
-        })) {
+            } }))
+        {
             Logger::error("Failed to load modules from: " + modules_file.string());
         }
     }
 
-    if (!fs::exists(graph_details)) {
+    if (!fs::exists(graph_details))
+    {
         Logger::error("Didn't find graph details file: " + graph_details.string());
-    } else {
+    }
+    else
+    {
         // load graph
-        if (!SafeWrapper::execute([&] {
+        if (!SafeWrapper::execute([&]
+                                  {
             auto graph_json = ReadFileToString(graph_details.string());
             auto graph_data = nlohmann::json::parse(graph_json);
             auto nodes_data = graph_data["nodes"];
@@ -120,8 +127,8 @@ ProjectManager::ProjectDetails ProjectManager::loadProject(const std::string &p_
                 PipelineGraph::addLink(dst_pin, src_pin);
             }
 
-            PipelineGraph::nextId = next_id;
-        })) {
+            PipelineGraph::nextId = next_id; }))
+        {
             Logger::error("Failed to load graph from: " + graph_details.string());
         }
     }
@@ -129,10 +136,12 @@ ProjectManager::ProjectDetails ProjectManager::loadProject(const std::string &p_
     return projectDetails;
 }
 
-bool ProjectManager::saveProject(const std::string &path) {
+bool ProjectManager::saveProject(const std::string &path)
+{
 
     fs::path base_path = path;
-    if (!fs::exists(base_path)) {
+    if (!fs::exists(base_path))
+    {
         Logger::error("Project path does not exist: " + base_path.string());
         return false;
     }
@@ -140,7 +149,7 @@ bool ProjectManager::saveProject(const std::string &path) {
     fs::path graph_file = base_path / "graph.json";
     fs::path imgui_file = base_path / "imgui.ini";
     fs::path graph_details = base_path / "graph.json.d";
-    fs::path modules_file  = base_path / "modules.json";
+    fs::path modules_file = base_path / "modules.json";
 
     ImGui::SaveIniSettingsToDisk(imgui_file.string().c_str());
 
@@ -148,45 +157,62 @@ bool ProjectManager::saveProject(const std::string &path) {
     nlohmann::json nodes_data;
     nlohmann::json links_data;
 
-    for (auto node: PipelineGraph::nodes) {
+    for (auto node : PipelineGraph::nodes)
+    {
         nlohmann::json node_data;
         node->save(node_data);
 
         std::string node_type;
-        if (dynamic_cast<PipelineGraph::Nodes::PrimitiveIntNode*>(node)) {
+        if (dynamic_cast<PipelineGraph::Nodes::PrimitiveIntNode *>(node))
+        {
             node_type = "PipelineGraph.Nodes.PrimitiveIntNode";
-        } else if (dynamic_cast<PipelineGraph::Nodes::PrimitiveFloatNode*>(node)) {
+        }
+        else if (dynamic_cast<PipelineGraph::Nodes::PrimitiveFloatNode *>(node))
+        {
             node_type = "PipelineGraph.Nodes.PrimitiveFloatNode";
-        } else if (dynamic_cast<PipelineGraph::Nodes::PrimitiveStringNode*>(node)) {
+        }
+        else if (dynamic_cast<PipelineGraph::Nodes::PrimitiveStringNode *>(node))
+        {
             node_type = "PipelineGraph.Nodes.PrimitiveStringNode";
-        } else if (dynamic_cast<PipelineGraph::Nodes::PythonModuleNode*>(node)) {
+        }
+        else if (dynamic_cast<PipelineGraph::Nodes::PythonModuleNode *>(node))
+        {
             node_type = "PipelineGraph.Nodes.PythonModuleNode";
-        } else if (dynamic_cast<PipelineGraph::Nodes::PythonFunctionNode*>(node)) {
+        }
+        else if (dynamic_cast<PipelineGraph::Nodes::PythonFunctionNode *>(node))
+        {
             node_type = "PipelineGraph.Nodes.PythonFunctionNode";
-        } else if (dynamic_cast<PipelineGraph::Nodes::AgentAcceptorNode*>(node)) {
+        }
+        else if (dynamic_cast<PipelineGraph::Nodes::AgentAcceptorNode *>(node))
+        {
             node_type = "PipelineGraph.Nodes.AgentAcceptorNode";
-        } else if (dynamic_cast<PipelineGraph::Nodes::MethodAcceptorNode*>(node)) {
+        }
+        else if (dynamic_cast<PipelineGraph::Nodes::MethodAcceptorNode *>(node))
+        {
             node_type = "PipelineGraph.Nodes.MethodAcceptorNode";
-        } else if (dynamic_cast<PipelineGraph::Nodes::EnvAcceptorNode*>(node)) {
+        }
+        else if (dynamic_cast<PipelineGraph::Nodes::EnvAcceptorNode *>(node))
+        {
             node_type = "PipelineGraph.Nodes.EnvAcceptorNode";
-        } else if (dynamic_cast<PipelineGraph::Nodes::MaskAcceptorNode*>(node)) {
+        }
+        else if (dynamic_cast<PipelineGraph::Nodes::MaskAcceptorNode *>(node))
+        {
             node_type = "PipelineGraph.Nodes.MaskAcceptorNode";
-        } else {
+        }
+        else
+        {
             Logger::error("Unknown node type during save: " + std::string(typeid(*node).name()));
             continue;
         }
 
-        nodes_data.push_back({
-            {"type", node_type},
-            {"data", node_data}
-        });
+        nodes_data.push_back({{"type", node_type},
+                              {"data", node_data}});
     }
 
-    for (auto link: PipelineGraph::links) {
-        links_data.push_back({
-            {"src", link->outputPinId.Get()},
-            {"dst", link->inputPinId.Get()}
-        });
+    for (auto link : PipelineGraph::links)
+    {
+        links_data.push_back({{"src", link->outputPinId.Get()},
+                              {"dst", link->inputPinId.Get()}});
     }
 
     graph_json["nodes"] = nodes_data;

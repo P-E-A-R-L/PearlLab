@@ -1,16 +1,8 @@
-//
-// Created by xabdomo on 6/18/25.
-//
-
 #ifndef INSPECTOR_HPP
 #define INSPECTOR_HPP
 
-
-
-class Inspector {
-
+class Inspector
+{
 };
 
-
-
-#endif //INSPECTOR_HPP
+#endif // INSPECTOR_HPP

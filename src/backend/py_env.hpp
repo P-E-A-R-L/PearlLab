@@ -1,7 +1,3 @@
-//
-// Created by xabdomo on 6/18/25.
-//
-
 #ifndef PY_ENV_HPP
 #define PY_ENV_HPP
 
@@ -15,17 +11,18 @@
 
 namespace py = pybind11;
 
-struct PyEnv : public PyVisualizable {
+struct PyEnv : public PyVisualizable
+{
 
     // Call: env.reset(seed=..., options=...)
     std::pair<py::object, py::dict> reset(std::optional<int> seed = std::nullopt,
                                           std::optional<py::dict> options = std::nullopt);
 
     // Call: env.step(action)
-    std::tuple<py::object, py::dict, bool, bool, py::dict> step(const py::object& action);
+    std::tuple<py::object, py::dict, bool, bool, py::dict> step(const py::object &action);
 
     // Call: env.render(mode)
-    std::optional<py::array> render(const std::string& mode = "human");
+    std::optional<py::array> render(const std::string &mode = "human");
 
     // Call: env.close()
     void close() const;
@@ -43,6 +40,4 @@ struct PyEnv : public PyVisualizable {
     [[nodiscard]] std::optional<py::object> unwrapped() const;
 };
 
-
-
-#endif //PY_ENV_HPP
+#endif // PY_ENV_HPP

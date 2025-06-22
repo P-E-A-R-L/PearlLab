@@ -57,11 +57,11 @@ if __name__ == "__main__":
     device = cudaDevice()
     
     # Environment setup
-    env = LunarWrapper(GymRLEnv(env_name='LunarLander-v3', tabular=True, stack_size=0, render_mode='rgb_array'))
+    env = LunarWrapper(GymRLEnv(env_name='LunarLander-v3', tabular=True, stack_size=1, render_mode='human'))
     
     n_actions = env.action_space.n
     input_dim = env.observation_space.shape[0]
-    
+
     # Setup agents
     policy_net_good = REINFORCE_Net(input_dim, n_actions)
     agent_good = TorchPolicyAgent('models/lunar_lander_reinforce_2000.pth', policy_net_good, device)
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     obs, _ = env.reset()
     
     # Run evaluation loop
-    for i in tqdm(range(20)):
+    for i in tqdm(range(500)):
         obs_tensor = torch.tensor(obs, dtype=torch.float32, device=device).unsqueeze(0)
         
         # Get explainer values
@@ -112,7 +112,8 @@ if __name__ == "__main__":
         # Use best model's policy to have both agents explain the same observations
         best_agent = np.argmax(scores_shap)
         agent = agents[best_agent]
-        action = agent.predict(np.expand_dims(obs, axis=0))
+        actions_probs = agent.predict(np.expand_dims(obs, axis=0))
+        action = np.argmax(actions_probs) 
         obs, _, terminated, truncated, _ = env.step(action)
         
         if terminated or truncated:

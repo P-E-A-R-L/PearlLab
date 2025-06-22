@@ -1,7 +1,3 @@
-//
-// Created by xabdomo on 6/11/25.
-//
-
 #ifndef PY_PARAM_HPP
 #define PY_PARAM_HPP
 
@@ -12,7 +8,8 @@
 
 namespace py = pybind11;
 
-struct Param {
+struct Param
+{
     std::string attrName;
     py::object type = py::none();
     bool editable;
@@ -23,10 +20,9 @@ struct Param {
     std::vector<std::string> choices;
     std::string defaultValue;
     std::string disc;
-
 };
 
 std::string ParamTypeAsString(const py::object &);
-bool isPrimitive(const py::object&);
+bool isPrimitive(const py::object &);
 
-#endif //PY_PARAM_HPP
+#endif // PY_PARAM_HPP

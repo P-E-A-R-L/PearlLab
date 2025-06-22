@@ -47,7 +47,6 @@ class CustomLimeTabularExplainer:
         data_row: 1D array shape (d,)
         predict_fn: function mapping array (N, d) -> probabilities array (N, num_classes)
         """
-        print(f"Explaining instance with {num_samples} samples...")
         # Generate perturbations
         perturbed = self._generate_perturbations(data_row, num_samples=num_samples)
         preds = predict_fn(perturbed)  # shape (num_samples, num_classes)

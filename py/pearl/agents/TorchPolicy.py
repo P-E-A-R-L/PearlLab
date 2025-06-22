@@ -21,11 +21,11 @@ class TorchPolicyAgent(RLAgent):
                 observation = observation.unsqueeze(0)
             logits = self.policy_net(observation)
             # Apply softmax to get probabilities
-            probs = torch.softmax(logits, dim=1)
-            # Convert to numpy array and reshape
-            probs = probs.cpu().numpy() if probs.is_cuda else probs.numpy()
-            print("Predicting probabilities for observation shape:", observation.shape)
-            return probs.reshape(-1)  # Flatten to 1D array
+            probs = torch.softmax(logits, dim=-1)  # safer dim
+        probs = probs.squeeze()                # removes all dims of size 1
+        return probs.cpu().numpy()
+
 
     def get_q_net(self):
         return self.policy_net
+        

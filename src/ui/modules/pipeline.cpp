@@ -1,7 +1,3 @@
-//
-// Created by xabdomo on 6/16/25.
-//
-
 #include "pipeline.hpp"
 
 #include "logger.hpp"
@@ -10,21 +6,22 @@
 #include "preview.hpp"
 #include "../../backend/py_safe_wrapper.hpp"
 
-namespace Pipeline {
-    namespace PipelineConfig {
+namespace Pipeline
+{
+    namespace PipelineConfig
+    {
         // all variables such as
         //   policy
         //   steps
         //   maxEp
         // etc .. will be stored here
 
-        int maxSteps    = 4000;    // default max steps for an agent
-        int maxEpisodes = 4000;    // default max episodes for an agent
-        int activeEnv   = 0;       // the index of the current active env
+        int maxSteps = 4000;    // default max steps for an agent
+        int maxEpisodes = 4000; // default max episodes for an agent
+        int activeEnv = 0;      // the index of the current active env
 
-        std::vector<PipelineAgent>  pipelineAgents  {};
-        std::vector<PipelineMethod> pipelineMethods {};
-
+        std::vector<PipelineAgent> pipelineAgents{};
+        std::vector<PipelineMethod> pipelineMethods{};
 
     }
 
@@ -34,47 +31,55 @@ namespace Pipeline {
 
     std::vector<PipelineGraph::ObjectRecipe> recipes;
 
-
-    namespace PipelineState {
+    namespace PipelineState
+    {
         bool Experimenting = false;
-        bool Simulating    = false;
-        int  StepSimFrames = 0;
+        bool Simulating = false;
+        int StepSimFrames = 0;
 
-        std::vector<ActiveAgent> activeAgents {};
+        std::vector<ActiveAgent> activeAgents{};
 
-        StepPolicy  stepPolicy  = INDEPENDENT;
+        StepPolicy stepPolicy = INDEPENDENT;
         ScorePolicy scorePolicy = PEARL;
 
     }
 
-    bool isExperimenting() {
+    bool isExperimenting()
+    {
         return PipelineState::Experimenting;
     }
 
-    void beginExperiment() {
-        if (isExperimenting()) return;
+    void beginExperiment()
+    {
+        if (isExperimenting())
+            return;
 
         // some sanity checks
-        if (PipelineConfig::pipelineAgents.empty()) {
+        if (PipelineConfig::pipelineAgents.empty())
+        {
             Logger::error("No agents configured for the experiment.");
             return;
         }
 
-        if (PipelineConfig::pipelineMethods.empty()) {
+        if (PipelineConfig::pipelineMethods.empty())
+        {
             Logger::warning("No methods configured for the experiment.");
         }
 
-        if (PipelineConfig::activeEnv >= envs.size()) {
+        if (PipelineConfig::activeEnv >= envs.size())
+        {
             Logger::error("Select an environment.");
             return;
         }
 
-        if (PipelineConfig::maxEpisodes <= 0) {
+        if (PipelineConfig::maxEpisodes <= 0)
+        {
             Logger::error("Max episodes must be greater than 0.");
             return;
         }
 
-        if (PipelineConfig::maxSteps <= 0) {
+        if (PipelineConfig::maxSteps <= 0)
+        {
             Logger::error("Max steps must be greater than 0.");
             return;
         }
@@ -82,7 +87,8 @@ namespace Pipeline {
         // now prepare the actual agents
         Logger::info("Preparing agents for the experiment...");
 
-        if (SafeWrapper::execute([&] () {
+        if (SafeWrapper::execute([&]()
+                                 {
             for (auto& agent: PipelineConfig::pipelineAgents) {
                 ActiveAgent activeAgent;
                 strcpy(activeAgent.name, agent.name);
@@ -136,25 +142,30 @@ namespace Pipeline {
                 }
 
                 PipelineState::activeAgents.push_back(activeAgent);
-            }
-        })) {
+            } }))
+        {
             Logger::info("Experiment started with " + std::to_string(PipelineConfig::pipelineAgents.size()) + " agents and " +
-                     std::to_string(PipelineConfig::pipelineMethods.size()) + " methods.");
+                         std::to_string(PipelineConfig::pipelineMethods.size()) + " methods.");
 
             PipelineState::Experimenting = true;
-            PipelineState::Simulating    = false;
+            PipelineState::Simulating = false;
             resetSim();
             Preview::onStart();
-        } else {
+        }
+        else
+        {
             Logger::error("Failed to prepare agents for the experiment.");
         }
     }
 
-    void _clearActiveAgents() {
-        for (auto& active: PipelineState::activeAgents) {
+    void _clearActiveAgents()
+    {
+        for (auto &active : PipelineState::activeAgents)
+        {
             delete active.agent;
             delete active.env;
-            for (auto& m: active.methods) {
+            for (auto &m : active.methods)
+            {
                 delete m;
             }
         }
@@ -162,8 +173,10 @@ namespace Pipeline {
         PipelineState::activeAgents.clear();
     }
 
-    void stopExperiment() {
-        if (!isExperimenting()) return;
+    void stopExperiment()
+    {
+        if (!isExperimenting())
+            return;
         PipelineState::Experimenting = false;
         PipelineState::Simulating = false;
         _clearActiveAgents();
@@ -171,144 +184,179 @@ namespace Pipeline {
         Preview::onStop();
     }
 
-    bool isSimRunning() {
+    bool isSimRunning()
+    {
         return PipelineState::Simulating;
     }
 
-    void pauseSim() {
+    void pauseSim()
+    {
         PipelineState::Simulating = false;
     }
 
-    void continueSim() {
+    void continueSim()
+    {
         PipelineState::Simulating = true;
     }
 
-    void stepSim() {
+    void stepSim()
+    {
         PipelineState::StepSimFrames = 1; // step one frame
     }
 
-    void resetSim() {
-        for (auto& active: PipelineState::activeAgents) {
+    void resetSim()
+    {
+        for (auto &active : PipelineState::activeAgents)
+        {
 
             // reset stats
             active.env->reset();
-            for (auto& method: active.methods) {
+            for (auto &method : active.methods)
+            {
                 method->set(active.env->object);
                 method->prepare(active.agent->object);
             }
 
             // reset scores and rewards
             active.reward_total = 0;
-            active.reward_ep    = 0;
+            active.reward_ep = 0;
 
             active.steps_current_episode = 0;
-            active.total_episodes        = 0;
-            active.total_steps           = 0;
+            active.total_episodes = 0;
+            active.total_steps = 0;
 
-            active.last_move_reward      = 0;
-            active.env_terminated        = false;
-            active.env_truncated         = false;
+            active.last_move_reward = 0;
+            active.env_terminated = false;
+            active.env_truncated = false;
 
-            for (int i = 0;i < active.scores_ep.size();i++) {
-                active.scores_ep[i]    = 0;
+            for (int i = 0; i < active.scores_ep.size(); i++)
+            {
+                active.scores_ep[i] = 0;
                 active.scores_total[i] = 0;
             }
         }
     }
 
-
-    static void _do_one_step(int action = -1, int agent = -1) {
-        if (!isExperimenting()) {
+    static void _do_one_step(int action = -1, int agent = -1)
+    {
+        if (!isExperimenting())
+        {
             Logger::info("Unable to step, Experiment is not running.");
             return;
         }
 
-        if (agent == -1) {
-            for (int i = 0;i < PipelineState::activeAgents.size(); ++i) {
+        if (agent == -1)
+        {
+            for (int i = 0; i < PipelineState::activeAgents.size(); ++i)
+            {
                 _do_one_step(action, i);
             }
             return;
         }
 
-        if (agent < 0 || agent >= PipelineState::activeAgents.size()) {
+        if (agent < 0 || agent >= PipelineState::activeAgents.size())
+        {
             Logger::error("Invalid agent index, tried to update state for agent[" + std::to_string(agent) + "] which doesn't exist.");
             return;
         }
 
-        auto& target_agent = PipelineState::activeAgents[agent];
+        auto &target_agent = PipelineState::activeAgents[agent];
 
-        if (target_agent.env_terminated || target_agent.env_truncated) { return; } // nothing to do
+        if (target_agent.env_terminated || target_agent.env_truncated)
+        {
+            return;
+        } // nothing to do
 
         auto actions = target_agent.env->get_available_actions();
-        if (!actions) {
+        if (!actions)
+        {
             Logger::error("Unable to retrieve actions, agent[" + std::to_string(agent) + "] environment didn't provide actions, unable to step.");
             return;
         }
 
-        if (action == -1) {
+        if (action == -1)
+        {
             // we need to select an action based on some criteria
-            switch (PipelineState::stepPolicy) {
-                case PipelineState::RANDOM:
-                    action = rand() % actions->size();
+            switch (PipelineState::stepPolicy)
+            {
+            case PipelineState::RANDOM:
+                action = rand() % actions->size();
                 break;
 
-                case PipelineState::BEST_AGENT: {
-                    int best_agent = -1;
-                    float best_score = std::numeric_limits<float>::min();
-                    for (int i = 0;i < PipelineState::activeAgents.size(); ++i) {
-                        if (best_agent == -1) { best_agent = i; continue; }
-                        auto score = evalAgent(i);
-                        if (best_score < score) {
-                            best_score = score;
-                            best_agent = i;
-                        }
+            case PipelineState::BEST_AGENT:
+            {
+                int best_agent = -1;
+                float best_score = std::numeric_limits<float>::min();
+                for (int i = 0; i < PipelineState::activeAgents.size(); ++i)
+                {
+                    if (best_agent == -1)
+                    {
+                        best_agent = i;
+                        continue;
                     }
+                    auto score = evalAgent(i);
+                    if (best_score < score)
+                    {
+                        best_score = score;
+                        best_agent = i;
+                    }
+                }
 
-                    // now we have the best agent
-                    // time we select its action
-                    auto& best = PipelineState::activeAgents[best_agent];
-                    SafeWrapper::execute([&]{
+                // now we have the best agent
+                // time we select its action
+                auto &best = PipelineState::activeAgents[best_agent];
+                SafeWrapper::execute([&]
+                                     {
                         auto prediction = best.agent->predict(target_agent.env->get_observations());
-                        action = PyScope::argmax( prediction);
-                    });
-                }
-                break;
+                        action = PyScope::argmax( prediction); });
+            }
+            break;
 
-                case PipelineState::WORST_AGENT: {
-                    int worst_agent = -1;
-                    float worst_score = std::numeric_limits<float>::min();
-                    for (int i = 0;i < PipelineState::activeAgents.size(); ++i) {
-                        if (worst_agent == -1) { worst_agent = i; continue; }
-                        auto score = evalAgent(i);
-                        if (worst_score > score) {
-                            worst_score = score;
-                            worst_agent = i;
-                        }
+            case PipelineState::WORST_AGENT:
+            {
+                int worst_agent = -1;
+                float worst_score = std::numeric_limits<float>::min();
+                for (int i = 0; i < PipelineState::activeAgents.size(); ++i)
+                {
+                    if (worst_agent == -1)
+                    {
+                        worst_agent = i;
+                        continue;
                     }
+                    auto score = evalAgent(i);
+                    if (worst_score > score)
+                    {
+                        worst_score = score;
+                        worst_agent = i;
+                    }
+                }
 
-                    auto& worst = PipelineState::activeAgents[worst_agent];
-                    SafeWrapper::execute([&]{
+                auto &worst = PipelineState::activeAgents[worst_agent];
+                SafeWrapper::execute([&]
+                                     {
                         auto prediction = worst.agent->predict(target_agent.env->get_observations());
-                        action = PyScope::argmax( prediction);
-                    });
-                }
-                break;
+                        action = PyScope::argmax( prediction); });
+            }
+            break;
 
-                case PipelineState::INDEPENDENT: {
-                    SafeWrapper::execute([&]{
+            case PipelineState::INDEPENDENT:
+            {
+                SafeWrapper::execute([&]
+                                     {
                         auto prediction = target_agent.agent->predict(target_agent.env->get_observations());
-                        action = PyScope::argmax( prediction);
-                    });
-                }
-                break;
+                        action = PyScope::argmax( prediction); });
+            }
+            break;
 
-                default:
-                    action = 0; // default to just the first action
+            default:
+                action = 0; // default to just the first action
             }
         }
 
-        if (action != -1) {
-            SafeWrapper::execute([&]{
+        if (action != -1)
+        {
+            SafeWrapper::execute([&]
+                                 {
                 // get the observations
                 auto ops = target_agent.env->get_observations();
 
@@ -334,84 +382,102 @@ namespace Pipeline {
                     auto value = target_agent.methods[i]->value(ops);
                     target_agent.scores_total[i] += value;
                     target_agent.scores_ep   [i] += value;
-                }
-            });
+                } });
         }
     }
 
-    void stepSim(int action_index) {
+    void stepSim(int action_index)
+    {
         _do_one_step(action_index);
     }
 
-    void stepSim(int action_index, int agent_index) {
+    void stepSim(int action_index, int agent_index)
+    {
         _do_one_step(action_index, agent_index);
     }
 
-    float evalAgent(int agent_index) {
-        if (agent_index < 0 || agent_index >= PipelineState::activeAgents.size()) {
+    float evalAgent(int agent_index)
+    {
+        if (agent_index < 0 || agent_index >= PipelineState::activeAgents.size())
+        {
             Logger::error("Invalid agent index, tried to get scores for agent[" + std::to_string(agent_index) + "] which doesn't exist.");
-            return - 1;
+            return -1;
         }
 
-        auto& agent = PipelineState::activeAgents[agent_index];
-        switch (PipelineState::scorePolicy) {
-            case PipelineState::PEARL: {
-                float result = 0;
-                for (int i = 0;i < agent.scores_total.size(); ++i) {
-                    result += agent.scores_total[i] * (PipelineConfig::pipelineMethods[i].active ? PipelineConfig::pipelineMethods[i].weight : 0);
-                }
-                return result / agent.total_steps;
+        auto &agent = PipelineState::activeAgents[agent_index];
+        switch (PipelineState::scorePolicy)
+        {
+        case PipelineState::PEARL:
+        {
+            float result = 0;
+            for (int i = 0; i < agent.scores_total.size(); ++i)
+            {
+                result += agent.scores_total[i] * (PipelineConfig::pipelineMethods[i].active ? PipelineConfig::pipelineMethods[i].weight : 0);
             }
-            case PipelineState::REWARD: {
-                return agent.reward_total / agent.total_steps;
-            }
+            return result / agent.total_steps;
+        }
+        case PipelineState::REWARD:
+        {
+            return agent.reward_total / agent.total_steps;
+        }
         }
 
         return -1;
     }
 
-    void setRecipes(std::vector<PipelineGraph::ObjectRecipe> r) {
-        if (isExperimenting()) {
+    void setRecipes(std::vector<PipelineGraph::ObjectRecipe> r)
+    {
+        if (isExperimenting())
+        {
             Logger::warning("Cannot set recipes while an experiment is running.");
             return;
         }
 
         recipes.clear();
-        envs   .clear();
-        agents .clear();
+        envs.clear();
+        agents.clear();
         methods.clear();
 
         PipelineConfig::pipelineAgents.clear();
         PipelineConfig::pipelineMethods.clear();
 
-        for (auto& recipe: r) {
-            if (recipe.type == PipelineGraph::Environment) envs   .push_back(recipe);
-            if (recipe.type == PipelineGraph::Agent)       agents .push_back(recipe);
-            if (recipe.type == PipelineGraph::Method)      methods.push_back(recipe);
+        for (auto &recipe : r)
+        {
+            if (recipe.type == PipelineGraph::Environment)
+                envs.push_back(recipe);
+            if (recipe.type == PipelineGraph::Agent)
+                agents.push_back(recipe);
+            if (recipe.type == PipelineGraph::Method)
+                methods.push_back(recipe);
 
             recipes.push_back(recipe);
         }
     }
 
-    void init() {
+    void init()
+    {
         envs.clear();
         agents.clear();
         methods.clear();
     }
 
-    static void render_recipes() {
+    static void render_recipes()
+    {
         ImGui::Begin("Recipes");
 
         int visibleCount = 0;
-        for (int i = 0; i < recipes.size(); ++i) {
-            auto& recipe = recipes[i];
+        for (int i = 0; i < recipes.size(); ++i)
+        {
+            auto &recipe = recipes[i];
 
             std::string id = "recipe_" + std::to_string(i);
             ImGui::PushID(id.c_str());
 
             std::string typeName = "A";
-            if (recipe.type == PipelineGraph::Environment) typeName = "E";
-            if (recipe.type == PipelineGraph::Method)      typeName = "M";
+            if (recipe.type == PipelineGraph::Environment)
+                typeName = "E";
+            if (recipe.type == PipelineGraph::Method)
+                typeName = "M";
 
             ImGui::Text(typeName.c_str());
             ImGui::SameLine();
@@ -419,15 +485,19 @@ namespace Pipeline {
             ImGui::SetCursorPos({30, ImGui::GetCursorPos().y});
 
             ImGui::PushID(i);
-            if (strlen(recipe.acceptor->_tag) == 0) {
+            if (strlen(recipe.acceptor->_tag) == 0)
+            {
                 ImGui::Selectable("<empty>");
-            } else {
+            }
+            else
+            {
                 ImGui::Selectable(recipe.acceptor->_tag);
             }
             ImGui::PopID();
 
             // Drag-and-drop support
-            if (ImGui::BeginDragDropSource()) {
+            if (ImGui::BeginDragDropSource())
+            {
                 ImGui::SetDragDropPayload("Recipes::Acceptor", &i, sizeof(int));
                 ImGui::Text("Dragging: %s", recipe.acceptor->_tag);
                 ImGui::EndDragDropSource();
@@ -444,55 +514,66 @@ namespace Pipeline {
         ImGui::End();
     }
 
-    static void render_pipeline() {
+    static void render_pipeline()
+    {
         ImGui::Begin("Pipeline");
 
-        if (isExperimenting()) {
-            if (ImGui::Button("Stop Experiment")) {
+        if (isExperimenting())
+        {
+            if (ImGui::Button("Stop Experiment"))
+            {
                 stopExperiment();
             }
-        } else {
-            if (ImGui::Button("Start Experiment")) {
+        }
+        else
+        {
+            if (ImGui::Button("Start Experiment"))
+            {
                 beginExperiment();
             }
         }
 
-        if (isExperimenting()) {
+        if (isExperimenting())
+        {
             ImGui::BeginDisabled();
         }
 
         ImGui::TextDisabled("Configuration");
 
         std::vector<std::string> names;
-        for (auto recipe: envs) {
+        for (auto recipe : envs)
+        {
             names.push_back(recipe.acceptor->_tag);
         }
 
-        if (names.empty()) {
+        if (names.empty())
+        {
             names.push_back("<empty>");
         }
 
         size_t size = 0;
-        for (auto& name: names) {
+        for (auto &name : names)
+        {
             size += name.length() + 1;
         }
 
-        char* data = new char[size + 1];
+        char *data = new char[size + 1];
         size_t offset = 0;
-        for (int i = 0;i < names.size();i++) {
+        for (int i = 0; i < names.size(); i++)
+        {
             strcpy(data + offset, names[i].c_str());
             offset += names[i].size() + 1;
         }
 
         data[size] = '\0'; // Null-terminate the for list
 
-        if (ImGui::Combo("##<empty>", &PipelineConfig::activeEnv, data, size)) {
+        if (ImGui::Combo("##<empty>", &PipelineConfig::activeEnv, data, size))
+        {
             // nothing to do here
         }
 
         ImGui::SameLine();
         ImGui::Text("Environment");
-
 
         ImGui::InputInt("Max Steps", &PipelineConfig::maxSteps);
         ImGui::InputInt("Max Episodes", &PipelineConfig::maxEpisodes);
@@ -502,21 +583,28 @@ namespace Pipeline {
 
         static int rename_agent_index = -1;
 
-        if (PipelineConfig::pipelineAgents.empty()) {
+        if (PipelineConfig::pipelineAgents.empty())
+        {
             ImGui::Text("<drag agents from recipes>");
-        } else {
-            for (int i = 0; i < PipelineConfig::pipelineAgents.size(); ++i) {
+        }
+        else
+        {
+            for (int i = 0; i < PipelineConfig::pipelineAgents.size(); ++i)
+            {
                 ImGui::PushID(i);
-                auto& agent = PipelineConfig::pipelineAgents[i];
+                auto &agent = PipelineConfig::pipelineAgents[i];
 
                 // Handle rename input field
-                if (rename_agent_index == i) {
+                if (rename_agent_index == i)
+                {
                     ImGui::SetNextItemWidth(150);
-                    if (ImGui::InputText("##rename", agent.name, IM_ARRAYSIZE(agent.name), ImGuiInputTextFlags_EnterReturnsTrue)) {
+                    if (ImGui::InputText("##rename", agent.name, IM_ARRAYSIZE(agent.name), ImGuiInputTextFlags_EnterReturnsTrue))
+                    {
                         rename_agent_index = -1; // Done renaming
                     }
-                } else {
-
+                }
+                else
+                {
 
                     ImVec2 group_start = ImGui::GetCursorScreenPos();
                     ImGui::BeginGroup();
@@ -533,13 +621,17 @@ namespace Pipeline {
                     ImGui::InvisibleButton("##context_target", g_size);
 
                     // Right-click context menu
-                    if (ImGui::BeginPopupContextItem()) {
-                        if (ImGui::MenuItem("Rename")) {
+                    if (ImGui::BeginPopupContextItem())
+                    {
+                        if (ImGui::MenuItem("Rename"))
+                        {
                             rename_agent_index = i;
                         }
-                        if (ImGui::MenuItem("Delete")) {
+                        if (ImGui::MenuItem("Delete"))
+                        {
                             PipelineConfig::pipelineAgents.erase(PipelineConfig::pipelineAgents.begin() + i);
-                            if (rename_agent_index == i) rename_agent_index = -1;
+                            if (rename_agent_index == i)
+                                rename_agent_index = -1;
                             ImGui::PopID();
                             ImGui::EndPopup();
                             break; // Exit now (one frame will be corrupted, but well it is what it is).
@@ -547,7 +639,8 @@ namespace Pipeline {
                         ImGui::EndPopup();
                     }
 
-                    if (ImGui::IsItemHovered()) {
+                    if (ImGui::IsItemHovered())
+                    {
                         std::string id = "recipe_" + std::to_string(agent.recipe_index);
                         ImGui::BeginTooltip();
                         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
@@ -560,7 +653,6 @@ namespace Pipeline {
 
                         // fixme: find a way to draw a rect around the recipe that creates this object
                         auto mId = ImGui::GetID(id.c_str());
-
                     }
                 }
 
@@ -573,21 +665,29 @@ namespace Pipeline {
 
         static int rename_method_index = -1;
 
-        if (PipelineConfig::pipelineMethods.empty()) {
+        if (PipelineConfig::pipelineMethods.empty())
+        {
             ImGui::Text("<drag methods from recipes>");
-        } else {
-            for (int i = 0; i < PipelineConfig::pipelineMethods.size(); ++i) {
+        }
+        else
+        {
+            for (int i = 0; i < PipelineConfig::pipelineMethods.size(); ++i)
+            {
                 ImGui::PushID(i + PipelineConfig::pipelineAgents.size());
 
-                auto& method = PipelineConfig::pipelineMethods[i];
+                auto &method = PipelineConfig::pipelineMethods[i];
 
                 // Handle rename input field
-                if (rename_method_index == i) {
+                if (rename_method_index == i)
+                {
                     ImGui::SetNextItemWidth(150);
-                    if (ImGui::InputText("##rename", method.name, IM_ARRAYSIZE(method.name), ImGuiInputTextFlags_EnterReturnsTrue)) {
+                    if (ImGui::InputText("##rename", method.name, IM_ARRAYSIZE(method.name), ImGuiInputTextFlags_EnterReturnsTrue))
+                    {
                         rename_agent_index = -1; // Done renaming
                     }
-                } else {
+                }
+                else
+                {
                     ImVec2 group_start = ImGui::GetCursorScreenPos();
                     ImGui::BeginGroup();
 
@@ -595,7 +695,7 @@ namespace Pipeline {
                     ImGui::SameLine();
                     ImGui::Text("%s", method.name);
                     ImGui::SameLine();
-                    ImGui::SetNextItemWidth(std::min(150, (int) ImGui::GetContentRegionAvail().x));
+                    ImGui::SetNextItemWidth(std::min(150, (int)ImGui::GetContentRegionAvail().x));
                     ImGui::SliderFloat("##slider", &method.weight, 0, 1, "Weight: %.2f");
 
                     ImGui::EndGroup();
@@ -606,13 +706,17 @@ namespace Pipeline {
                     ImGui::InvisibleButton("##context_target", g_size);
 
                     // Right-click context menu
-                    if (ImGui::BeginPopupContextItem()) {
-                        if (ImGui::MenuItem("Rename")) {
+                    if (ImGui::BeginPopupContextItem())
+                    {
+                        if (ImGui::MenuItem("Rename"))
+                        {
                             rename_agent_index = i;
                         }
-                        if (ImGui::MenuItem("Delete")) {
+                        if (ImGui::MenuItem("Delete"))
+                        {
                             PipelineConfig::pipelineMethods.erase(PipelineConfig::pipelineMethods.begin() + i);
-                            if (rename_agent_index == i) rename_agent_index = -1;
+                            if (rename_agent_index == i)
+                                rename_agent_index = -1;
                             ImGui::EndPopup();
                             ImGui::PopID();
                             break; // Exit now (one frame will be corrupted, but well it is what it is).
@@ -620,7 +724,8 @@ namespace Pipeline {
                         ImGui::EndPopup();
                     }
 
-                    if (ImGui::IsItemHovered()) {
+                    if (ImGui::IsItemHovered())
+                    {
                         std::string id = "recipe_" + std::to_string(method.recipe_index);
                         ImGui::BeginTooltip();
                         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
@@ -633,7 +738,6 @@ namespace Pipeline {
 
                         // fixme: find a way to draw a rect around the recipe that creates this object
                         auto mId = ImGui::GetID(id.c_str());
-
                     }
                 }
 
@@ -655,11 +759,14 @@ namespace Pipeline {
         ImGui::SetCursorScreenPos(abs_min);
         ImGui::InvisibleButton("##Dropdown Recipes::Acceptor", region_size);
 
-        if (ImGui::BeginDragDropTarget()) {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("Recipes::Acceptor")) {
-                int   index  = *static_cast<int*>(payload->Data);
-                auto& recipe = recipes[index];
-                if (recipe.type == PipelineGraph::Agent) {
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("Recipes::Acceptor"))
+            {
+                int index = *static_cast<int *>(payload->Data);
+                auto &recipe = recipes[index];
+                if (recipe.type == PipelineGraph::Agent)
+                {
 
                     PipelineAgent agent;
                     agent.recipe = &recipe;
@@ -667,8 +774,9 @@ namespace Pipeline {
                     strcpy(agent.name, recipe.acceptor->_tag);
                     agent.recipe_index = index;
                     PipelineConfig::pipelineAgents.push_back(agent);
-
-                } else if (recipe.type == PipelineGraph::Method) {
+                }
+                else if (recipe.type == PipelineGraph::Method)
+                {
                     PipelineMethod method;
                     method.recipe = &recipe;
                     method.active = true;
@@ -676,42 +784,50 @@ namespace Pipeline {
                     strcpy(method.name, recipe.acceptor->_tag);
                     method.recipe_index = index;
                     PipelineConfig::pipelineMethods.push_back(method);
-                } else {
+                }
+                else
+                {
                     Logger::warning("Drop Agents / Methods, You can select the environment from the drop down list.");
                 }
             }
             ImGui::EndDragDropTarget();
         }
 
-        if (isExperimenting()) {
+        if (isExperimenting())
+        {
             ImGui::EndDisabled();
         }
 
         ImGui::End();
     }
 
-    void render() {
+    void render()
+    {
         render_recipes();
         render_pipeline();
     }
 
-    void update() {
-        if (isExperimenting()) {
-            for (int i = 0;i < PipelineState::StepSimFrames;i++) {
+    void update()
+    {
+        if (isExperimenting())
+        {
+            for (int i = 0; i < PipelineState::StepSimFrames; i++)
+            {
                 _do_one_step();
             }
 
             PipelineState::StepSimFrames = 0;
 
-            if (isSimRunning()) {
+            if (isSimRunning())
+            {
                 _do_one_step();
             }
         }
     }
 
-    void destroy() {
+    void destroy()
+    {
         recipes.clear();
         _clearActiveAgents();
     }
 }
-

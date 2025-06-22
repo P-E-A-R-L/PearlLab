@@ -70,7 +70,7 @@ class TabularShapExplainability(ExplainabilityMethod):
         exp = self.explain(obs)
         self.mask.update(obs)
 
-        obs_tensor = torch.tensor(obs, dtype=torch.float32, device=self.device)
+        obs_tensor = torch.tensor(obs, dtype=torch.float32, device=self.device).squeeze()
         with torch.no_grad():
             q_vals = self.agent.get_q_net()(obs_tensor)
 

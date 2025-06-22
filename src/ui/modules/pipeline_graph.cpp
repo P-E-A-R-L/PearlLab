@@ -1,7 +1,3 @@
-//
-// Created by xabdomo on 6/12/25.
-//
-
 #include "pipeline_graph.hpp"
 
 #include <imgui.h>
@@ -71,27 +67,32 @@ namespace PipelineGraph
     static std::vector<ed::LinkId> selectedLinkIds;
     static std::vector<PipelineGraph::Node> clipboardNodes;
 
-    void ShowIntegerInputDialog(bool* open, const char* popup_id, const std::function<void(int)>& on_confirm) {
+    void ShowIntegerInputDialog(bool *open, const char *popup_id, const std::function<void(int)> &on_confirm)
+    {
         static int input_value = 0;
 
-        if (*open) {
+        if (*open)
+        {
             ImGui::OpenPopup(popup_id);
             *open = false; // Reset the flag
         }
 
-        if (ImGui::BeginPopupModal(popup_id, NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (ImGui::BeginPopupModal(popup_id, NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
             ImGui::Text("Enter an integer value:");
             ImGui::InputInt("##InputInt", &input_value);
 
             ImGui::Separator();
 
-            if (ImGui::Button("OK", ImVec2(120, 0))) {
+            if (ImGui::Button("OK", ImVec2(120, 0)))
+            {
                 on_confirm(input_value); // Call the lambda with the input value
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SetItemDefaultFocus();
             ImGui::SameLine();
-            if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            if (ImGui::Button("Cancel", ImVec2(120, 0)))
+            {
                 ImGui::CloseCurrentPopup();
             }
 
@@ -99,7 +100,8 @@ namespace PipelineGraph
         }
     }
 
-    void Node::init() {
+    void Node::init()
+    {
         _executed = false;
     }
 
@@ -120,17 +122,20 @@ namespace PipelineGraph
         return true;
     }
 
-    void Node::save(nlohmann::json &custom_data) {
+    void Node::save(nlohmann::json &custom_data)
+    {
         custom_data["id"] = id.Get();
         std::vector<size_t> inputs_details;
         std::vector<size_t> outputs_details;
 
-        for (auto& in: inputs) {
+        for (auto &in : inputs)
+        {
             inputs_details.push_back(in.id.Get());
         }
         custom_data["inputs"] = inputs_details;
 
-        for (auto& in: outputs) {
+        for (auto &in : outputs)
+        {
             outputs_details.push_back(in.id.Get());
         }
         custom_data["outputs"] = outputs_details;
@@ -138,21 +143,25 @@ namespace PipelineGraph
         custom_data["tag"] = std::string(this->_tag);
     }
 
-    void Node::load(nlohmann::json &custom_data) {
+    void Node::load(nlohmann::json &custom_data)
+    {
         id = ed::NodeId(custom_data["id"].get<size_t>());
 
         const auto inputs_details = custom_data["inputs"].get<std::vector<size_t>>();
         const auto outputs_details = custom_data["outputs"].get<std::vector<size_t>>();
 
-        for (int i = 0; i < inputs.size(); ++i) {
+        for (int i = 0; i < inputs.size(); ++i)
+        {
             inputs[i].id = ed::PinId(inputs_details[i]);
         }
 
-        for (int i = 0; i < outputs.size(); ++i) {
+        for (int i = 0; i < outputs.size(); ++i)
+        {
             outputs[i].id = ed::PinId(outputs_details[i]);
         }
 
-        if (custom_data.contains("tag")) {
+        if (custom_data.contains("tag"))
+        {
             std::string tag = custom_data["tag"].get<std::string>();
             strcpy(this->_tag, tag.c_str());
         }
@@ -176,7 +185,8 @@ namespace PipelineGraph
         return py::none();
     }
 
-    ed::NodeId _addNode(Node* n) {
+    ed::NodeId _addNode(Node *n)
+    {
         nodes.push_back(n);
         nodeLookup[n->id] = n;
 
@@ -202,23 +212,26 @@ namespace PipelineGraph
         return n->id;
     }
 
-
-    ed::NodeId addNode(Node * n) {
+    ed::NodeId addNode(Node *n)
+    {
         nodes.push_back(n);
         nodeLookup[n->id] = n;
 
-        for (auto& pin : n->inputs) {
+        for (auto &pin : n->inputs)
+        {
             pinNodeLookup[pin.id] = n;
             pinLookup[pin.id] = &pin;
         }
-        for (auto& pin : n->outputs) {
+        for (auto &pin : n->outputs)
+        {
             pinNodeLookup[pin.id] = n;
             pinLookup[pin.id] = &pin;
         }
         return n->id;
     }
 
-    void removeNode(ed::NodeId id) {
+    void removeNode(ed::NodeId id)
+    {
         auto node = nodeLookup.find(id);
         if (node == nodeLookup.end())
         {
@@ -270,34 +283,46 @@ namespace PipelineGraph
     Pin *last_err_pin_src;
     Pin *last_err_pin_dst;
 
-    ed::LinkId addLink(ed::PinId inputPinId, ed::PinId outputPinId) {
-        if (inputPinId && outputPinId){// ed::AcceptNewItem() return true when user release mouse button.
+    ed::LinkId addLink(ed::PinId inputPinId, ed::PinId outputPinId)
+    {
+        if (inputPinId && outputPinId)
+        { // ed::AcceptNewItem() return true when user release mouse button.
             auto src = pinLookup[outputPinId];
             auto dst = pinLookup[inputPinId];
-            if (src->direction != OUTPUT || dst->direction != INPUT) {
+            if (src->direction != OUTPUT || dst->direction != INPUT)
+            {
                 // ed::RejectNewItem();
-            } else if (src->type.is_none() == false && dst->type.is_none() == false) {
+            }
+            else if (src->type.is_none() == false && dst->type.is_none() == false)
+            {
                 // no need to check for types if it's from a function call
-                if (true) {
+                if (true)
+                {
                     auto input_pin_link = pinLinkLookup.find(inputPinId);
                     auto output_pin_link = pinLinkLookup.find(outputPinId);
-                    if (input_pin_link != pinLinkLookup.end()) {
-                    } else {
-                        auto link = new Link{ ed::LinkId(GetNextId()), inputPinId, outputPinId };
-                        links.push_back( link );
+                    if (input_pin_link != pinLinkLookup.end())
+                    {
+                    }
+                    else
+                    {
+                        auto link = new Link{ed::LinkId(GetNextId()), inputPinId, outputPinId};
+                        links.push_back(link);
 
-                        linkLookup[link->id]       = link;
+                        linkLookup[link->id] = link;
 
-                        if (output_pin_link == pinLinkLookup.end()) {
+                        if (output_pin_link == pinLinkLookup.end())
+                        {
                             pinLinkLookup[outputPinId] = {};
                         }
 
-                        pinLinkLookup[inputPinId]  = { link };
+                        pinLinkLookup[inputPinId] = {link};
                         pinLinkLookup[outputPinId].push_back(link);
                         return link->id;
                     }
                 }
-            } else {
+            }
+            else
+            {
                 Logger::warning("Linking a pin where the input / output type is not defined.");
             }
         }
@@ -305,20 +330,23 @@ namespace PipelineGraph
         return ed::LinkId(-1);
     }
 
-
-
     // same as AddLink, but this one is called from UI
-    ed::LinkId _addLink(ed::PinId inputPinId, ed::PinId outputPinId) {
-        if (inputPinId && outputPinId){// ed::AcceptNewItem() return true when user release mouse button.
+    ed::LinkId _addLink(ed::PinId inputPinId, ed::PinId outputPinId)
+    {
+        if (inputPinId && outputPinId)
+        { // ed::AcceptNewItem() return true when user release mouse button.
             auto src = pinLookup[outputPinId];
             auto dst = pinLookup[inputPinId];
             if (src->direction != OUTPUT || dst->direction != INPUT)
             {
                 ed::RejectNewItem();
-            } else if (src->type.is_none() == false && dst->type.is_none() == false) {
-                //fixme: I added an object-type pypass rule to avoid drawing the entire graph each time I debug
-                //       run the application, I may need to remove it one day.
-                if (PyScope::isSubclassOrInstance(*src->type, *dst->type) || src->type.is(PyScope::getInstance().object_type)) {
+            }
+            else if (src->type.is_none() == false && dst->type.is_none() == false)
+            {
+                // fixme: I added an object-type pypass rule to avoid drawing the entire graph each time I debug
+                //        run the application, I may need to remove it one day.
+                if (PyScope::isSubclassOrInstance(*src->type, *dst->type) || src->type.is(PyScope::getInstance().object_type))
+                {
 
                     auto input_pin_link = pinLinkLookup.find(inputPinId);
                     auto output_pin_link = pinLinkLookup.find(outputPinId);
@@ -549,14 +577,15 @@ namespace PipelineGraph
         return result;
     }
 
-    void init(const std::string& graph_file)
+    void init(const std::string &graph_file)
     {
         ed::Config config;
         config.SettingsFile = graph_file.c_str();
         m_Context = ed::CreateEditor(&config);
     }
 
-    void saveSettings(const std::string &graph_file) {
+    void saveSettings(const std::string &graph_file)
+    {
         // TODO
     }
 
@@ -603,59 +632,69 @@ namespace PipelineGraph
         ImGui::EndTooltip();
     }
 
-    static void renderDialogs(bool* open_demux_popup) {
+    static void renderDialogs(bool *open_demux_popup)
+    {
 
-        ShowIntegerInputDialog(open_demux_popup, "De-Mux Output Count", [](int count) {
+        ShowIntegerInputDialog(open_demux_popup, "De-Mux Output Count", [](int count)
+                               {
                     if (count > 0) {
                         // addNode(new Nodes::DeMuxNode(count));
                     } else {
                         Logger::error("De-Mux input count must be greater than 0");
-                    }
-                });
+                    } });
     }
 
-    static void renderMenu(bool* open_demux_popup) {
+    static void renderMenu(bool *open_demux_popup)
+    {
         {
             ImGui::TextDisabled("Primitives:");
-            if (ImGui::MenuItem("Integer")) {
+            if (ImGui::MenuItem("Integer"))
+            {
                 _addNode(new Nodes::PrimitiveIntNode(0));
             }
 
-            if (ImGui::MenuItem("Integer (ranged)")) {
+            if (ImGui::MenuItem("Integer (ranged)"))
+            {
                 _addNode(new Nodes::PrimitiveIntNode(0, 0, 100));
             }
 
-            if (ImGui::MenuItem("Float")) {
+            if (ImGui::MenuItem("Float"))
+            {
                 _addNode(new Nodes::PrimitiveFloatNode(0));
             }
 
-            if (ImGui::MenuItem("Float (ranged)")) {
+            if (ImGui::MenuItem("Float (ranged)"))
+            {
                 _addNode(new Nodes::PrimitiveFloatNode(0, 0.0f, 100.0f));
             }
 
-            if (ImGui::MenuItem("String")) {
+            if (ImGui::MenuItem("String"))
+            {
                 _addNode(new Nodes::PrimitiveStringNode(false));
             }
 
-            if (ImGui::MenuItem("File")) {
+            if (ImGui::MenuItem("File"))
+            {
                 _addNode(new Nodes::PrimitiveStringNode(true));
             }
 
-
             ImGui::Separator();
             ImGui::TextDisabled("Functional:");
-            if (ImGui::MenuItem("De-Mux")) {
+            if (ImGui::MenuItem("De-Mux"))
+            {
                 *open_demux_popup = true;
             }
 
             ImGui::Separator();
             ImGui::TextDisabled("Pipeline:");
 
-            if (ImGui::MenuItem("Agent")) {
+            if (ImGui::MenuItem("Agent"))
+            {
                 _addNode(new Nodes::AgentAcceptorNode());
             }
 
-            if (ImGui::MenuItem("Environment")) {
+            if (ImGui::MenuItem("Environment"))
+            {
                 _addNode(new Nodes::EnvAcceptorNode());
             }
 
@@ -663,18 +702,25 @@ namespace PipelineGraph
             //     addNode(new Nodes::MaskAcceptorNode());
             // }
 
-            if (ImGui::MenuItem("Method")) {
+            if (ImGui::MenuItem("Method"))
+            {
                 _addNode(new Nodes::MethodAcceptorNode());
             }
 
             ImGui::Separator();
 
-            if (ImGui::BeginMenu("Objects")) {
-                for (auto& module : SharedUi::loadedModules) {
-                    if (ImGui::MenuItem(module.moduleName.c_str())) {
-                        if (module.type == PyScope::Function) {
+            if (ImGui::BeginMenu("Objects"))
+            {
+                for (auto &module : SharedUi::loadedModules)
+                {
+                    if (ImGui::MenuItem(module.moduleName.c_str()))
+                    {
+                        if (module.type == PyScope::Function)
+                        {
                             _addNode(new Nodes::PythonFunctionNode(&module));
-                        } else {
+                        }
+                        else
+                        {
                             _addNode(new Nodes::PythonModuleNode(&module));
                         }
                     }
@@ -685,8 +731,8 @@ namespace PipelineGraph
         }
     }
 
-
-    void render() {
+    void render()
+    {
         curr_focus_pin = nullptr;
         static bool first_frame = true;
         ImGui::Begin("Pipeline Graph");
@@ -695,12 +741,14 @@ namespace PipelineGraph
         static bool open_demux_popup = false;
         renderDialogs(&open_demux_popup);
 
-        if (ImGui::BeginPopupContextItem("Pipeline Graph Context Menu", ImGuiPopupFlags_MouseButtonRight)) {
+        if (ImGui::BeginPopupContextItem("Pipeline Graph Context Menu", ImGuiPopupFlags_MouseButtonRight))
+        {
             renderMenu(&open_demux_popup);
             ImGui::EndPopup();
         }
 
-        if (ImGui::BeginPopupContextWindow("Pipeline Graph Context Menu - rc", ImGuiPopupFlags_MouseButtonRight)) {
+        if (ImGui::BeginPopupContextWindow("Pipeline Graph Context Menu - rc", ImGuiPopupFlags_MouseButtonRight))
+        {
             renderMenu(&open_demux_popup);
             ImGui::EndPopup();
         }
@@ -726,13 +774,14 @@ namespace PipelineGraph
         ed::SetCurrentEditor(m_Context);
         ed::Begin("Pipeline Graph - Editor", ImVec2(0, 0));
 
-        if (first_frame) {
+        if (first_frame)
+        {
             first_frame = false;
             StartupLoader::load_graph();
         }
 
-
-        for (auto& node : nodes) {
+        for (auto &node : nodes)
+        {
             ed::BeginNode(node->id);
             ImGui::PushID(node->id.AsPointer());
             node->render();
@@ -748,7 +797,8 @@ namespace PipelineGraph
         if (ed::BeginCreate())
         {
             ed::PinId inputPinId, outputPinId;
-            if (ed::QueryNewLink(&outputPinId, &inputPinId)){
+            if (ed::QueryNewLink(&outputPinId, &inputPinId))
+            {
                 _addLink(inputPinId, outputPinId);
             }
         }
@@ -797,9 +847,12 @@ namespace PipelineGraph
                 if (module)
                 {
                     // Create a new node for the dropped module
-                    if (module->type == PyScope::Function) {
+                    if (module->type == PyScope::Function)
+                    {
                         PipelineGraph::_addNode(new Nodes::PythonFunctionNode(module));
-                    } else {
+                    }
+                    else
+                    {
                         PipelineGraph::_addNode(new Nodes::PythonModuleNode(module));
                     }
                 }
@@ -973,7 +1026,8 @@ namespace PipelineGraph
         ImGui::PopStyleVar();
     }
 
-    Nodes::PrimitiveIntNode::PrimitiveIntNode() {
+    Nodes::PrimitiveIntNode::PrimitiveIntNode()
+    {
         id = GetNextId();
         this->name = "Primitive Int";
 
@@ -1072,7 +1126,8 @@ namespace PipelineGraph
 
     Nodes::PrimitiveIntNode::~PrimitiveIntNode() = default;
 
-    void Nodes::PrimitiveIntNode::save(nlohmann::json &custom_data) {
+    void Nodes::PrimitiveIntNode::save(nlohmann::json &custom_data)
+    {
         Node::save(custom_data);
 
         custom_data["value"] = value;
@@ -1080,7 +1135,8 @@ namespace PipelineGraph
         custom_data["rangeEnd"] = rangeEnd;
     }
 
-    void Nodes::PrimitiveIntNode::load(nlohmann::json &custom_data) {
+    void Nodes::PrimitiveIntNode::load(nlohmann::json &custom_data)
+    {
         Node::load(custom_data);
 
         value = custom_data.value("value", 0);
@@ -1088,7 +1144,8 @@ namespace PipelineGraph
         rangeEnd = custom_data.value("rangeEnd", 0);
     }
 
-    Nodes::PrimitiveFloatNode::PrimitiveFloatNode() {
+    Nodes::PrimitiveFloatNode::PrimitiveFloatNode()
+    {
         id = GetNextId();
         this->name = "Primitive Float";
 
@@ -1187,7 +1244,8 @@ namespace PipelineGraph
 
     Nodes::PrimitiveFloatNode::~PrimitiveFloatNode() = default;
 
-    void Nodes::PrimitiveFloatNode::save(nlohmann::json &custom_data) {
+    void Nodes::PrimitiveFloatNode::save(nlohmann::json &custom_data)
+    {
         Node::save(custom_data);
 
         custom_data["value"] = value;
@@ -1195,7 +1253,8 @@ namespace PipelineGraph
         custom_data["rangeEnd"] = rangeEnd;
     }
 
-    void Nodes::PrimitiveFloatNode::load(nlohmann::json &custom_data) {
+    void Nodes::PrimitiveFloatNode::load(nlohmann::json &custom_data)
+    {
         Node::load(custom_data);
 
         value = custom_data.value("value", 0);
@@ -1203,7 +1262,8 @@ namespace PipelineGraph
         rangeEnd = custom_data.value("rangeEnd", 0);
     }
 
-    Nodes::PrimitiveStringNode::PrimitiveStringNode() {
+    Nodes::PrimitiveStringNode::PrimitiveStringNode()
+    {
         _file = false;
 
         id = GetNextId();
@@ -1240,7 +1300,8 @@ namespace PipelineGraph
         outputs.push_back(output);
     }
 
-    Nodes::PrimitiveStringNode::PrimitiveStringNode(const std::string& val) {
+    Nodes::PrimitiveStringNode::PrimitiveStringNode(const std::string &val)
+    {
         _file = false;
 
         id = GetNextId();
@@ -1252,8 +1313,8 @@ namespace PipelineGraph
         inputs.clear();
         Pin output;
 
-        output.id    = GetNextId();
-        output.name    = "value";
+        output.id = GetNextId();
+        output.name = "value";
         output.tooltip = "String value";
         output.direction = OUTPUT;
         output.type = PyScope::getInstance().str_type;
@@ -1313,13 +1374,15 @@ namespace PipelineGraph
 
     Nodes::PrimitiveStringNode::~PrimitiveStringNode() = default;
 
-    void Nodes::PrimitiveStringNode::save(nlohmann::json &custom_data) {
+    void Nodes::PrimitiveStringNode::save(nlohmann::json &custom_data)
+    {
         Node::save(custom_data);
         custom_data["value"] = std::string(_value);
         custom_data["file"] = _file;
     }
 
-    void Nodes::PrimitiveStringNode::load(nlohmann::json &custom_data) {
+    void Nodes::PrimitiveStringNode::load(nlohmann::json &custom_data)
+    {
         Node::load(custom_data);
 
         std::string val = custom_data.value("value", std::string(""));
@@ -1428,8 +1491,8 @@ namespace PipelineGraph
 
     Nodes::AdderNode::~AdderNode() = default;
 
-
-    Nodes::PythonModuleNode::PythonModuleNode(): _type(nullptr) {
+    Nodes::PythonModuleNode::PythonModuleNode() : _type(nullptr)
+    {
         id = GetNextId();
         this->name = "Python Module";
 
@@ -1437,7 +1500,8 @@ namespace PipelineGraph
         outputs.clear();
     }
 
-    void Nodes::PythonModuleNode::_preparePins() {
+    void Nodes::PythonModuleNode::_preparePins()
+    {
         Pin output;
         output.id = GetNextId();
         output.name = "obj";
@@ -1488,15 +1552,15 @@ namespace PipelineGraph
             constructor_args.push_back(val);
         }
 
-        SafeWrapper::execute([&] {
+        SafeWrapper::execute([&]
+                             {
             py::tuple args(constructor_args.size());
             for (size_t i = 0; i < constructor_args.size(); i++) {
                 args[i] = constructor_args[i];
             }
 
             outputs[0].value = _type->module(*args); // Unpack arguments into Python constructor
-            _executed = true;
-        });
+            _executed = true; });
     }
 
     void Nodes::PythonModuleNode::render()
@@ -1522,29 +1586,35 @@ namespace PipelineGraph
 
     Nodes::PythonModuleNode::~PythonModuleNode() = default;
 
-    void Nodes::PythonModuleNode::save(nlohmann::json &custom_data) {
+    void Nodes::PythonModuleNode::save(nlohmann::json &custom_data)
+    {
         SingleOutputNode::save(custom_data);
 
         custom_data["module"] = _type->moduleName;
     }
 
-    void Nodes::PythonModuleNode::load(nlohmann::json &custom_data) {
+    void Nodes::PythonModuleNode::load(nlohmann::json &custom_data)
+    {
 
         std::string moduleName = custom_data.value("module", "");
-        if (moduleName == "") {
+        if (moduleName == "")
+        {
             throw std::runtime_error("No module name specified");
         }
 
         bool found = false;
-        for (auto& mod: SharedUi::loadedModules) {
-            if (mod.moduleName == moduleName) {
+        for (auto &mod : SharedUi::loadedModules)
+        {
+            if (mod.moduleName == moduleName)
+            {
                 _type = &mod;
                 found = true;
                 break;
             }
         }
 
-        if (!found) {
+        if (!found)
+        {
             throw std::runtime_error("Module: " + moduleName + ", was not loaded.");
         }
 
@@ -1592,8 +1662,10 @@ namespace PipelineGraph
         _preparePins();
     }
 
-    void Nodes::PythonFunctionNode::exec() {
-        if (_pointer) {
+    void Nodes::PythonFunctionNode::exec()
+    {
+        if (_pointer)
+        {
             outputs[0].value = _type->module;
             _executed = true;
             return;
@@ -1614,15 +1686,15 @@ namespace PipelineGraph
             constructor_args.push_back(val);
         }
 
-        SafeWrapper::execute([&] {
+        SafeWrapper::execute([&]
+                             {
             py::tuple args(constructor_args.size());
             for (size_t i = 0; i < constructor_args.size(); i++) {
                 args[i] = constructor_args[i];
             }
 
             outputs[0].value = _type->module(*args); // Unpack arguments into Python constructor
-            _executed = true;
-        });
+            _executed = true; });
     }
 
     void Nodes::PythonFunctionNode::render()
@@ -1687,7 +1759,8 @@ namespace PipelineGraph
 
     Nodes::PythonFunctionNode::~PythonFunctionNode() = default;
 
-    void Nodes::PythonFunctionNode::save(nlohmann::json &custom_data) {
+    void Nodes::PythonFunctionNode::save(nlohmann::json &custom_data)
+    {
         inputs = _inputs;
         SingleOutputNode::save(custom_data);
 
@@ -1695,22 +1768,27 @@ namespace PipelineGraph
         custom_data["pointer"] = _pointer;
     }
 
-    void Nodes::PythonFunctionNode::load(nlohmann::json &custom_data) {
+    void Nodes::PythonFunctionNode::load(nlohmann::json &custom_data)
+    {
         std::string moduleName = custom_data.value("module", "");
-        if (moduleName == "") {
+        if (moduleName == "")
+        {
             throw std::runtime_error("No module name specified");
         }
 
         bool found = false;
-        for (auto& mod: SharedUi::loadedModules) {
-            if (mod.moduleName == moduleName) {
+        for (auto &mod : SharedUi::loadedModules)
+        {
+            if (mod.moduleName == moduleName)
+            {
                 _type = &mod;
                 found = true;
                 break;
             }
         }
 
-        if (!found) {
+        if (!found)
+        {
             throw std::runtime_error("Module: " + moduleName + ", was not loaded.");
         }
 
@@ -1718,7 +1796,8 @@ namespace PipelineGraph
         SingleOutputNode::load(custom_data);
     }
 
-    void Nodes::PythonFunctionNode::_preparePins() {
+    void Nodes::PythonFunctionNode::_preparePins()
+    {
         Pin output;
         output.id = GetNextId();
         output.name = "ret";
@@ -1761,36 +1840,45 @@ namespace PipelineGraph
 
     Nodes::AcceptorNode::~AcceptorNode() = default;
 
-    Nodes::DeMuxNode::DeMuxNode(int numOutputs) {
+    Nodes::DeMuxNode::DeMuxNode(int numOutputs)
+    {
         id = GetNextId();
         this->name = "Demux";
-
     }
 
-    void Nodes::DeMuxNode::exec() {
+    void Nodes::DeMuxNode::exec()
+    {
         py::object inputValue = getPinValue(inputs[0]);
-        if (inputValue.is_none()) {
+        if (inputValue.is_none())
+        {
             Logger::warning("DeMux input is None, cannot demux.");
             return;
         }
 
-
-        try {
-            if (py::isinstance<py::list>(inputValue) || py::isinstance<py::tuple>(inputValue)) {
+        try
+        {
+            if (py::isinstance<py::list>(inputValue) || py::isinstance<py::tuple>(inputValue))
+            {
                 py::sequence seq = inputValue;
-                for (size_t i = 0; i < std::min(seq.size(), outputs.size()); ++i) {
+                for (size_t i = 0; i < std::min(seq.size(), outputs.size()); ++i)
+                {
                     py::object item = seq[i];
                     outputs[i].value = item;
                 }
-            } else {
+            }
+            else
+            {
                 Logger::error("DeMux input is not iterable.");
             }
-        } catch (...) {
+        }
+        catch (...)
+        {
             Logger::error("DeMux failed due to unknown error.");
         }
     }
 
-    void Nodes::DeMuxNode::render() {
+    void Nodes::DeMuxNode::render()
+    {
         int max_node_header_size = 0;
         max_node_header_size = std::max(max_node_header_size, static_cast<int>(ImGui::CalcTextSize(this->name.c_str()).x));
         ImGui::Text(this->name.c_str());
@@ -1800,19 +1888,22 @@ namespace PipelineGraph
 
     Nodes::DeMuxNode::~DeMuxNode() = default;
 
-    void Nodes::DeMuxNode::save(nlohmann::json &custom_data) {
+    void Nodes::DeMuxNode::save(nlohmann::json &custom_data)
+    {
         Node::save(custom_data);
 
         custom_data["numOutputs"] = static_cast<int>(outputs.size());
     }
 
-    void Nodes::DeMuxNode::load(nlohmann::json &custom_data) {
+    void Nodes::DeMuxNode::load(nlohmann::json &custom_data)
+    {
         int pins = custom_data.value("numOutputs", 0);
         _preparePins(pins);
         Node::load(custom_data);
     }
 
-    void Nodes::DeMuxNode::_preparePins(int numOutputs) {
+    void Nodes::DeMuxNode::_preparePins(int numOutputs)
+    {
         Pin input;
         input.id = GetNextId();
         input.name = "obj";
@@ -1821,20 +1912,22 @@ namespace PipelineGraph
         input.type = PyScope::getInstance().object_type;
         inputs.push_back(input);
 
-        for (int i = 0; i < numOutputs; ++i) {
+        for (int i = 0; i < numOutputs; ++i)
+        {
             Pin output;
             output.id = GetNextId();
-            //output.name = std::format("obj[{}]", i + 1);
+            // output.name = std::format("obj[{}]", i + 1);
             output.name = "obj[" + std::to_string(i + 1) + "]";
             output.direction = OUTPUT;
-            //output.tooltip = std::format("Output #{}", i + 1);
+            // output.tooltip = std::format("Output #{}", i + 1);
             output.tooltip = "Output #" + std::to_string(i + 1);
             output.type = PyScope::getInstance().object_type;
             outputs.push_back(output);
         }
     }
 
-    Nodes::AgentAcceptorNode::AgentAcceptorNode() {
+    Nodes::AgentAcceptorNode::AgentAcceptorNode()
+    {
 
         id = GetNextId();
         this->name = "Agent Acceptor";

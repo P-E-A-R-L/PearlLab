@@ -1,18 +1,15 @@
-//
-// Created by xabdomo on 6/12/25.
-//
-
 #include "objects_panel.hpp"
 
 #include <imgui.h>
 
 #include "../shared_ui.hpp"
 
-void ObjectsPanel::init() {
-
+void ObjectsPanel::init()
+{
 }
 
-void ObjectsPanel::render() {
+void ObjectsPanel::render()
+{
     static char nameFilter[128] = "";
     static bool showAgents = true;
     static bool showEnvironments = true;
@@ -24,7 +21,8 @@ void ObjectsPanel::render() {
     ImGui::Begin("Objects");
 
     // Right-click context menu on window header
-    if (ImGui::BeginPopupContextItem("Objects", ImGuiPopupFlags_MouseButtonRight)) {
+    if (ImGui::BeginPopupContextItem("Objects", ImGuiPopupFlags_MouseButtonRight))
+    {
         ImGui::Text("Filter by Type:");
         ImGui::Separator();
         ImGui::Checkbox("Agent (A)", &showAgents);
@@ -43,18 +41,22 @@ void ObjectsPanel::render() {
 
     ImGui::Separator();
 
-    auto& objects = SharedUi::loadedModules;
+    auto &objects = SharedUi::loadedModules;
     int size = objects.size();
 
     std::string filterStr = nameFilter;
     std::transform(filterStr.begin(), filterStr.end(), filterStr.begin(), ::tolower);
 
-    if (size == 0) {
+    if (size == 0)
+    {
         ImGui::Text("No objects loaded.");
-    } else {
+    }
+    else
+    {
         int visibleCount = 0;
-        for (int i = 0; i < size; ++i) {
-            PyScope::LoadedModule& module = objects[i];
+        for (int i = 0; i < size; ++i)
+        {
+            PyScope::LoadedModule &module = objects[i];
 
             // Filter by type
             bool visibleByType =
@@ -73,13 +75,17 @@ void ObjectsPanel::render() {
             if (!filterStr.empty() && moduleNameLower.find(filterStr) == std::string::npos)
                 continue;
 
-
             std::string typeName = "U";
-            if (module.type == PyScope::Agent) typeName = "A";
-            else if (module.type == PyScope::Environment) typeName = "E";
-            else if (module.type == PyScope::Method) typeName = "M";
-            else if (module.type == PyScope::Mask) typeName = "K";
-            else if (module.type == PyScope::Function) typeName = "F";
+            if (module.type == PyScope::Agent)
+                typeName = "A";
+            else if (module.type == PyScope::Environment)
+                typeName = "E";
+            else if (module.type == PyScope::Method)
+                typeName = "M";
+            else if (module.type == PyScope::Mask)
+                typeName = "K";
+            else if (module.type == PyScope::Function)
+                typeName = "F";
 
             ImGui::Text(typeName.c_str());
             ImGui::SameLine();
@@ -89,7 +95,8 @@ void ObjectsPanel::render() {
             ImGui::Selectable(module.moduleName.c_str());
 
             // Drag-and-drop support
-            if (ImGui::BeginDragDropSource()) {
+            if (ImGui::BeginDragDropSource())
+            {
                 ImGui::SetDragDropPayload("PyScope::LoadedModule", &i, sizeof(int));
                 ImGui::Text("Dragging: %s", module.moduleName.c_str());
                 ImGui::EndDragDropSource();
@@ -105,6 +112,6 @@ void ObjectsPanel::render() {
     ImGui::End();
 }
 
-
-void ObjectsPanel::destroy() {
+void ObjectsPanel::destroy()
+{
 }

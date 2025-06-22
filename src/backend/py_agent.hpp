@@ -1,7 +1,3 @@
-//
-// Created by xabdomo on 6/16/25.
-//
-
 #ifndef PY_AGENT_HPP
 #define PY_AGENT_HPP
 
@@ -15,9 +11,10 @@
 
 namespace py = pybind11;
 
-struct PyAgent : public PyLiveObject {
+struct PyAgent : public PyLiveObject
+{
     // Predict method: returns np.ndarray (action probabilities)
-    py::object predict(const py::object& observation) const;
+    py::object predict(const py::object &observation) const;
 
     // get_q_net: returns any Python object (usually a model)
     py::object get_q_net() const;
@@ -31,6 +28,4 @@ struct PyAgent : public PyLiveObject {
     std::optional<py::object> get_action_space() const;
 };
 
-
-
-#endif //PY_AGENT_HPP
+#endif // PY_AGENT_HPP

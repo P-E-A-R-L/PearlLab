@@ -1,7 +1,3 @@
-//
-// Created by xabdomo on 6/22/25.
-//
-
 #define GLFW_INCLUDE_NONE
 
 #include <imgui.h>

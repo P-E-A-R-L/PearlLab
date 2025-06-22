@@ -1,7 +1,3 @@
-//
-// Created by xabdomo on 6/18/25.
-//
-
 #include "preview.hpp"
 
 #include <imgui.h>
@@ -13,54 +9,71 @@
 #include "../utility/gl_texture.hpp"
 #include "../utility/image_store.hpp"
 
-void Preview::VisualizedObject::init(PyVisualizable * obj) {
+void Preview::VisualizedObject::init(PyVisualizable *obj)
+{
     this->visualizable = obj;
 
-    if (visualizable->supports(VisualizationMethod::RGB_ARRAY)) {
+    if (visualizable->supports(VisualizationMethod::RGB_ARRAY))
+    {
         _init_rgb_array();
     }
 
-    if (visualizable->supports(VisualizationMethod::GRAY_SCALE)) {
+    if (visualizable->supports(VisualizationMethod::GRAY_SCALE))
+    {
         _init_gray();
     }
 
-    if (visualizable->supports(VisualizationMethod::HEAT_MAP)) {
+    if (visualizable->supports(VisualizationMethod::HEAT_MAP))
+    {
         _init_heat_map();
     }
 
-    if (visualizable->supports(VisualizationMethod::FEATURES)) {
+    if (visualizable->supports(VisualizationMethod::FEATURES))
+    {
         _init_features();
     }
 }
 
-bool Preview::VisualizedObject::supports(VisualizationMethod method) const {
-    switch (method) {
-        case VisualizationMethod::RGB_ARRAY:
-            return rgb_array != nullptr;
-        case VisualizationMethod::GRAY_SCALE:
-            return gray != nullptr;
-        case VisualizationMethod::HEAT_MAP:
-            return heat_map != nullptr;
-        case VisualizationMethod::FEATURES:
-            return features_params != nullptr;
-        default:
-            return false;
+bool Preview::VisualizedObject::supports(VisualizationMethod method) const
+{
+    switch (method)
+    {
+    case VisualizationMethod::RGB_ARRAY:
+        return rgb_array != nullptr;
+    case VisualizationMethod::GRAY_SCALE:
+        return gray != nullptr;
+    case VisualizationMethod::HEAT_MAP:
+        return heat_map != nullptr;
+    case VisualizationMethod::FEATURES:
+        return features_params != nullptr;
+    default:
+        return false;
     }
 }
 
-void Preview::VisualizedObject::update() {
-    if (rgb_array)       _update_rgb_array();
-    if (gray)            _update_gray();
-    if (heat_map)        _update_heat_map();
-    if (features_params) _update_features();
+void Preview::VisualizedObject::update()
+{
+    if (rgb_array)
+        _update_rgb_array();
+    if (gray)
+        _update_gray();
+    if (heat_map)
+        _update_heat_map();
+    if (features_params)
+        _update_features();
 
-    if (rgb_array       == nullptr && visualizable->supports(VisualizationMethod::RGB_ARRAY))  _init_rgb_array();
-    if (gray            == nullptr && visualizable->supports(VisualizationMethod::GRAY_SCALE)) _init_gray();
-    if (heat_map        == nullptr && visualizable->supports(VisualizationMethod::HEAT_MAP))   _init_heat_map();
-    if (features_params == nullptr && visualizable->supports(VisualizationMethod::FEATURES))   _init_features();
+    if (rgb_array == nullptr && visualizable->supports(VisualizationMethod::RGB_ARRAY))
+        _init_rgb_array();
+    if (gray == nullptr && visualizable->supports(VisualizationMethod::GRAY_SCALE))
+        _init_gray();
+    if (heat_map == nullptr && visualizable->supports(VisualizationMethod::HEAT_MAP))
+        _init_heat_map();
+    if (features_params == nullptr && visualizable->supports(VisualizationMethod::FEATURES))
+        _init_features();
 }
 
-Preview::VisualizedObject::~VisualizedObject() {
+Preview::VisualizedObject::~VisualizedObject()
+{
     visualizable = nullptr;
 
     delete rgb_array;
@@ -86,8 +99,10 @@ Preview::VisualizedObject::~VisualizedObject() {
     features_params = nullptr;
 }
 
-void Preview::VisualizedObject::_init_rgb_array() {
-    if (!SafeWrapper::execute([&]{
+void Preview::VisualizedObject::_init_rgb_array()
+{
+    if (!SafeWrapper::execute([&]
+                              {
         auto type = visualizable->getVisualizationParamsType(VisualizationMethod::RGB_ARRAY);
         rgb_array_params = new PyLiveObject();
         if (type != std::nullopt && !type->is_none() && py::hasattr(*type, "__bases__")) {
@@ -96,15 +111,16 @@ void Preview::VisualizedObject::_init_rgb_array() {
             PyScope::parseLoadedModule(py::getattr(rgb_array_params->object, "__class__"), *rgb_array_params);
         } else {
             rgb_array_params->object = py::none();
-        }
-    })) {
+        } }))
+    {
         Logger::error("Failed to initialize RGB Array visualization (params) for object: " + std::string(visualizable->moduleName));
         delete rgb_array_params;
         rgb_array_params = nullptr;
         return;
     }
 
-    if (!SafeWrapper::execute([&] {
+    if (!SafeWrapper::execute([&]
+                              {
         rgb_array = new GLTexture();
 
         auto data = visualizable->getVisualization(VisualizationMethod::RGB_ARRAY, rgb_array_params->object);
@@ -136,8 +152,8 @@ void Preview::VisualizedObject::_init_rgb_array() {
             }
         } else {
             Logger::warning("No RGB Array visualization available for object: " + std::string(visualizable->moduleName));
-        }
-    })) {
+        } }))
+    {
         Logger::error("Failed to initialize RGB Array visualization (buffer) for object: " + std::string(visualizable->moduleName));
         delete rgb_array_params;
         rgb_array_params = nullptr;
@@ -147,8 +163,10 @@ void Preview::VisualizedObject::_init_rgb_array() {
     }
 }
 
-void Preview::VisualizedObject::_update_rgb_array() const {
-    SafeWrapper::execute([&]{
+void Preview::VisualizedObject::_update_rgb_array() const
+{
+    SafeWrapper::execute([&]
+                         {
         auto data = visualizable->getVisualization(VisualizationMethod::RGB_ARRAY, rgb_array_params->object);
         if (data.has_value()) {
             py::array_t<float> arr = data->cast<py::array>();
@@ -176,12 +194,13 @@ void Preview::VisualizedObject::_update_rgb_array() const {
             }
         } else {
             Logger::warning("No RGB Array visualization available for object: " + std::string(visualizable->moduleName));
-        }
-    });
+        } });
 }
 
-void Preview::VisualizedObject::_init_gray() {
-    if (!SafeWrapper::execute([&]{
+void Preview::VisualizedObject::_init_gray()
+{
+    if (!SafeWrapper::execute([&]
+                              {
         auto type = visualizable->getVisualizationParamsType(VisualizationMethod::GRAY_SCALE);
         gray_params = new PyLiveObject();
         if (type != std::nullopt && !type->is_none() && py::hasattr(*type, "__bases__")) {
@@ -190,15 +209,16 @@ void Preview::VisualizedObject::_init_gray() {
             PyScope::parseLoadedModule(py::getattr(gray_params->object, "__class__"), *gray_params);
         } else {
             gray_params->object = py::none();
-        }
-    })) {
+        } }))
+    {
         Logger::error("Failed to initialize Gray Scale visualization (params) for object: " + std::string(visualizable->moduleName));
         delete gray_params;
         gray_params = nullptr;
         return;
     }
 
-    if (!SafeWrapper::execute([&] {
+    if (!SafeWrapper::execute([&]
+                              {
         gray = new GLTexture();
 
         auto data = visualizable->getVisualization(VisualizationMethod::GRAY_SCALE, gray_params->object);
@@ -224,8 +244,8 @@ void Preview::VisualizedObject::_init_gray() {
             }
         } else {
             Logger::warning("No Gray Scale visualization available for object: " + std::string(visualizable->moduleName));
-        }
-    })) {
+        } }))
+    {
         Logger::error("Failed to initialize Gray Scale visualization (buffer) for object: " + std::string(visualizable->moduleName));
         delete gray_params;
         gray_params = nullptr;
@@ -235,8 +255,10 @@ void Preview::VisualizedObject::_init_gray() {
     }
 }
 
-void Preview::VisualizedObject::_update_gray() const {
-    SafeWrapper::execute([&] {
+void Preview::VisualizedObject::_update_gray() const
+{
+    SafeWrapper::execute([&]
+                         {
         auto data = visualizable->getVisualization(VisualizationMethod::GRAY_SCALE, gray_params->object);
         if (data.has_value()) {
             py::array_t<float> arr = data->cast<py::array>();
@@ -258,12 +280,13 @@ void Preview::VisualizedObject::_update_gray() const {
             }
         } else {
             Logger::warning("No Gray Scale visualization available for object: " + std::string(visualizable->moduleName));
-        }
-    });
+        } });
 }
 
-void Preview::VisualizedObject::_init_heat_map() {
-    if (!SafeWrapper::execute([&]{
+void Preview::VisualizedObject::_init_heat_map()
+{
+    if (!SafeWrapper::execute([&]
+                              {
         auto type = visualizable->getVisualizationParamsType(VisualizationMethod::HEAT_MAP);
         heat_map_params = new PyLiveObject();
         if (type != std::nullopt && !type->is_none() && py::hasattr(*type, "__bases__")) {
@@ -272,15 +295,16 @@ void Preview::VisualizedObject::_init_heat_map() {
             PyScope::parseLoadedModule(py::getattr(heat_map_params->object, "__class__"), *heat_map_params);
         } else {
             heat_map_params->object = py::none();
-        }
-    })) {
+        } }))
+    {
         Logger::error("Failed to initialize Heat map visualization (params) for object: " + std::string(visualizable->moduleName));
         delete heat_map_params;
         heat_map_params = nullptr;
         return;
     }
 
-    if (!SafeWrapper::execute([&] {
+    if (!SafeWrapper::execute([&]
+                              {
         heat_map = new GLTexture();
 
         auto data = visualizable->getVisualization(VisualizationMethod::HEAT_MAP, heat_map_params->object);
@@ -310,8 +334,8 @@ void Preview::VisualizedObject::_init_heat_map() {
             }
         } else {
             Logger::warning("No Heat map visualization available for object: " + std::string(visualizable->moduleName));
-        }
-    })) {
+        } }))
+    {
         Logger::error("Failed to initialize Heat map visualization (buffer) for object: " + std::string(visualizable->moduleName));
         delete heat_map_params;
         heat_map_params = nullptr;
@@ -321,8 +345,10 @@ void Preview::VisualizedObject::_init_heat_map() {
     }
 }
 
-void Preview::VisualizedObject::_update_heat_map() const {
-    SafeWrapper::execute([&] {
+void Preview::VisualizedObject::_update_heat_map() const
+{
+    SafeWrapper::execute([&]
+                         {
         auto data = visualizable->getVisualization(VisualizationMethod::HEAT_MAP, heat_map_params->object);
         if (data.has_value()) {
             py::array_t<float> arr = data->cast<py::array>();
@@ -348,12 +374,13 @@ void Preview::VisualizedObject::_update_heat_map() const {
             }
         } else {
             Logger::warning("No Heat map visualization available for object: " + std::string(visualizable->moduleName));
-        }
-    });
+        } });
 }
 
-void Preview::VisualizedObject::_init_features() {
-    if (!SafeWrapper::execute([&]{
+void Preview::VisualizedObject::_init_features()
+{
+    if (!SafeWrapper::execute([&]
+                              {
         auto type = visualizable->getVisualizationParamsType(VisualizationMethod::FEATURES);
         features_params = new PyLiveObject();
         if (type != std::nullopt && !type->is_none() && py::hasattr(*type, "__bases__")) {
@@ -362,8 +389,8 @@ void Preview::VisualizedObject::_init_features() {
             PyScope::parseLoadedModule(py::getattr(features_params->object, "__class__"), *features_params);
         } else {
             features_params->object = py::none();
-        }
-    })) {
+        } }))
+    {
         Logger::error("Failed to initialize Features visualization (params) for object: " + std::string(visualizable->moduleName));
         delete features_params;
         features_params = nullptr;
@@ -373,8 +400,10 @@ void Preview::VisualizedObject::_init_features() {
     _update_features();
 }
 
-void Preview::VisualizedObject::_update_features() {
-    SafeWrapper::execute([&] {
+void Preview::VisualizedObject::_update_features()
+{
+    SafeWrapper::execute([&]
+                         {
         auto data = visualizable->getVisualization(VisualizationMethod::FEATURES, features_params->object);
         if (data.has_value()) {
             features.clear();
@@ -388,21 +417,23 @@ void Preview::VisualizedObject::_update_features() {
 
         } else {
             Logger::warning("No Features visualization available for object: " + std::string(visualizable->moduleName));
-        }
-    });
+        } });
 }
 
-
-void Preview::VisualizedAgent::init(Pipeline::ActiveAgent *agent) {
+void Preview::VisualizedAgent::init(Pipeline::ActiveAgent *agent)
+{
 
     this->agent = agent;
-    if (agent->env) {
+    if (agent->env)
+    {
         env_visualization = new VisualizedObject();
         env_visualization->init(agent->env);
     }
 
-    for (auto& method : agent->methods) {
-        if (method) {
+    for (auto &method : agent->methods)
+    {
+        if (method)
+        {
             auto vis_obj = new VisualizedObject();
             vis_obj->init(method);
             method_visualizations.push_back(vis_obj);
@@ -410,19 +441,24 @@ void Preview::VisualizedAgent::init(Pipeline::ActiveAgent *agent) {
     }
 }
 
-void Preview::VisualizedAgent::update() const {
-    if (env_visualization) {
+void Preview::VisualizedAgent::update() const
+{
+    if (env_visualization)
+    {
         env_visualization->update();
     }
 
-    for (auto& method_vis : method_visualizations) {
+    for (auto &method_vis : method_visualizations)
+    {
         method_vis->update();
     }
 }
 
-Preview::VisualizedAgent::~VisualizedAgent() {
+Preview::VisualizedAgent::~VisualizedAgent()
+{
     delete env_visualization;
-    for (auto& method_vis : method_visualizations) {
+    for (auto &method_vis : method_visualizations)
+    {
         delete method_vis;
     }
 
@@ -432,35 +468,43 @@ Preview::VisualizedAgent::~VisualizedAgent() {
 
 void Preview::init() {}
 
-static void _render_visualizable(Preview::VisualizedObject* obj, const std::string& message) {
-    if (ImGui::BeginTabBar("##vis")) {
-        if (obj->supports(VisualizationMethod::RGB_ARRAY) && ImGui::BeginTabItem("RGB")) {
+static void _render_visualizable(Preview::VisualizedObject *obj, const std::string &message)
+{
+    if (ImGui::BeginTabBar("##vis"))
+    {
+        if (obj->supports(VisualizationMethod::RGB_ARRAY) && ImGui::BeginTabItem("RGB"))
+        {
             auto obs = obj->rgb_array;
             ImGui::Image(obs->id(), ImVec2(obs->width(), obs->height()));
             ImGui::EndTabItem();
         }
 
-        if (obj->supports(VisualizationMethod::GRAY_SCALE) && ImGui::BeginTabItem("Gray")) {
+        if (obj->supports(VisualizationMethod::GRAY_SCALE) && ImGui::BeginTabItem("Gray"))
+        {
             auto obs = obj->gray;
             ImGui::Image(obs->id(), ImVec2(obs->width(), obs->height()));
             ImGui::EndTabItem();
         }
 
-        if (obj->supports(VisualizationMethod::HEAT_MAP) && ImGui::BeginTabItem("Heat Map")) {
+        if (obj->supports(VisualizationMethod::HEAT_MAP) && ImGui::BeginTabItem("Heat Map"))
+        {
             auto obs = obj->heat_map;
             ImGui::Image(obs->id(), ImVec2(obs->width(), obs->height()));
             ImGui::EndTabItem();
         }
 
-        if (obj->supports(VisualizationMethod::FEATURES) && ImGui::BeginTabItem("Features")) {
+        if (obj->supports(VisualizationMethod::FEATURES) && ImGui::BeginTabItem("Features"))
+        {
             auto obs = obj->features;
 
-            if (ImGui::BeginTable("StringFloatTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+            if (ImGui::BeginTable("StringFloatTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+            {
                 ImGui::TableSetupColumn("Name");
                 ImGui::TableSetupColumn("Value");
                 ImGui::TableHeadersRow();
 
-                for (const auto& [name, value] : obs) {
+                for (const auto &[name, value] : obs)
+                {
                     ImGui::TableNextRow();
 
                     ImGui::TableSetColumnIndex(0);
@@ -479,27 +523,32 @@ static void _render_visualizable(Preview::VisualizedObject* obj, const std::stri
     }
 }
 
-static void _render_agent_basic(const Pipeline::ActiveAgent& agent, float width, int index) {
+static void _render_agent_basic(const Pipeline::ActiveAgent &agent, float width, int index)
+{
     ImGui::BeginChild(agent.name, ImVec2(width, 0), true);
     FontManager::pushFont("Bold");
-    ImGui::Text("%s"   , agent.name);
+    ImGui::Text("%s", agent.name);
     FontManager::popFont();
 
-
-    if (agent.env) {
+    if (agent.env)
+    {
         _render_visualizable(Preview::previews[index]->env_visualization, "No observations available.");
-    } else {
+    }
+    else
+    {
         ImGui::Text("No environment available.");
     }
 
-    if (ImGui::BeginTable("AgentScoresTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+    if (ImGui::BeginTable("AgentScoresTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+    {
         ImGui::TableSetupColumn("Method");
         ImGui::TableSetupColumn("Episode Score");
         ImGui::TableSetupColumn("Total Score");
         ImGui::TableSetupColumn("Normalized");
         ImGui::TableHeadersRow();
 
-        for (int i = 0; i < agent.methods.size(); ++i) {
+        for (int i = 0; i < agent.methods.size(); ++i)
+        {
             ImGui::TableNextRow();
 
             ImGui::TableSetColumnIndex(0);
@@ -519,81 +568,96 @@ static void _render_agent_basic(const Pipeline::ActiveAgent& agent, float width,
         ImGui::EndTable();
     }
 
-    if (agent.env_terminated || agent.env_truncated) {
+    if (agent.env_terminated || agent.env_truncated)
+    {
         ImGui::Text("<Episode completed>");
     }
 
     ImGui::EndChild();
 }
 
-
-typedef std::function<void(Pipeline::ActiveAgent&, float, int)> _agent_render_function;
+typedef std::function<void(Pipeline::ActiveAgent &, float, int)> _agent_render_function;
 
 static int agents_per_row = 3;
-static void tab_wrapper(const _agent_render_function &_f) {
+static void tab_wrapper(const _agent_render_function &_f)
+{
     { // agents previews (env)
-        auto child_width = ( ImGui::GetContentRegionAvail().x - (agents_per_row + 1) * 10 ) / agents_per_row;
+        auto child_width = (ImGui::GetContentRegionAvail().x - (agents_per_row + 1) * 10) / agents_per_row;
         child_width = std::max(child_width, 320.0f);
 
         float y = ImGui::GetCursorPosY() + 10;
         float max_height = 0;
-        for (int i = 0;i < Pipeline::PipelineState::activeAgents.size();i++) {
-            auto& agent = Pipeline::PipelineState::activeAgents[i];
+        for (int i = 0; i < Pipeline::PipelineState::activeAgents.size(); i++)
+        {
+            auto &agent = Pipeline::PipelineState::activeAgents[i];
             ImGui::PushID(i);
-            ImGui::SetCursorPos({(i % agents_per_row) * ( child_width + 10 ) + 10, y});
+            ImGui::SetCursorPos({(i % agents_per_row) * (child_width + 10) + 10, y});
             ImGui::BeginGroup();
             _f(agent, child_width, i);
             ImGui::EndGroup();
             ImGui::PopID();
             auto size = ImGui::GetItemRectSize();
             max_height = std::max(max_height, size.y);
-            if (i % agents_per_row == 0 && i != 0) {
+            if (i % agents_per_row == 0 && i != 0)
+            {
                 y += max_height + 10; // add some spacing
-                max_height = 0; // reset for next row
+                max_height = 0;       // reset for next row
             }
         }
     }
 }
 
-static void _render_preview() {
+static void _render_preview()
+{
 
-    for (int i = 0;i < Pipeline::PipelineState::activeAgents.size();i++) {
+    for (int i = 0; i < Pipeline::PipelineState::activeAgents.size(); i++)
+    {
         Preview::previews[i]->update(); // update the visualizations (textures, features, etc ..)
     }
 
     { // control zone
         auto playing = Pipeline::isSimRunning();
-        auto size  = ImGui::GetContentRegionAvail();
+        auto size = ImGui::GetContentRegionAvail();
         auto control_size = 16 * 2 + ImGui::GetStyle().ItemSpacing.x;
         auto x = (size.x - control_size) / 2;
 
         std::string Icon = "./assets/icons/play-grad.png";
-        if (playing) Icon = "./assets/icons/pause-grad.png";
+        if (playing)
+            Icon = "./assets/icons/pause-grad.png";
 
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 4));
         ImGui::SetCursorPosX(x);
-        if (ImGui::ImageButton("##play_btn" ,ImageStore::idOf(Icon), {20, 20})) {
-            if (!playing) Pipeline::continueSim();
-            else Pipeline::pauseSim();
+        if (ImGui::ImageButton("##play_btn", ImageStore::idOf(Icon), {20, 20}))
+        {
+            if (!playing)
+                Pipeline::continueSim();
+            else
+                Pipeline::pauseSim();
         }
 
         ImGui::SameLine();
-        if (ImGui::ImageButton("##step_btn" ,ImageStore::idOf("./assets/icons/step-grad.png"), {20, 20})) {
+        if (ImGui::ImageButton("##step_btn", ImageStore::idOf("./assets/icons/step-grad.png"), {20, 20}))
+        {
             Pipeline::stepSim();
         }
         ImGui::PopStyleVar();
     }
 
-    if (ImGui::BeginTabBar("Tabs")) {
-        if (ImGui::BeginTabItem("Basic")) {
+    if (ImGui::BeginTabBar("Tabs"))
+    {
+        if (ImGui::BeginTabItem("Basic"))
+        {
             tab_wrapper(_render_agent_basic);
             ImGui::EndTabItem();
         }
 
-        for (int i = 0;i < Pipeline::PipelineConfig::pipelineMethods.size();i++) {
+        for (int i = 0; i < Pipeline::PipelineConfig::pipelineMethods.size(); i++)
+        {
             ImGui::PushID(i);
-            if (Pipeline::PipelineConfig::pipelineMethods[i].active && ImGui::BeginTabItem(Pipeline::PipelineConfig::pipelineMethods[i].name)) {
-                tab_wrapper([&] (Pipeline::ActiveAgent& agent, float width, int index) {
+            if (Pipeline::PipelineConfig::pipelineMethods[i].active && ImGui::BeginTabItem(Pipeline::PipelineConfig::pipelineMethods[i].name))
+            {
+                tab_wrapper([&](Pipeline::ActiveAgent &agent, float width, int index)
+                            {
                     ImGui::BeginChild(agent.name, ImVec2(width, 0), true);
                     FontManager::pushFont("Bold");
                     ImGui::Text("%s"   , agent.name);
@@ -610,8 +674,7 @@ static void _render_preview() {
                         ImGui::Text("<Episode completed>");
                     }
 
-                    ImGui::EndChild();
-                });
+                    ImGui::EndChild(); });
                 ImGui::EndTabItem();
             }
             ImGui::PopID();
@@ -621,46 +684,55 @@ static void _render_preview() {
     }
 }
 
-void Preview::render() {
+void Preview::render()
+{
     ImGui::Begin("Preview");
 
-    if (!Pipeline::isExperimenting()) {
+    if (!Pipeline::isExperimenting())
+    {
 
         auto size = ImGui::GetContentRegionAvail();
-        auto text_size  = ImGui::CalcTextSize("No active experiment.\nStart an experiment in the pipeline tab.");
+        auto text_size = ImGui::CalcTextSize("No active experiment.\nStart an experiment in the pipeline tab.");
 
         auto x = (size.x - text_size.x) / 2;
         auto y = (size.y - text_size.y) / 2;
 
-        ImGui::SetCursorPos({ x, y });
+        ImGui::SetCursorPos({x, y});
         ImGui::Text("No active experiment.\nStart an experiment in the pipeline tab.");
-
-    } else {
+    }
+    else
+    {
 
         _render_preview();
     }
     ImGui::End();
 }
 
-std::vector<Preview::VisualizedAgent*> Preview::previews;
+std::vector<Preview::VisualizedAgent *> Preview::previews;
 
-void Preview::onStart() {
-    for (auto& agent: Pipeline::PipelineState::activeAgents) {
+void Preview::onStart()
+{
+    for (auto &agent : Pipeline::PipelineState::activeAgents)
+    {
         previews.push_back(new Preview::VisualizedAgent());
         previews.back()->init(&agent);
     }
 }
 
-void Preview::onStop() {
-    for (auto prev : previews) {
+void Preview::onStop()
+{
+    for (auto prev : previews)
+    {
         delete prev;
     }
 
     previews.clear();
 }
 
-void Preview::destroy() {
-    for (auto prev : previews) {
+void Preview::destroy()
+{
+    for (auto prev : previews)
+    {
         delete prev;
     }
 

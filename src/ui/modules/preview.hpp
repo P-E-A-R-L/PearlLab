@@ -1,7 +1,3 @@
-//
-// Created by xabdomo on 6/18/25.
-//
-
 #ifndef PREVIEW_HPP
 #define PREVIEW_HPP
 #include <map>
@@ -9,22 +5,23 @@
 #include "pipeline.hpp"
 #include "../utility/gl_texture.hpp"
 
+namespace Preview
+{
+    struct VisualizedObject
+    {
+        PyVisualizable *visualizable;
 
-namespace Preview {
-    struct VisualizedObject {
-        PyVisualizable* visualizable;
+        GLTexture *rgb_array = nullptr;
+        GLTexture *gray = nullptr;
+        GLTexture *heat_map = nullptr;
+        std::map<std::string, std::string> features;
 
-        GLTexture* rgb_array           = nullptr;
-        GLTexture* gray                = nullptr;
-        GLTexture* heat_map            = nullptr;
-        std::map<std::string, std::string>   features;
+        PyLiveObject *rgb_array_params = nullptr;
+        PyLiveObject *gray_params = nullptr;
+        PyLiveObject *heat_map_params = nullptr;
+        PyLiveObject *features_params = nullptr;
 
-        PyLiveObject* rgb_array_params = nullptr;
-        PyLiveObject* gray_params      = nullptr;
-        PyLiveObject* heat_map_params  = nullptr;
-        PyLiveObject* features_params  = nullptr;
-
-        void init(PyVisualizable*);
+        void init(PyVisualizable *);
         [[nodiscard]] bool supports(VisualizationMethod method) const;
         void update();
 
@@ -42,21 +39,21 @@ namespace Preview {
 
         void _init_features();
         void _update_features();
-
     };
 
-    struct VisualizedAgent {
-        Pipeline::ActiveAgent* agent;
-        VisualizedObject* env_visualization = nullptr;
-        std::vector<VisualizedObject*> method_visualizations;
+    struct VisualizedAgent
+    {
+        Pipeline::ActiveAgent *agent;
+        VisualizedObject *env_visualization = nullptr;
+        std::vector<VisualizedObject *> method_visualizations;
 
-        void init(Pipeline::ActiveAgent* agent);
+        void init(Pipeline::ActiveAgent *agent);
         void update() const;
 
         ~VisualizedAgent();
     };
 
-    extern std::vector<Preview::VisualizedAgent*> previews;
+    extern std::vector<Preview::VisualizedAgent *> previews;
 
     void init();
     void render();
@@ -65,6 +62,4 @@ namespace Preview {
     void destroy();
 };
 
-
-
-#endif //PREVIEW_HPP
+#endif // PREVIEW_HPP

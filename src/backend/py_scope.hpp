@@ -1,7 +1,3 @@
-//
-// Created by xabdomo on 6/11/25.
-//
-
 #ifndef PYSCOPE_HPP
 #define PYSCOPE_HPP
 
@@ -12,7 +8,8 @@
 
 namespace py = pybind11;
 
-class PyScope {
+class PyScope
+{
 public:
     // internal modules
     py::module annotations;
@@ -51,7 +48,6 @@ public:
     py::object issubclass;
     py::object isgeneric;
 
-
     // output redirectors
     py::module redirect_msg_mod;
     py::module redirect_err_mod;
@@ -61,18 +57,19 @@ public:
     std::vector<std::string> modulesPaths;
     std::vector<py::module> pythonModules;
 
-    static PyScope& getInstance();
+    static PyScope &getInstance();
     static void clearInstance();
 
-    static py::module* LoadModule(const std::string& path);
-    static std::vector<py::object> LoadModuleForClasses(const std::string& path);
+    static py::module *LoadModule(const std::string &path);
+    static std::vector<py::object> LoadModuleForClasses(const std::string &path);
     static void init();
 
     static bool isSubclassOrInstance(py::handle obj, py::handle base);
 
     static Param parseParamFromAnnotation(py::handle annotation);
 
-    enum ModuleType {
+    enum ModuleType
+    {
         Agent,
         Environment,
         Method,
@@ -81,20 +78,21 @@ public:
         Other
     };
 
-     struct LoadedModule {
-        py::object  module;
-        py::object  returnType;  // for functions
+    struct LoadedModule
+    {
+        py::object module;
+        py::object returnType; // for functions
         std::string moduleName;
         std::vector<Param> annotations;
         std::vector<Param> constructor;
         ModuleType type = Other; // default to Other
     };
 
-    static bool parseLoadedModule(py::object obj, PyScope::LoadedModule& l);
-
+    static bool parseLoadedModule(py::object obj, PyScope::LoadedModule &l);
 
     template <typename T>
-    static ssize_t argmax_impl(py::array_t<T> array) {
+    static ssize_t argmax_impl(py::array_t<T> array)
+    {
 
         auto buf = array.unchecked();
         if (buf.size() == 0)
@@ -102,8 +100,10 @@ public:
 
         ssize_t max_index = 0;
         T max_value = *buf.data(0);
-        for (ssize_t i = 1; i < buf.size(); ++i) {
-            if (*buf.data(i) > max_value) {
+        for (ssize_t i = 1; i < buf.size(); ++i)
+        {
+            if (*buf.data(i) > max_value)
+            {
                 max_value = *buf.data(i);
                 max_index = i;
             }
@@ -111,11 +111,10 @@ public:
         return max_index;
     }
 
-    static ssize_t argmax(const py::array& array);
+    static ssize_t argmax(const py::array &array);
+
 private:
     PyScope();
 };
 
-
-
-#endif //PYSCOPE_HPP
+#endif // PYSCOPE_HPP

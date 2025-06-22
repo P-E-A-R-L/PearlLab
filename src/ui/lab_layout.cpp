@@ -1,7 +1,3 @@
-//
-// Created by xabdomo on 6/11/25.
-//
-
 #include "lab_layout.hpp"
 #include <imgui_internal.h>
 #include <GLFW/glfw3.h>
@@ -19,7 +15,8 @@
 #include "modules/py_module_window.hpp"
 #include "utility/image_store.hpp"
 
-namespace LabLayout {
+namespace LabLayout
+{
     // hidden because normally not other module would need these functions
     // these are just some demo functions to make the UI .. well .. do something
     // they are to be changed with the actual modules
@@ -29,9 +26,10 @@ namespace LabLayout {
 
 }
 
-extern GLFWwindow* AppWindow;
+extern GLFWwindow *AppWindow;
 
-void LabLayout::renderParamsModule() {
+void LabLayout::renderParamsModule()
+{
     static char modelPath[128] = "models/agent_a.model";
     static float noise = 0.1f;
     static float learningRate = 0.01f;
@@ -43,8 +41,8 @@ void LabLayout::renderParamsModule() {
     ImGui::End();
 }
 
-
-void LabLayout::init(const std::string& project_path) {
+void LabLayout::init(const std::string &project_path)
+{
     Logger::init();
     PyScope::init();
 
@@ -59,36 +57,44 @@ void LabLayout::init(const std::string& project_path) {
     Preview::init();
 }
 
-void LabLayout::render() {
+void LabLayout::render()
+{
 
     ///
     /// MAIN MANU
     ///
     static bool open_modules_debugger = false;
-    static bool show_metrics          = false;
+    static bool show_metrics = false;
 
     if (ImGui::BeginMainMenuBar())
     {
         if (ImGui::BeginMenu("File"))
         {
-            if (ImGui::MenuItem("Load Module")) {
-                ImGuiFileDialog::Instance()->OpenDialog("FileDlgKey", "Select module file", ".py" );
+            if (ImGui::MenuItem("Load Module"))
+            {
+                ImGuiFileDialog::Instance()->OpenDialog("FileDlgKey", "Select module file", ".py");
             }
 
-            if (ImGui::MenuItem("Quick Save")) {
-                if (ProjectManager::saveProject(project_details.project_path)) {
+            if (ImGui::MenuItem("Quick Save"))
+            {
+                if (ProjectManager::saveProject(project_details.project_path))
+                {
                     Logger::info("Project saved successfully.");
-                } else {
+                }
+                else
+                {
                     Logger::error("Failed to save project.");
                 }
             }
 
-            if (ImGui::MenuItem("Save Project")) {
-                ImGuiFileDialog::Instance()->OpenDialog("FileDlgKey", "Select module file", ".py" );
+            if (ImGui::MenuItem("Save Project"))
+            {
+                ImGuiFileDialog::Instance()->OpenDialog("FileDlgKey", "Select module file", ".py");
             }
 
             ImGui::Separator();
-            if (ImGui::MenuItem("Exit")) {
+            if (ImGui::MenuItem("Exit"))
+            {
                 glfwSetWindowShouldClose(AppWindow, GLFW_TRUE);
             }
             ImGui::EndMenu();
@@ -96,16 +102,27 @@ void LabLayout::render() {
 
         if (ImGui::BeginMenu("Edit"))
         {
-            if (ImGui::MenuItem("Undo", "CTRL+Z")) { /* Undo Action */ }
-            if (ImGui::MenuItem("Redo", "CTRL+Y", false, false)) { /* Disabled Redo */ }
+            if (ImGui::MenuItem("Undo", "CTRL+Z"))
+            { /* Undo Action */
+            }
+            if (ImGui::MenuItem("Redo", "CTRL+Y", false, false))
+            { /* Disabled Redo */
+            }
             ImGui::Separator();
-            if (ImGui::MenuItem("Cut", "CTRL+X")) { /* Cut Action */ }
-            if (ImGui::MenuItem("Copy", "CTRL+C")) { /* Copy Action */ }
-            if (ImGui::MenuItem("Paste", "CTRL+V")) { /* Paste Action */ }
+            if (ImGui::MenuItem("Cut", "CTRL+X"))
+            { /* Cut Action */
+            }
+            if (ImGui::MenuItem("Copy", "CTRL+C"))
+            { /* Copy Action */
+            }
+            if (ImGui::MenuItem("Paste", "CTRL+V"))
+            { /* Paste Action */
+            }
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("Debug")) {
+        if (ImGui::BeginMenu("Debug"))
+        {
             ImGui::MenuItem("Modules Debugger", nullptr, &open_modules_debugger);
             ImGui::MenuItem("Show Metrics", nullptr, &show_metrics);
             ImGui::EndMenu();
@@ -113,8 +130,8 @@ void LabLayout::render() {
 
         if (ImGui::BeginMenu("Help"))
         {
-            if (ImGui::MenuItem("About")) {
-
+            if (ImGui::MenuItem("About"))
+            {
             }
             ImGui::EndMenu();
         }
@@ -128,14 +145,14 @@ void LabLayout::render() {
         {
             std::string filePath = ImGuiFileDialog::Instance()->GetFilePathName();
             auto result = PyScope::LoadModuleForClasses(filePath);
-            for (auto obj: result) {
+            for (auto obj : result)
+            {
                 SharedUi::pushModule(obj);
                 Logger::info("Loaded module: " + std::string(py::str(obj.attr("__name__"))));
             }
         }
         ImGuiFileDialog::Instance()->Close();
     }
-
 
     ///
     /// WINDOW CONTENT
@@ -149,7 +166,7 @@ void LabLayout::render() {
                                     ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
                                     ImGuiWindowFlags_NoNavFocus;
 
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    const ImGuiViewport *viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
     ImGui::SetNextWindowSize(viewport->WorkSize);
     ImGui::SetNextWindowViewport(viewport->ID);
@@ -164,7 +181,8 @@ void LabLayout::render() {
     ImGui::DockSpace(dockspace_id, ImVec2(0, 0), dockspace_flags);
 
     // Build default layout once
-    if (first_time) {
+    if (first_time)
+    {
         Logger::info("Initializing Lab Layout...");
 
         first_time = false;
@@ -201,7 +219,6 @@ void LabLayout::render() {
         ImGui::DockBuilderDockWindow("Inspector", right);
         ImGui::DockBuilderFinish(dockspace_id);
 
-
         Logger::info("Done.");
 
         StartupLoader::load_modules();
@@ -215,8 +232,10 @@ void LabLayout::render() {
     // Render individual windows
     renderParamsModule();
 
-    if (open_modules_debugger) PyModuleWindow::render();
-    if (show_metrics)          ImGui::ShowMetricsWindow();
+    if (open_modules_debugger)
+        PyModuleWindow::render();
+    if (show_metrics)
+        ImGui::ShowMetricsWindow();
 
     Logger::render();
     PipelineGraph::render();
@@ -225,7 +244,8 @@ void LabLayout::render() {
     Preview::render();
 }
 
-void LabLayout::destroy() {
+void LabLayout::destroy()
+{
     PyModuleWindow::destroy();
     PipelineGraph::destroy();
     SharedUi::destroy();
@@ -234,5 +254,3 @@ void LabLayout::destroy() {
     Preview::destroy();
     PyScope::clearInstance();
 }
-
-

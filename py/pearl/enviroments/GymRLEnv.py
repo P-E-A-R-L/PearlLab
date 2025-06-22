@@ -1,11 +1,9 @@
 from typing import Optional, Tuple, Callable, Dict, Any, Union
-
 from pearl.env import RLEnvironment
 import collections
 import numpy as np
 import gymnasium as gym
 import ale_py
-
 from visual import VisualizationMethod
 
 gym.register_envs(ale_py)
@@ -105,7 +103,6 @@ class GymRLEnv(RLEnvironment):
         self,
         action: Union[int, np.ndarray]
     ) -> Tuple[np.ndarray, Dict[str, np.ndarray], bool, bool, Dict[str, Any]]:
-        print("step called with action:", action)
         total_reward = 0.0
         terminated = False
         truncated = False
@@ -146,15 +143,11 @@ class GymRLEnv(RLEnvironment):
     def getVisualization(self, m: VisualizationMethod, params: Any = None) -> np.ndarray | dict | None:
         if not isinstance(m, VisualizationMethod):
             m = VisualizationMethod(m)
-
         if m == VisualizationMethod.RGB_ARRAY:
-            return self.render("rgb_array")
-        # if m == VisualizationMethod.HEAT_MAP:
-        #     return cv2.cvtColor(self.render("rgb_array"), cv2.COLOR_RGB2GRAY)
-        # if m == VisualizationMethod.GRAY_SCAL:
-        #     return cv2.cvtColor(self.render("rgb_array"), cv2.COLOR_RGB2GRAY)
-        # if m == VisualizationMethod.FEATURES:
-        #     return {"test": "hello from python"} # the other 3 if-s are example
+            rgb_image = self.render("rgb_array")
+            if rgb_image.max() > 1.0:
+                rgb_image = rgb_image.astype(np.float32) / 255.0
+            return rgb_image
         return None
 
     def getVisualizationParamsType(self, m: VisualizationMethod) -> type | None:

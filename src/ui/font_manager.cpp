@@ -1,16 +1,13 @@
-//
-// Created by xabdomo on 6/11/25.
-//
-
 #include "font_manager.hpp"
 #include <unordered_map>
 #include <string>
 
 #include "imgui.h"
 
-static std::unordered_map<std::string, ImFont*> fontMap;
+static std::unordered_map<std::string, ImFont *> fontMap;
 
-void FontManager::init() {
+void FontManager::init()
+{
     ImGuiIO &io = ImGui::GetIO();
 
     // Load fonts and store them with names
@@ -27,11 +24,13 @@ void FontManager::init() {
     io.Fonts->Build();
 }
 
-void FontManager::pushFont(const std::string &name) {
+void FontManager::pushFont(const std::string &name)
+{
     if (fontMap.contains(name))
         ImGui::PushFont(fontMap[name]);
 }
 
-void FontManager::popFont() {
+void FontManager::popFont()
+{
     ImGui::PopFont();
 }
