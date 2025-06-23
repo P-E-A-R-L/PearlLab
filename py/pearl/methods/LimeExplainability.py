@@ -23,7 +23,7 @@ class LimeExplainability(ExplainabilityMethod):
         super().__init__()
         self.device = device
         self.mask = mask
-        self.explainer = CustomLimeImageExplainer(num_samples=100, num_segments=1000)
+        self.explainer = CustomLimeImageExplainer(num_samples=500, num_segments=500)
         self.agent: RLAgent = None
         self.last_explain = None
         self.obs = None

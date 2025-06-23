@@ -6,7 +6,8 @@ enum class VisualizationMethod
     FEATURES = 0,
     RGB_ARRAY = 1,
     GRAY_SCALE = 2,
-    HEAT_MAP = 3
+    HEAT_MAP = 3,
+    BAR_CHART = 4,
 };
 
 #endif // VISUALIZATION_METHOD_HPP

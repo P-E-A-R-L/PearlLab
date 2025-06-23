@@ -195,7 +195,7 @@
                     20
                 ],
                 "tag": "<tag>",
-                "value": "x,y,vx,vy,angle,angular_velocity,left_leg,right_leg"
+                "value": "x,y,vx,vy,angle,ang_vel,left_leg,right_leg"
             },
             "type": "PipelineGraph.Nodes.PrimitiveStringNode"
         },

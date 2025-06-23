@@ -115,26 +115,27 @@ class TabularLimeExplainability(ExplainabilityMethod):
     def supports(self, m: VisualizationMethod) -> bool:
         if not isinstance(m, VisualizationMethod):
             m = VisualizationMethod(m)
-        return m == VisualizationMethod.FEATURES
+        return m == VisualizationMethod.BAR_CHART
 
     def getVisualizationParamsType(self, m: VisualizationMethod) -> type | None:
         if not isinstance(m, VisualizationMethod):
             m = VisualizationMethod(m)
-        if m == VisualizationMethod.FEATURES:
+        if m == VisualizationMethod.BAR_CHART:
             return TabularLimeVisualizationParams
         return None
 
     def getVisualization(self, m: VisualizationMethod, params: Any = None) -> dict | None:
-        if self.last_explain is None:
-            return {}
         if not isinstance(m, VisualizationMethod):
             m = VisualizationMethod(m)
-        if m == VisualizationMethod.FEATURES:
+        if m == VisualizationMethod.BAR_CHART:
+            # Return empty dict if no explanation exists
+            if self.last_explain is None:
+                return {name: 0.0 for name in self.feature_names}
             exp, action = self.last_explain
             idx = 0
             if params is not None and isinstance(params, TabularLimeVisualizationParams):
                 idx = params.action
             idx = max(0, idx) % self.mask.action_space
-            # Return a dict of feature name → importance
+            # Return a dict of feature name: importance
             return {self.feature_names[fid]: weight for fid, weight in exp.local_exp.get(action, [])}
         return None

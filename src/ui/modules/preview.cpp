@@ -32,6 +32,11 @@ void Preview::VisualizedObject::init(PyVisualizable *obj)
     {
         _init_features();
     }
+
+    if (visualizable->supports(VisualizationMethod::BAR_CHART))
+    {
+        _init_bar_chart();
+    }
 }
 
 bool Preview::VisualizedObject::supports(VisualizationMethod method) const
@@ -46,6 +51,8 @@ bool Preview::VisualizedObject::supports(VisualizationMethod method) const
         return heat_map != nullptr;
     case VisualizationMethod::FEATURES:
         return features_params != nullptr;
+    case VisualizationMethod::BAR_CHART:
+        return bar_chart_params != nullptr;
     default:
         return false;
     }
@@ -61,6 +68,8 @@ void Preview::VisualizedObject::update()
         _update_heat_map();
     if (features_params)
         _update_features();
+    if (bar_chart_params)
+        _update_bar_chart();
 
     if (rgb_array == nullptr && visualizable->supports(VisualizationMethod::RGB_ARRAY))
         _init_rgb_array();
@@ -70,6 +79,8 @@ void Preview::VisualizedObject::update()
         _init_heat_map();
     if (features_params == nullptr && visualizable->supports(VisualizationMethod::FEATURES))
         _init_features();
+    if (bar_chart_params == nullptr && visualizable->supports(VisualizationMethod::BAR_CHART))
+        _init_bar_chart();
 }
 
 Preview::VisualizedObject::~VisualizedObject()
@@ -420,6 +431,52 @@ void Preview::VisualizedObject::_update_features()
         } });
 }
 
+void Preview::VisualizedObject::_init_bar_chart()
+{
+    if (!SafeWrapper::execute([&]
+                              {
+        auto type = visualizable->getVisualizationParamsType(VisualizationMethod::BAR_CHART);
+        bar_chart_params = new PyLiveObject();
+        if (type != std::nullopt && !type->is_none() && py::hasattr(*type, "__bases__")) {
+            py::tuple args(0);
+            bar_chart_params->object = (*type)(*args);
+            PyScope::parseLoadedModule(py::getattr(bar_chart_params->object, "__class__"), *bar_chart_params);
+        } else {
+            bar_chart_params->object = py::none();
+        } }))
+    {
+        Logger::error("Failed to initialize Bar Chart visualization (params) for object: " + std::string(visualizable->moduleName));
+        delete bar_chart_params;
+        bar_chart_params = nullptr;
+        return;
+    }
+
+    _update_bar_chart();
+}
+
+void Preview::VisualizedObject::_update_bar_chart()
+{
+    SafeWrapper::execute([&]
+                         {
+        auto data = visualizable->getVisualization(VisualizationMethod::BAR_CHART, bar_chart_params->object);
+        if (data.has_value()) {
+            bar_chart.clear();
+            py::dict dict = data->cast<py::dict>();
+
+            for (const auto item : dict) {
+                py::str key = py::str(item.first);
+                try {
+                    float value = py::cast<float>(item.second);
+                    bar_chart[key] = value;
+                } catch (...) {
+                    Logger::error("Failed to process bar chart entry: " + std::string(key));
+                }
+            }
+        } else {
+            Logger::warning("No Bar Chart visualization available");
+        } });
+}
+
 void Preview::VisualizedAgent::init(Pipeline::ActiveAgent *agent)
 {
 
@@ -519,6 +576,107 @@ static void _render_visualizable(Preview::VisualizedObject *obj, const std::stri
             ImGui::EndTabItem();
         }
 
+        if (obj->supports(VisualizationMethod::BAR_CHART) && ImGui::BeginTabItem("Bar Chart"))
+        {
+            // min/max values for scaling
+            float min_value = 0.0f;
+            float max_value = 0.0f;
+            for (const auto &[key, value] : obj->bar_chart)
+            {
+                min_value = std::min(min_value, value);
+                max_value = std::max(max_value, value);
+            }
+
+            float range_padding = std::max(std::abs(max_value), std::abs(min_value)) * 0.2f;
+            min_value -= range_padding;
+            max_value += range_padding;
+            if (min_value == max_value)
+            {
+                min_value -= 1.0f;
+                max_value += 1.0f;
+            }
+
+            // chart parameters
+            const float bar_width = 50.0f;
+            const float bar_spacing = 30.0f;
+            const float graph_height = 300.0f;
+            const float zero_line_y = graph_height * (max_value / (max_value - min_value));
+            const float value_range = max_value - min_value;
+
+            const float graph_width = (bar_width + bar_spacing) * obj->bar_chart.size() + bar_spacing;
+
+            if (ImGui::BeginChild("BarChartView", ImVec2(0, graph_height + 50), false,
+                                  ImGuiWindowFlags_HorizontalScrollbar))
+            {
+                ImDrawList *draw_list = ImGui::GetWindowDrawList();
+                const ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
+                const ImU32 positive_color = ImGui::GetColorU32(ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
+                const ImU32 negative_color = ImGui::GetColorU32(ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
+                const ImU32 text_color = ImGui::GetColorU32(ImGuiCol_Text);
+                const ImU32 axis_color = ImGui::GetColorU32(ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+
+                // zero line
+                draw_list->AddLine(
+                    ImVec2(cursor_pos.x, cursor_pos.y + zero_line_y),
+                    ImVec2(cursor_pos.x + graph_width, cursor_pos.y + zero_line_y),
+                    axis_color, 2.0f);
+
+                float x_offset = bar_spacing;
+
+                for (const auto &[key, value] : obj->bar_chart)
+                {
+                    const bool is_positive = value >= 0;
+                    const float bar_height = (std::abs(value) / value_range) * graph_height;
+
+                    // bar positions
+                    ImVec2 bar_min, bar_max;
+                    if (is_positive)
+                    {
+                        bar_min = ImVec2(cursor_pos.x + x_offset, cursor_pos.y + zero_line_y - bar_height);
+                        bar_max = ImVec2(cursor_pos.x + x_offset + bar_width, cursor_pos.y + zero_line_y);
+                    }
+                    else
+                    {
+                        bar_min = ImVec2(cursor_pos.x + x_offset, cursor_pos.y + zero_line_y);
+                        bar_max = ImVec2(cursor_pos.x + x_offset + bar_width, cursor_pos.y + zero_line_y + bar_height);
+                    }
+
+                    draw_list->AddRectFilled(bar_min, bar_max,
+                                             is_positive ? positive_color : negative_color, 3.0f);
+
+                    // value text
+                    char value_text[32];
+                    snprintf(value_text, sizeof(value_text), "%.2f", value);
+                    const ImVec2 text_size = ImGui::CalcTextSize(value_text);
+
+                    ImVec2 text_pos;
+                    if (is_positive)
+                    {
+                        text_pos = ImVec2(
+                            bar_min.x + (bar_width - text_size.x) * 0.5f,
+                            bar_min.y - text_size.y - 2.0f);
+                    }
+                    else
+                    {
+                        text_pos = ImVec2(
+                            bar_min.x + (bar_width - text_size.x) * 0.5f,
+                            bar_max.y + 2.0f);
+                    }
+                    draw_list->AddText(text_pos, text_color, value_text);
+
+                    // feature names
+                    const ImVec2 name_pos = ImVec2(
+                        bar_min.x + (bar_width - ImGui::CalcTextSize(key.c_str()).x) * 0.5f,
+                        cursor_pos.y + graph_height + 5.0f);
+                    draw_list->AddText(name_pos, text_color, key.c_str());
+
+                    x_offset += bar_width + bar_spacing;
+                }
+            }
+            ImGui::EndChild();
+            ImGui::EndTabItem();
+        }
+
         ImGui::EndTabBar();
     }
 }
@@ -578,33 +736,49 @@ static void _render_agent_basic(const Pipeline::ActiveAgent &agent, float width,
 
 typedef std::function<void(Pipeline::ActiveAgent &, float, int)> _agent_render_function;
 
-static int agents_per_row = 3;
+static int agents_per_row = 2;
 static void tab_wrapper(const _agent_render_function &_f)
 {
+    ImGui::BeginChild("AgentsScrollArea", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+    
     { // agents previews (env)
-        auto child_width = (ImGui::GetContentRegionAvail().x - (agents_per_row + 1) * 10) / agents_per_row;
+        auto available_width = ImGui::GetContentRegionAvail().x;
+        auto child_width = (available_width - (agents_per_row + 1) * 10) / agents_per_row;
         child_width = std::max(child_width, 320.0f);
 
-        float y = ImGui::GetCursorPosY() + 10;
-        float max_height = 0;
-        for (int i = 0; i < Pipeline::PipelineState::activeAgents.size(); i++)
-        {
-            auto &agent = Pipeline::PipelineState::activeAgents[i];
-            ImGui::PushID(i);
-            ImGui::SetCursorPos({(i % agents_per_row) * (child_width + 10) + 10, y});
-            ImGui::BeginGroup();
-            _f(agent, child_width, i);
-            ImGui::EndGroup();
-            ImGui::PopID();
-            auto size = ImGui::GetItemRectSize();
-            max_height = std::max(max_height, size.y);
-            if (i % agents_per_row == 0 && i != 0)
-            {
-                y += max_height + 10; // add some spacing
-                max_height = 0;       // reset for next row
+        int num_rows = (Pipeline::PipelineState::activeAgents.size() + agents_per_row - 1) / agents_per_row;
+        float total_height = 0;
+        
+        for (int row = 0; row < num_rows; row++) {
+            float max_height_in_row = 0;
+            
+            for (int col = 0; col < agents_per_row; col++) {
+                int agent_index = row * agents_per_row + col;
+                if (agent_index >= Pipeline::PipelineState::activeAgents.size())
+                    break;
+                
+                auto &agent = Pipeline::PipelineState::activeAgents[agent_index];
+                ImGui::PushID(agent_index);
+                
+                ImGui::SetCursorPos(ImVec2(col * (child_width + 10) + 10, total_height + 10));
+                ImGui::BeginGroup();
+                _f(agent, child_width, agent_index);
+                ImGui::EndGroup();
+                
+                ImGui::PopID();
+                auto size = ImGui::GetItemRectSize();
+                max_height_in_row = std::max(max_height_in_row, size.y);
             }
+            
+            total_height += max_height_in_row + 10; // spacing after each row
         }
+        
+        // dummy item to ensure proper scrolling
+        ImGui::SetCursorPos(ImVec2(0, total_height));
+        ImGui::Dummy(ImVec2(1, 1));
     }
+    
+    ImGui::EndChild();
 }
 
 static void _render_preview()
