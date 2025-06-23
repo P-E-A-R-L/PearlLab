@@ -35,6 +35,8 @@ namespace PipelineGraph
 
         PinDirection direction;
 
+        std::string type_name;
+
         py::object type = py::none(); // the output / input type of this node
         py::object value = py::none();
     };
@@ -256,7 +258,7 @@ namespace PipelineGraph
         std::vector<Node *> plan;
         Nodes::AcceptorNode *acceptor;
         RecipeType type;
-        py::object create();
+        py::object create() const;
     };
 };
 

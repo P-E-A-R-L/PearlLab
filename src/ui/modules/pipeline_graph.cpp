@@ -214,6 +214,8 @@ namespace PipelineGraph
 
     ed::NodeId addNode(Node *n)
     {
+        py::gil_scoped_acquire acquire{};
+
         nodes.push_back(n);
         nodeLookup[n->id] = n;
 
@@ -232,6 +234,8 @@ namespace PipelineGraph
 
     void removeNode(ed::NodeId id)
     {
+        py::gil_scoped_acquire acquire{};
+
         auto node = nodeLookup.find(id);
         if (node == nodeLookup.end())
         {
@@ -248,6 +252,8 @@ namespace PipelineGraph
 
     void clearNode(ed::NodeId id)
     {
+        py::gil_scoped_acquire acquire{};
+
         auto node = nodeLookup.find(id);
         if (node == nodeLookup.end())
         {
@@ -333,6 +339,8 @@ namespace PipelineGraph
     // same as AddLink, but this one is called from UI
     ed::LinkId _addLink(ed::PinId inputPinId, ed::PinId outputPinId)
     {
+        py::gil_scoped_acquire acquire{};
+
         if (inputPinId && outputPinId)
         { // ed::AcceptNewItem() return true when user release mouse button.
             auto src = pinLookup[outputPinId];
@@ -410,6 +418,8 @@ namespace PipelineGraph
 
     void removeLink(ed::LinkId id)
     {
+        py::gil_scoped_acquire acquire{};
+
         auto link = linkLookup.find(id);
         if (link == linkLookup.end())
         {
@@ -549,6 +559,7 @@ namespace PipelineGraph
 
         result.acceptor = dynamic_cast<Nodes::AcceptorNode *>(start);
         result.type = Agent;
+
         if (dynamic_cast<Nodes::EnvAcceptorNode *>(result.acceptor))
             result.type = Environment;
         if (dynamic_cast<Nodes::MethodAcceptorNode *>(result.acceptor))
@@ -559,14 +570,15 @@ namespace PipelineGraph
 
     std::vector<ObjectRecipe> build()
     {
+        py::gil_scoped_acquire acquire{};
+
         std::vector<ObjectRecipe> result;
         for (const auto node : nodes)
         {
             if (dynamic_cast<Nodes::AcceptorNode *>(node))
             {
                 auto k = _buildFromSource(node);
-                if (k == std::nullopt)
-                {
+                if (k == std::nullopt) {
                     Logger::error("Failed to create build recipe from node: " + std::string(node->_tag));
                     continue;
                 }
@@ -579,6 +591,8 @@ namespace PipelineGraph
 
     void init(const std::string &graph_file)
     {
+        py::gil_scoped_acquire acquire{};
+
         ed::Config config;
         config.SettingsFile = graph_file.c_str();
         m_Context = ed::CreateEditor(&config);
@@ -613,8 +627,7 @@ namespace PipelineGraph
         ImGui::Text("%s (%ul)", p->name.c_str(), p->id.Get());
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
         FontManager::pushFont("Light");
-        std::string py_type_name = py::str(p->type);
-        ImGui::Text(py_type_name.c_str());
+        ImGui::Text(p->type_name.c_str());
         FontManager::popFont();
         ImGui::PopStyleColor();
 
@@ -871,55 +884,42 @@ namespace PipelineGraph
 
     void destroy()
     {
+        py::gil_scoped_acquire acquire{};
+
         ed::DestroyEditor(m_Context);
 
-        for (auto node : nodes)
-        {
+        for (auto node : nodes) {
             delete node;
         }
         nodes.clear();
 
-        for (auto link : links)
-        {
+        for (auto link : links) {
             delete link;
         }
         links.clear();
     }
 
-    py::object ObjectRecipe::create()
-    {
-        for (auto node : plan)
-        {
+    py::object ObjectRecipe::create() const {
+        for (auto node : plan) {
             node->init();
         }
 
-        try
-        {
-            for (auto node : plan)
-            {
-                if (node->canExecute())
-                {
+        try {
+            for (auto node : plan) {
+                if (node->canExecute()) {
                     node->exec();
-                }
-                else
-                {
+                } else {
                     Logger::error("Node " + std::string(node->_tag) + " cannot be executed, missing inputs or dependencies.");
                     return py::none();
                 }
             }
-        }
-        catch (const std::exception &e)
-        {
+        } catch (const std::exception &e) {
             Logger::error("Exception while creating recipe: " + std::string(e.what()));
             return py::none();
-        }
-        catch (py::error_already_set &e)
-        {
+        } catch (py::error_already_set &e) {
             Logger::error("Python error while creating recipe: " + std::string(e.what()));
             return py::none();
-        }
-        catch (...)
-        {
+        } catch (...) {
             Logger::error("Unknown error while creating recipe");
             return py::none();
         }
@@ -1028,6 +1028,8 @@ namespace PipelineGraph
 
     Nodes::PrimitiveIntNode::PrimitiveIntNode()
     {
+        py::gil_scoped_acquire acquire{};
+
         id = GetNextId();
         this->name = "Primitive Int";
 
@@ -1038,6 +1040,7 @@ namespace PipelineGraph
         output.tooltip = "Integer value";
         output.direction = OUTPUT;
         output.type = PyScope::getInstance().int_type;
+        output.type_name = py::str(output.type);
         value = 0;
         rangeEnd = -1;
         rangeStart = -1;
@@ -1047,6 +1050,8 @@ namespace PipelineGraph
 
     Nodes::PrimitiveIntNode::PrimitiveIntNode(int val)
     {
+        py::gil_scoped_acquire acquire{};
+
         id = GetNextId();
         this->name = "Primitive Int";
 
@@ -1057,6 +1062,7 @@ namespace PipelineGraph
         output.tooltip = "Integer value";
         output.direction = OUTPUT;
         output.type = PyScope::getInstance().int_type;
+        output.type_name = py::str(output.type);
         value = val;
         rangeEnd = -1;
         rangeStart = -1;
@@ -1066,6 +1072,8 @@ namespace PipelineGraph
 
     Nodes::PrimitiveIntNode::PrimitiveIntNode(int val, int v_rangeStart, int v_rangeEnd)
     {
+        py::gil_scoped_acquire acquire{};
+
         id = GetNextId();
         this->name = "Primitive Int";
 
@@ -1077,6 +1085,7 @@ namespace PipelineGraph
         output.tooltip = "Integer value";
         output.direction = OUTPUT;
         output.type = PyScope::getInstance().int_type;
+        output.type_name = py::str(output.type);
 
         value = val;
         rangeStart = v_rangeStart;
@@ -1146,6 +1155,8 @@ namespace PipelineGraph
 
     Nodes::PrimitiveFloatNode::PrimitiveFloatNode()
     {
+        py::gil_scoped_acquire acquire{};
+
         id = GetNextId();
         this->name = "Primitive Float";
 
@@ -1156,6 +1167,7 @@ namespace PipelineGraph
         output.tooltip = "Float value";
         output.direction = OUTPUT;
         output.type = PyScope::getInstance().float_type;
+        output.type_name = py::str(output.type);
         value = 0;
         rangeEnd = -1;
         rangeStart = -1;
@@ -1165,6 +1177,8 @@ namespace PipelineGraph
 
     Nodes::PrimitiveFloatNode::PrimitiveFloatNode(float val)
     {
+        py::gil_scoped_acquire acquire{};
+
         id = GetNextId();
         this->name = "Primitive Float";
 
@@ -1175,6 +1189,7 @@ namespace PipelineGraph
         output.tooltip = "Float value";
         output.direction = OUTPUT;
         output.type = PyScope::getInstance().float_type;
+        output.type_name = py::str(output.type);
         value = val;
         rangeEnd = -1;
         rangeStart = -1;
@@ -1184,6 +1199,8 @@ namespace PipelineGraph
 
     Nodes::PrimitiveFloatNode::PrimitiveFloatNode(float val, float v_rangeStart, float v_rangeEnd)
     {
+        py::gil_scoped_acquire acquire{};
+
         id = GetNextId();
         this->name = "Primitive Float";
 
@@ -1195,6 +1212,7 @@ namespace PipelineGraph
         output.tooltip = "Float value";
         output.direction = OUTPUT;
         output.type = PyScope::getInstance().float_type;
+        output.type_name = py::str(output.type);
 
         value = val;
         rangeStart = v_rangeStart;
@@ -1264,6 +1282,8 @@ namespace PipelineGraph
 
     Nodes::PrimitiveStringNode::PrimitiveStringNode()
     {
+        py::gil_scoped_acquire acquire{};
+
         _file = false;
 
         id = GetNextId();
@@ -1277,12 +1297,15 @@ namespace PipelineGraph
         output.tooltip = "String value";
         output.direction = OUTPUT;
         output.type = PyScope::getInstance().str_type;
+        output.type_name = py::str(output.type);
 
         outputs.push_back(output);
     }
 
     Nodes::PrimitiveStringNode::PrimitiveStringNode(bool file)
     {
+        py::gil_scoped_acquire acquire{};
+
         _file = file;
 
         id = GetNextId();
@@ -1296,12 +1319,15 @@ namespace PipelineGraph
         output.tooltip = "String value";
         output.direction = OUTPUT;
         output.type = PyScope::getInstance().str_type;
+        output.type_name = py::str(output.type);
 
         outputs.push_back(output);
     }
 
     Nodes::PrimitiveStringNode::PrimitiveStringNode(const std::string &val)
     {
+        py::gil_scoped_acquire acquire{};
+
         _file = false;
 
         id = GetNextId();
@@ -1318,6 +1344,7 @@ namespace PipelineGraph
         output.tooltip = "String value";
         output.direction = OUTPUT;
         output.type = PyScope::getInstance().str_type;
+        output.type_name = py::str(output.type);
 
         outputs.push_back(output);
     }
@@ -1393,6 +1420,8 @@ namespace PipelineGraph
 
     Nodes::AdderNode::AdderNode()
     {
+        py::gil_scoped_acquire acquire{};
+
         id = GetNextId();
         this->name = "Adder";
 
@@ -1423,6 +1452,14 @@ namespace PipelineGraph
         inputs.push_back(input1);
         inputs.push_back(input2);
         outputs.push_back(output);
+
+        for (auto& in: inputs) {
+            in.type_name = py::str(in.type);
+        }
+
+        for (auto& out: outputs) {
+            out.type_name = py::str(out.type);
+        }
     }
 
     void Nodes::AdderNode::exec()
@@ -1493,6 +1530,8 @@ namespace PipelineGraph
 
     Nodes::PythonModuleNode::PythonModuleNode() : _type(nullptr)
     {
+        py::gil_scoped_acquire acquire{};
+
         id = GetNextId();
         this->name = "Python Module";
 
@@ -1508,6 +1547,7 @@ namespace PipelineGraph
         output.direction = OUTPUT;
         output.tooltip = "The Object";
         output.type = _type->module;
+        output.type_name = py::str(_type->module);
         outputs.push_back(output);
 
         for (auto &param : _type->constructor)
@@ -1520,10 +1560,20 @@ namespace PipelineGraph
             input.type = param.type;
             inputs.push_back(input);
         }
+
+        for (auto& in: inputs) {
+            in.type_name = py::str(in.type);
+        }
+
+        for (auto& out: outputs) {
+            out.type_name = py::str(out.type);
+        }
     }
 
     Nodes::PythonModuleNode::PythonModuleNode(PyScope::LoadedModule *type)
     {
+        py::gil_scoped_acquire acquire{};
+
         _type = type;
 
         id = GetNextId();
@@ -1624,6 +1674,8 @@ namespace PipelineGraph
 
     Nodes::PythonFunctionNode::PythonFunctionNode()
     {
+        py::gil_scoped_acquire acquire{};
+
         _type = nullptr;
         _pointer = false;
 
@@ -1636,6 +1688,8 @@ namespace PipelineGraph
 
     Nodes::PythonFunctionNode::PythonFunctionNode(PyScope::LoadedModule *type)
     {
+        py::gil_scoped_acquire acquire{};
+
         _type = type;
         _pointer = false;
 
@@ -1650,6 +1704,8 @@ namespace PipelineGraph
 
     Nodes::PythonFunctionNode::PythonFunctionNode(PyScope::LoadedModule *type, bool pointer)
     {
+        py::gil_scoped_acquire acquire{};
+
         _type = type;
         _pointer = pointer;
 
@@ -1796,8 +1852,7 @@ namespace PipelineGraph
         SingleOutputNode::load(custom_data);
     }
 
-    void Nodes::PythonFunctionNode::_preparePins()
-    {
+    void Nodes::PythonFunctionNode::_preparePins() {
         Pin output;
         output.id = GetNextId();
         output.name = "ret";
@@ -1818,6 +1873,14 @@ namespace PipelineGraph
         }
 
         inputs = _inputs;
+
+        for (auto& in: inputs) {
+            in.type_name = py::str(in.type);
+        }
+
+        for (auto& out: outputs) {
+            out.type_name = py::str(out.type);
+        }
     }
 
     Nodes::AcceptorNode::AcceptorNode() = default;
@@ -1904,6 +1967,8 @@ namespace PipelineGraph
 
     void Nodes::DeMuxNode::_preparePins(int numOutputs)
     {
+        py::gil_scoped_acquire acquire{};
+
         Pin input;
         input.id = GetNextId();
         input.name = "obj";
@@ -1924,10 +1989,19 @@ namespace PipelineGraph
             output.type = PyScope::getInstance().object_type;
             outputs.push_back(output);
         }
+
+        for (auto& in: inputs) {
+            in.type_name = py::str(in.type);
+        }
+
+        for (auto& out: outputs) {
+            out.type_name = py::str(out.type);
+        }
     }
 
     Nodes::AgentAcceptorNode::AgentAcceptorNode()
     {
+        py::gil_scoped_acquire acquire{};
 
         id = GetNextId();
         this->name = "Agent Acceptor";
@@ -1939,10 +2013,20 @@ namespace PipelineGraph
         input.tooltip = "The Agent to add to pipeline";
         input.type = PyScope::getInstance().pearl_agent_type;
         inputs.push_back(input);
+
+
+        for (auto& in: inputs) {
+            in.type_name = py::str(in.type);
+        }
+
+        for (auto& out: outputs) {
+            out.type_name = py::str(out.type);
+        }
     }
 
     Nodes::EnvAcceptorNode::EnvAcceptorNode()
     {
+        py::gil_scoped_acquire acquire{};
 
         id = GetNextId();
         this->name = "Env Acceptor";
@@ -1954,10 +2038,21 @@ namespace PipelineGraph
         input.tooltip = "The environment to add to pipeline";
         input.type = PyScope::getInstance().pearl_env_type;
         inputs.push_back(input);
+
+
+        for (auto& in: inputs) {
+            in.type_name = py::str(in.type);
+        }
+
+        for (auto& out: outputs) {
+            out.type_name = py::str(out.type);
+        }
     }
 
     Nodes::MaskAcceptorNode::MaskAcceptorNode()
     {
+        py::gil_scoped_acquire acquire{};
+
         id = GetNextId();
         this->name = "Mask Acceptor";
 
@@ -1968,10 +2063,21 @@ namespace PipelineGraph
         input.tooltip = "The mask to add to pipeline";
         input.type = PyScope::getInstance().pearl_mask_type;
         inputs.push_back(input);
+
+
+        for (auto& in: inputs) {
+            in.type_name = py::str(in.type);
+        }
+
+        for (auto& out: outputs) {
+            out.type_name = py::str(out.type);
+        }
     }
 
     Nodes::MethodAcceptorNode::MethodAcceptorNode()
     {
+        py::gil_scoped_acquire acquire{};
+
         id = GetNextId();
         this->name = "Method Acceptor";
 
@@ -1982,5 +2088,14 @@ namespace PipelineGraph
         input.tooltip = "The method to add to pipeline";
         input.type = PyScope::getInstance().pearl_method_type;
         inputs.push_back(input);
+
+
+        for (auto& in: inputs) {
+            in.type_name = py::str(in.type);
+        }
+
+        for (auto& out: outputs) {
+            out.type_name = py::str(out.type);
+        }
     }
 }

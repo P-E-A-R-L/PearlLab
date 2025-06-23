@@ -57,6 +57,11 @@ void LabLayout::init(const std::string &project_path)
     Preview::init();
 }
 
+void LabLayout::update() {
+    // before we render any content
+    Pipeline::update();
+}
+
 void LabLayout::render()
 {
 
@@ -226,8 +231,7 @@ void LabLayout::render()
 
     ImGui::End();
 
-    // before we render any content
-    Pipeline::update();
+
 
     // Render individual windows
     renderParamsModule();

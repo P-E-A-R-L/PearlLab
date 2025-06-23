@@ -8,6 +8,7 @@ namespace LabLayout
 {
     extern ProjectManager::ProjectDetails project_details;
     void init(const std::string &project_path);
+    void update();
     void render();
     void destroy();
 }

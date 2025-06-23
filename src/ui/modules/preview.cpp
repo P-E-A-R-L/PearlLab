@@ -11,6 +11,8 @@
 
 void Preview::VisualizedObject::init(PyVisualizable *obj)
 {
+    py::gil_scoped_acquire acquire{};
+
     this->visualizable = obj;
 
     if (visualizable->supports(VisualizationMethod::RGB_ARRAY))
@@ -58,8 +60,7 @@ bool Preview::VisualizedObject::supports(VisualizationMethod method) const
     }
 }
 
-void Preview::VisualizedObject::update()
-{
+void Preview::VisualizedObject::update() {
     if (rgb_array)
         _update_rgb_array();
     if (gray)
@@ -83,8 +84,7 @@ void Preview::VisualizedObject::update()
         _init_bar_chart();
 }
 
-Preview::VisualizedObject::~VisualizedObject()
-{
+Preview::VisualizedObject::~VisualizedObject() {
     visualizable = nullptr;
 
     delete rgb_array;
@@ -110,10 +110,8 @@ Preview::VisualizedObject::~VisualizedObject()
     features_params = nullptr;
 }
 
-void Preview::VisualizedObject::_init_rgb_array()
-{
-    if (!SafeWrapper::execute([&]
-                              {
+void Preview::VisualizedObject::_init_rgb_array() {
+    if (!SafeWrapper::execute([&]{
         auto type = visualizable->getVisualizationParamsType(VisualizationMethod::RGB_ARRAY);
         rgb_array_params = new PyLiveObject();
         if (type != std::nullopt && !type->is_none() && py::hasattr(*type, "__bases__")) {
@@ -500,13 +498,13 @@ void Preview::VisualizedAgent::init(Pipeline::ActiveAgent *agent)
 
 void Preview::VisualizedAgent::update() const
 {
-    if (env_visualization)
-    {
+    py::gil_scoped_acquire acquire{};
+
+    if (env_visualization){
         env_visualization->update();
     }
 
-    for (auto &method_vis : method_visualizations)
-    {
+    for (auto &method_vis : method_visualizations){
         method_vis->update();
     }
 }
@@ -681,14 +679,14 @@ static void _render_visualizable(Preview::VisualizedObject *obj, const std::stri
     }
 }
 
-static void _render_agent_basic(const Pipeline::ActiveAgent &agent, float width, int index)
+static void _render_agent_basic(const Pipeline::ActiveAgent* agent, float width, int index)
 {
-    ImGui::BeginChild(agent.name, ImVec2(width, 0), true);
+    ImGui::BeginChild(agent->name, ImVec2(width, 0), true);
     FontManager::pushFont("Bold");
-    ImGui::Text("%s", agent.name);
+    ImGui::Text("%s", agent->name);
     FontManager::popFont();
 
-    if (agent.env)
+    if (agent->env)
     {
         _render_visualizable(Preview::previews[index]->env_visualization, "No observations available.");
     }
@@ -705,7 +703,7 @@ static void _render_agent_basic(const Pipeline::ActiveAgent &agent, float width,
         ImGui::TableSetupColumn("Normalized");
         ImGui::TableHeadersRow();
 
-        for (int i = 0; i < agent.methods.size(); ++i)
+        for (int i = 0; i < agent->methods.size(); ++i)
         {
             ImGui::TableNextRow();
 
@@ -713,20 +711,20 @@ static void _render_agent_basic(const Pipeline::ActiveAgent &agent, float width,
             ImGui::Text("%s", Pipeline::PipelineConfig::pipelineMethods[i].name);
 
             ImGui::TableSetColumnIndex(1);
-            ImGui::Text("%.2f", agent.scores_ep[i]);
+            ImGui::Text("%.2f", agent->scores_ep[i]);
 
             ImGui::TableSetColumnIndex(2);
-            ImGui::Text("%.2f", agent.scores_total[i]);
+            ImGui::Text("%.2f", agent->scores_total[i]);
 
             ImGui::TableSetColumnIndex(3);
-            float normalized = (agent.total_steps > 0) ? agent.scores_total[i] / agent.total_steps : 0.0f;
+            float normalized = (agent->total_steps > 0) ? agent->scores_total[i] / agent->total_steps : 0.0f;
             ImGui::Text("%.4f", normalized);
         }
 
         ImGui::EndTable();
     }
 
-    if (agent.env_terminated || agent.env_truncated)
+    if (agent->env_terminated || agent->env_truncated)
     {
         ImGui::Text("<Episode completed>");
     }
@@ -734,9 +732,9 @@ static void _render_agent_basic(const Pipeline::ActiveAgent &agent, float width,
     ImGui::EndChild();
 }
 
-typedef std::function<void(Pipeline::ActiveAgent &, float, int)> _agent_render_function;
+typedef std::function<void(Pipeline::ActiveAgent*, float, int)> _agent_render_function;
 
-static int agents_per_row = 2;
+static int agents_per_row = 3;
 static void tab_wrapper(const _agent_render_function &_f)
 {
     ImGui::BeginChild("AgentsScrollArea", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
@@ -783,9 +781,7 @@ static void tab_wrapper(const _agent_render_function &_f)
 
 static void _render_preview()
 {
-
-    for (int i = 0; i < Pipeline::PipelineState::activeAgents.size(); i++)
-    {
+    for (int i = 0; i < Pipeline::PipelineState::activeAgents.size(); i++) {
         Preview::previews[i]->update(); // update the visualizations (textures, features, etc ..)
     }
 
@@ -830,21 +826,21 @@ static void _render_preview()
             ImGui::PushID(i);
             if (Pipeline::PipelineConfig::pipelineMethods[i].active && ImGui::BeginTabItem(Pipeline::PipelineConfig::pipelineMethods[i].name))
             {
-                tab_wrapper([&](Pipeline::ActiveAgent &agent, float width, int index)
+                tab_wrapper([&](Pipeline::ActiveAgent *agent, float width, int index)
                             {
-                    ImGui::BeginChild(agent.name, ImVec2(width, 0), true);
+                    ImGui::BeginChild(agent->name, ImVec2(width, 0), true);
                     FontManager::pushFont("Bold");
-                    ImGui::Text("%s"   , agent.name);
+                    ImGui::Text("%s"   , agent->name);
                     FontManager::popFont();
 
-                    if (agent.methods[i]) {
+                    if (agent->methods[i]) {
                         _render_visualizable(Preview::previews[index]->method_visualizations[i], "No observations available.");
                     } else {
                         ImGui::Text("No method visualization available.");
                     }
 
 
-                    if (agent.env_terminated || agent.env_truncated) {
+                    if (agent->env_terminated || agent->env_truncated) {
                         ImGui::Text("<Episode completed>");
                     }
 
@@ -889,7 +885,7 @@ void Preview::onStart()
     for (auto &agent : Pipeline::PipelineState::activeAgents)
     {
         previews.push_back(new Preview::VisualizedAgent());
-        previews.back()->init(&agent);
+        previews.back()->init(agent);
     }
 }
 

@@ -93,6 +93,7 @@ public:
     template <typename T>
     static ssize_t argmax_impl(py::array_t<T> array)
     {
+        py::gil_scoped_acquire acquire{};
 
         auto buf = array.unchecked();
         if (buf.size() == 0)

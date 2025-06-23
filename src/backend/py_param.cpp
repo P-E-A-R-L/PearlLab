@@ -3,6 +3,8 @@
 
 std::string ParamTypeAsString(const py::object &t)
 {
+    py::gil_scoped_acquire acquire{};
+
     auto &instance = PyScope::getInstance();
     if (t.is_none())
         return "<None>";
@@ -19,6 +21,8 @@ std::string ParamTypeAsString(const py::object &t)
 
 bool isPrimitive(const py::object &t)
 {
+    py::gil_scoped_acquire acquire{};
+
     auto &instance = PyScope::getInstance();
     if (t.is_none())
         return false;

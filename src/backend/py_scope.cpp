@@ -81,6 +81,8 @@ void PyScope::clearInstance()
 
 py::module *PyScope::LoadModule(const std::string &module_path)
 {
+    py::gil_scoped_acquire acquire{};
+
     fs::path path(module_path);
     Logger::info("Attempting to load module: " + module_path);
     if (!fs::exists(path) || fs::is_directory(path))
@@ -140,6 +142,8 @@ py::module *PyScope::LoadModule(const std::string &module_path)
 
 std::vector<py::object> PyScope::LoadModuleForClasses(const std::string &path)
 {
+    py::gil_scoped_acquire acquire{};
+
     auto module = LoadModule(path);
     if (!module)
     {
@@ -188,6 +192,8 @@ std::vector<py::object> PyScope::LoadModuleForClasses(const std::string &path)
 
 bool PyScope::parseLoadedModule(py::object module, PyScope::LoadedModule &l)
 {
+    py::gil_scoped_acquire acquire{};
+
     l.module = module;
     l.moduleName = std::string(py::str(module.attr("__module__"))) + std::string(".") + std::string(py::str(module.attr("__qualname__")));
 
@@ -428,6 +434,8 @@ bool PyScope::parseLoadedModule(py::object module, PyScope::LoadedModule &l)
 
 ssize_t PyScope::argmax(const py::array &array)
 {
+    py::gil_scoped_acquire acquire{};
+
     auto dtype = array.dtype();
 
     if (py::isinstance<py::array_t<float>>(array))
@@ -446,10 +454,13 @@ PyScope::PyScope() {}
 
 void PyScope::init()
 {
+
     if (instance == nullptr)
     {
         instance = new PyScope();
     }
+
+    py::gil_scoped_acquire acquire{};
 
     Logger::info("Initializing Python ...");
     instance->sys = py::module_::import("sys");
@@ -555,6 +566,8 @@ void PyScope::init()
 
 bool PyScope::isSubclassOrInstance(py::handle obj, py::handle base)
 {
+    py::gil_scoped_acquire acquire{};
+
     if (obj.is_none() && base.is_none())
     {
         return true; // both are None, considered as same type
@@ -577,6 +590,8 @@ bool PyScope::isSubclassOrInstance(py::handle obj, py::handle base)
 
 Param PyScope::parseParamFromAnnotation(py::handle value)
 {
+    py::gil_scoped_acquire acquire{};
+
     py::object typ = value.attr("typ");
     bool editable = py::bool_(value.attr("editable"));
     std::string rangeStart = py::str(value.attr("range_start"));

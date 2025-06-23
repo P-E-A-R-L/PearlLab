@@ -108,6 +108,10 @@ int application_loop();
 int application_destroy();
 
 int main(int argc, char** argv) {
+
+    if (argc == 2) {
+        OpenProject(argv[1]);
+    }
     // Initialize GLFW
     if (!glfwInit()) return -1 ;
 
@@ -159,7 +163,6 @@ int main(int argc, char** argv) {
 
         ImGui::NewFrame();
 
-        // LabLayout::render(); // render the main app
         if (_run_application) {
             if (!_application_initialized) {
                 _application_initialized = true;

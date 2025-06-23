@@ -51,6 +51,10 @@ int application_init(const std::string& project_path) {
 
 
 int application_loop() {
+    pybind11::gil_scoped_release release{}; // release the gil entirely for this thread now any function
+                                            // logic that relies on it, should get it's own lock
+
+    LabLayout::update();
     LabLayout::render(); // render the main app
     return 0;
 }

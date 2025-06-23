@@ -44,7 +44,6 @@ namespace Preview
 
         void _init_bar_chart();
         void _update_bar_chart();
-        void TextRotated(const char* text, float angle_degrees);
     };
 
     struct VisualizedAgent

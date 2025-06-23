@@ -3,6 +3,7 @@
 #include <chrono>
 #include <algorithm>
 #include <iomanip>
+#include <mutex>
 #include <sstream>
 
 static std::map<Logger::Level, std::string> LevelsNames;
@@ -12,8 +13,9 @@ static bool sortByTime = false;
 
 static std::vector<Logger::Entry> entries{};
 
-void Logger::init()
-{
+static std::mutex mutex{};
+
+void Logger::init() {
     LevelsNames = {
         {Level::INFO, "Info"},
         {Level::ERROR, "Error"},
@@ -23,16 +25,15 @@ void Logger::init()
     types = {Level::INFO, Level::ERROR, Level::WARNING, Level::MESSAGE};
 }
 
-void Logger::log(const std::string &message, Level level, ImVec4 color, time_t time)
-{
-    entries.push_back({message, level, color, time});
+void Logger::log(const std::string &message, Level level, ImVec4 color, time_t time) {
+    mutex.lock();
+        entries.push_back({message, level, color, time});
+    mutex.unlock();
 }
 
-void Logger::log(const std::string &message, Level level)
-{
+void Logger::log(const std::string &message, Level level) {
     ImVec4 color;
-    switch (level)
-    {
+    switch (level) {
     case INFO:
         color = ImVec4(0.4f, 0.8f, 1.0f, 1.0f);
         break;
@@ -54,33 +55,27 @@ void Logger::log(const std::string &message, Level level)
     log(message, level, color, now);
 }
 
-void Logger::info(const std::string &message)
-{
+void Logger::info(const std::string &message) {
     log(message, INFO);
 }
 
-void Logger::warning(const std::string &message)
-{
+void Logger::warning(const std::string &message) {
     log(message, WARNING);
 }
 
-void Logger::error(const std::string &message)
-{
+void Logger::error(const std::string &message) {
     log(message, ERROR);
 }
 
-void Logger::message(const std::string &message)
-{
+void Logger::message(const std::string &message) {
     log(message, MESSAGE);
 }
 
-void Logger::clear()
-{
+void Logger::clear() {
     entries.clear();
 }
 
-void Logger::setAutoScroll(bool value)
-{
+void Logger::setAutoScroll(bool value) {
     autoScroll = value;
 }
 

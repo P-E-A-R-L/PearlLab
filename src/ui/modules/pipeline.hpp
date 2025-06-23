@@ -1,6 +1,7 @@
 #ifndef PIPELINE_HPP
 #define PIPELINE_HPP
 
+#include <atomic>
 #include <vector>
 
 #include "pipeline_graph.hpp"
@@ -15,12 +16,22 @@ namespace Pipeline
     extern std::vector<PipelineGraph::ObjectRecipe> agents;
     extern std::vector<PipelineGraph::ObjectRecipe> methods;
 
+    enum ActiveAgentState {
+        IDLE,
+        SELECTING_ACTION,
+        STEPPING,
+    };
+
+    struct ActiveActionStateData {
+        size_t next_action = -1;
+    };
+
     struct ActiveAgent
     {
         char name[256] = "Agent";
 
         PyAgent *agent = nullptr;
-        PyEnv *env = nullptr;
+        PyEnv   *env = nullptr;
         std::vector<PyMethod *> methods;
 
         std::vector<double> scores_total;
@@ -36,12 +47,20 @@ namespace Pipeline
         bool env_terminated;
         bool env_truncated;
         double last_move_reward = 0;
+
+        // state variables
+        std::atomic<ActiveAgentState> state = IDLE;
+        std::atomic<size_t>           next_action   = 0;
+        std::atomic<size_t>           steps_to_take = 0;
+
+        std::atomic<bool> _worker_stop    = false; // a signal to notify the worker to stop
+        std::atomic<bool> _worker_running = true;  // is a worker running for this agent ?
     };
 
     struct PipelineAgent
     {
         char name[256] = "Method";
-        PipelineGraph::ObjectRecipe *recipe;
+        PipelineGraph::ObjectRecipe *recipe{};
         bool active = true;
         int recipe_index = 0;
     };
@@ -49,7 +68,7 @@ namespace Pipeline
     struct PipelineMethod
     {
         char name[256] = "Agent";
-        PipelineGraph::ObjectRecipe *recipe;
+        PipelineGraph::ObjectRecipe *recipe{};
         float weight = 1;
         bool active = true;
         int recipe_index = 0;
@@ -71,9 +90,17 @@ namespace Pipeline
         extern std::vector<PipelineMethod> pipelineMethods;
     }
 
+    enum ExperimentState {
+        STOPPED,
+        INITIALIZING,
+        FAILED,
+        RUNNING,
+        STOPPING,
+    };
+
     namespace PipelineState
     {
-        extern bool Experimenting;
+        extern std::atomic<ExperimentState> experimentState;
         extern bool Simulating;
         extern int StepSimFrames;
 
@@ -95,7 +122,7 @@ namespace Pipeline
         extern StepPolicy stepPolicy;
         extern ScorePolicy scorePolicy;
 
-        extern std::vector<ActiveAgent> activeAgents;
+        extern std::vector<ActiveAgent*> activeAgents;
     }
 
     // simulation control

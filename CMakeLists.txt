@@ -154,3 +154,16 @@ target_link_libraries(PearlLab
         pybind11::module
         yaml-cpp
 )
+
+
+add_executable(sandbox src/sandbox.cpp)
+
+target_link_libraries(sandbox
+        glfw
+        OpenGL::GL
+        ImGuiFileDialog
+        ${Boost_LIBRARIES}
+        ${Python3_LIBRARIES}
+        pybind11::module
+        yaml-cpp
+)

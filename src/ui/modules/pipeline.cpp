@@ -1,5 +1,8 @@
 #include "pipeline.hpp"
 
+#include <iostream>
+#include <thread>
+
 #include "logger.hpp"
 #include "../font_manager.hpp"
 #include "imgui_internal.h"
@@ -33,25 +36,254 @@ namespace Pipeline
 
     namespace PipelineState
     {
-        bool Experimenting = false;
+        std::atomic<ExperimentState> experimentState = STOPPED;
         bool Simulating = false;
         int StepSimFrames = 0;
 
-        std::vector<ActiveAgent> activeAgents{};
+        std::vector<ActiveAgent*> activeAgents{};
 
         StepPolicy stepPolicy = INDEPENDENT;
         ScorePolicy scorePolicy = PEARL;
 
+        static std::atomic<int> _agentsCountOk;
+        static std::atomic<int> _agentsCountFailed;
     }
 
     bool isExperimenting()
     {
-        return PipelineState::Experimenting;
+        return PipelineState::experimentState == RUNNING;
+    }
+
+    static void _agent_worker_init(ActiveAgent* agent, PipelineAgent* recipe) {
+        Logger::info("Initializing agent: " + std::string(agent->name));
+        py::gil_scoped_acquire acquire; // take GIL lock
+        agent->agent            = new PyAgent();
+        agent->agent->object    = recipe->recipe->create();
+
+        if (agent->agent->object.is_none()) {
+            Logger::error("Failed to create agent: " + std::string(agent->name));
+            PipelineState::_agentsCountFailed += 1;
+            return;
+        }
+
+        PyScope::parseLoadedModule(py::getattr(agent->agent->object, "__class__"), *agent->agent);
+
+        agent->env               = new PyEnv();
+        agent->env->object       = envs[PipelineConfig::activeEnv].create();
+
+        if (agent->env->object.is_none()) {
+            Logger::error("Failed to create environment for agent: " + std::string(agent->name));
+            PipelineState::_agentsCountFailed += 1;
+            return;
+        }
+
+        PyScope::parseLoadedModule(py::getattr(agent->agent->object, "__class__"), *agent->env);
+
+        agent->reward_total = 0;
+        agent->reward_ep    = 0;
+
+        agent->steps_current_episode = 0;
+        agent->total_episodes        = 0;
+        agent->total_steps           = 0;
+
+        agent->last_move_reward      = 0;
+        agent->env_terminated        = false;
+        agent->env_truncated         = false;
+
+
+        for (auto& method: PipelineConfig::pipelineMethods) {
+            const auto methodPtr          = new PyMethod();
+            methodPtr->object             = method.recipe->create();
+
+            if (methodPtr->object.is_none()) {
+                delete methodPtr;
+                Logger::error("Failed to create method for agent: " + std::string(agent->name));
+                PipelineState::_agentsCountFailed += 1;
+                return;
+            }
+
+            PyScope::parseLoadedModule(
+            py::getattr(methodPtr->object, "__class__"), *methodPtr
+            );
+
+            agent->methods      .push_back(methodPtr);
+            agent->scores_total .push_back(0);
+            agent->scores_ep    .push_back(0);
+        }
+
+        agent->steps_to_take = 0;
+        agent->state         = IDLE;
+        agent->next_action   = 0;
+
+        Logger::info("Initializing agent: " + std::string(agent->name) + ", Completed.");
+    }
+
+    static void _agent_worker_update(ActiveAgent* agent) {
+        // std::cout << "Agent[" << agent->name << "] steps=" << agent->steps_to_take << std::endl;
+        if (agent->state == IDLE) {
+            if (agent->steps_to_take > 0) {
+                agent->state = ActiveAgentState::SELECTING_ACTION;
+                agent->steps_to_take -= 1;
+            } else {
+                // nothing to do, just idle
+            }
+        } else if (agent->state == ActiveAgentState::SELECTING_ACTION) {
+            goto _update_agents_state_select_action;
+        } else if (agent->state == ActiveAgentState::STEPPING) {
+            goto update_state;
+        } else {
+            // unknown state, just continue
+        }
+
+        return;
+
+        _update_agents_state_select_action: {
+            py::gil_scoped_acquire acquire; // take GIL lock
+            auto target_agent = agent;
+            auto actions = target_agent->env->get_available_actions();
+
+            if (!actions) {
+                Logger::error("Unable to retrieve actions, agent[" + std::string(py::str(target_agent->agent->object)) + "] environment didn't provide actions, unable to step.");
+                return;
+            }
+
+            switch (PipelineState::stepPolicy) {
+                case PipelineState::RANDOM:
+                    target_agent->next_action = rand() % actions->size();
+                    break;
+                case PipelineState::BEST_AGENT: {
+                    int best_agent = -1;
+                    float best_score = std::numeric_limits<float>::min();
+                    for (int i = 0; i < PipelineState::activeAgents.size(); ++i) {
+                        if (best_agent == -1) {best_agent = i;
+                            continue;
+                        }
+
+                        auto score = evalAgent(i);
+                        if (best_score < score) {
+                            best_score = score;
+                            best_agent = i;
+                        }
+                    }
+
+                    // now we have the best agent
+                    // time we select its action
+                    auto &best = PipelineState::activeAgents[best_agent];
+                    SafeWrapper::execute([target_agent, best]{
+                        py::gil_scoped_acquire acquire;
+                        auto observations = target_agent->env->get_observations();
+                        auto prediction = best->agent->predict(observations);
+                        target_agent->next_action = PyScope::argmax(prediction);
+                    });
+                }
+                    break;
+                case PipelineState::WORST_AGENT: {
+                    int worst_agent = -1;
+                    float worst_score = std::numeric_limits<float>::min();
+                    for (int i = 0; i < PipelineState::activeAgents.size(); ++i) {
+                        if (worst_agent == -1) {
+                            worst_agent = i;
+                            continue;
+                        }
+                        auto score = evalAgent(i);
+                        if (worst_score > score)
+                        {
+                            worst_score = score;
+                            worst_agent = i;
+                        }
+                    }
+
+                    auto &worst = PipelineState::activeAgents[worst_agent];
+                    SafeWrapper::execute([target_agent, worst]{
+                        py::gil_scoped_acquire acquire;
+                        auto observations = target_agent->env->get_observations();
+                        auto prediction = worst->agent->predict(observations);
+                        target_agent->next_action = PyScope::argmax( prediction);
+                    });
+                }
+                    break;
+
+                case PipelineState::INDEPENDENT: {
+                    SafeWrapper::execute([target_agent]{
+                        py::gil_scoped_acquire acquire;
+                        auto observations = target_agent->env->get_observations();
+                        auto prediction = target_agent->agent->predict(observations);
+                        target_agent->next_action = PyScope::argmax( prediction);
+                    });
+                }
+                    break;
+
+                default:
+                    target_agent->next_action = 0; // default to just the first action
+            }
+
+            target_agent->state = ActiveAgentState::STEPPING; // update to indate we are ready for the next state :)
+            return;
+        }
+
+        update_state: {
+            py::gil_scoped_acquire acquire; // take GIL lock
+            auto target_agent = agent;
+
+            SafeWrapper::execute([&]{
+                // get the observations
+                auto ops = target_agent->env->get_observations();
+
+                // notify all explainability methods
+                size_t action = target_agent->next_action;
+                for (auto& method: target_agent->methods) {
+                    method->onStep(py::int_(action));
+                }
+
+                // do the action
+                auto result = target_agent->env->step(py::int_(action));
+
+                for (auto& method: target_agent->methods) {
+                    method->onStepAfter(py::int_(action), std::get<1>(result), std::get<2>(result) || std::get<3>(result), std::get<4>(result));
+                }
+
+                // update agent analytics
+                target_agent->total_steps           += 1;
+                target_agent->steps_current_episode += 1;
+                target_agent->env_terminated = std::get<2>(result);
+                target_agent->env_truncated  = std::get<3>(result);
+
+                for (int i = 0; i < target_agent->methods.size(); ++i) {
+                    auto value = target_agent->methods[i]->value(ops);
+                    target_agent->scores_total[i] += value;
+                    target_agent->scores_ep   [i] += value;
+                }
+            });
+
+            target_agent->state = IDLE;
+            return;
+        }
+
+    }
+
+    static void _agent_worker(ActiveAgent* agent, PipelineAgent* recipe) {
+        std::thread([agent, recipe] {
+            agent->_worker_running = true;
+
+            _agent_worker_init(agent, recipe);
+
+            agent->state = IDLE;
+            agent->next_action = 0;
+            agent->steps_to_take = 0;
+
+            PipelineState::_agentsCountOk += 1;
+
+            while (!agent->_worker_stop ) {
+                _agent_worker_update(agent);
+            }
+
+            agent->_worker_running = false;
+        }).detach();
     }
 
     void beginExperiment()
     {
-        if (isExperimenting())
+        if (PipelineState::experimentState != STOPPED)
             return;
 
         // some sanity checks
@@ -87,87 +319,31 @@ namespace Pipeline
         // now prepare the actual agents
         Logger::info("Preparing agents for the experiment...");
 
-        if (SafeWrapper::execute([&]()
-                                 {
-            for (auto& agent: PipelineConfig::pipelineAgents) {
-                ActiveAgent activeAgent;
-                strcpy(activeAgent.name, agent.name);
+        PipelineState::experimentState    = INITIALIZING;
+        PipelineState::_agentsCountOk     = 0;
+        PipelineState::_agentsCountFailed = 0;
 
-                activeAgent.agent            = new PyAgent();
-                activeAgent.agent->object    = agent.recipe->create();
+        for (int i = 0;i < PipelineConfig::pipelineAgents.size();i++) {
+            auto activeAgent = new ActiveAgent();
+            strcpy(activeAgent->name, PipelineConfig::pipelineAgents[i].name);
+            _agent_worker(activeAgent, &PipelineConfig::pipelineAgents[i]);
 
-                if (activeAgent.agent->object.is_none()) {
-                    throw std::runtime_error("Failed to create agent: " + std::string(activeAgent.name));
-                }
-
-                PyScope::parseLoadedModule(
-                    py::getattr(activeAgent.agent->object, "__class__"), *activeAgent.agent
-                );
-
-                activeAgent.env               = new PyEnv();
-                activeAgent.env->object       = envs[PipelineConfig::activeEnv].create();
-                if (activeAgent.env->object.is_none()) {
-                    throw std::runtime_error("Failed to create environment for agent: " + std::string(activeAgent.name));
-                }
-                PyScope::parseLoadedModule(
-                    py::getattr(activeAgent.agent->object, "__class__"), *activeAgent.env
-                );
-
-                activeAgent.reward_total = 0;
-                activeAgent.reward_ep    = 0;
-
-                activeAgent.steps_current_episode = 0;
-                activeAgent.total_episodes        = 0;
-                activeAgent.total_steps           = 0;
-
-                activeAgent.last_move_reward      = 0;
-                activeAgent.env_terminated        = false;
-                activeAgent.env_truncated         = false;
-
-                for (auto& method: PipelineConfig::pipelineMethods) {
-                    const auto methodPtr          = new PyMethod();
-                    methodPtr->object             = method.recipe->create();
-
-                    if (methodPtr->object.is_none()) {
-                        throw std::runtime_error("Failed to create method for agent: " + std::string(activeAgent.name));
-                    }
-
-                    PyScope::parseLoadedModule(
-                        py::getattr(methodPtr->object, "__class__"), *methodPtr
-                    );
-
-                    activeAgent.methods      .push_back(methodPtr);
-                    activeAgent.scores_total .push_back(0);
-                    activeAgent.scores_ep    .push_back(0);
-                }
-
-                PipelineState::activeAgents.push_back(activeAgent);
-            } }))
-        {
-            Logger::info("Experiment started with " + std::to_string(PipelineConfig::pipelineAgents.size()) + " agents and " +
-                         std::to_string(PipelineConfig::pipelineMethods.size()) + " methods.");
-
-            PipelineState::Experimenting = true;
-            PipelineState::Simulating = false;
-            resetSim();
-            Preview::onStart();
-        }
-        else
-        {
-            Logger::error("Failed to prepare agents for the experiment.");
+            PipelineState::activeAgents.push_back(activeAgent);
         }
     }
 
     void _clearActiveAgents()
     {
-        for (auto &active : PipelineState::activeAgents)
+        for (auto active : PipelineState::activeAgents)
         {
-            delete active.agent;
-            delete active.env;
-            for (auto &m : active.methods)
+            delete active->agent;
+            delete active->env;
+            for (auto &m : active->methods)
             {
                 delete m;
             }
+
+            delete active;
         }
 
         PipelineState::activeAgents.clear();
@@ -175,13 +351,14 @@ namespace Pipeline
 
     void stopExperiment()
     {
-        if (!isExperimenting())
+        if (PipelineState::experimentState != RUNNING)
             return;
-        PipelineState::Experimenting = false;
-        PipelineState::Simulating = false;
-        _clearActiveAgents();
-        Logger::info("Experiment stopped.");
-        Preview::onStop();
+
+        Logger::info("Stopping experiment ...");
+        for (auto& agent: PipelineState::activeAgents) {
+            agent->_worker_stop = true;
+        }
+        PipelineState::experimentState = STOPPING;
     }
 
     bool isSimRunning()
@@ -199,201 +376,53 @@ namespace Pipeline
         PipelineState::Simulating = true;
     }
 
-    void stepSim()
-    {
+    void stepSim() {
         PipelineState::StepSimFrames = 1; // step one frame
     }
 
-    void resetSim()
-    {
-        for (auto &active : PipelineState::activeAgents)
+    void resetSim() {
+        py::gil_scoped_acquire acquire{};
+        for (auto active : PipelineState::activeAgents)
         {
-
             // reset stats
-            active.env->reset();
-            for (auto &method : active.methods)
+            active->env->reset();
+
+            for (auto method : active->methods)
             {
-                method->set(active.env->object);
-                method->prepare(active.agent->object);
+                method->set(active->env->object);
+                method->prepare(active->agent->object);
             }
 
             // reset scores and rewards
-            active.reward_total = 0;
-            active.reward_ep = 0;
+            active->reward_total = 0;
+            active->reward_ep = 0;
 
-            active.steps_current_episode = 0;
-            active.total_episodes = 0;
-            active.total_steps = 0;
+            active->steps_current_episode = 0;
+            active->total_episodes = 0;
+            active->total_steps = 0;
 
-            active.last_move_reward = 0;
-            active.env_terminated = false;
-            active.env_truncated = false;
+            active->last_move_reward = 0;
+            active->env_terminated = false;
+            active->env_truncated = false;
 
-            for (int i = 0; i < active.scores_ep.size(); i++)
+            for (int i = 0; i < active->scores_ep.size(); i++)
             {
-                active.scores_ep[i] = 0;
-                active.scores_total[i] = 0;
+                active->scores_ep[i] = 0;
+                active->scores_total[i] = 0;
             }
+
+            active->state = IDLE;
+            active->next_action = 0;
+            active->steps_to_take = 0;
         }
     }
 
-    static void _do_one_step(int action = -1, int agent = -1)
-    {
-        if (!isExperimenting())
-        {
-            Logger::info("Unable to step, Experiment is not running.");
-            return;
-        }
-
-        if (agent == -1)
-        {
-            for (int i = 0; i < PipelineState::activeAgents.size(); ++i)
-            {
-                _do_one_step(action, i);
-            }
-            return;
-        }
-
-        if (agent < 0 || agent >= PipelineState::activeAgents.size())
-        {
-            Logger::error("Invalid agent index, tried to update state for agent[" + std::to_string(agent) + "] which doesn't exist.");
-            return;
-        }
-
-        auto &target_agent = PipelineState::activeAgents[agent];
-
-        if (target_agent.env_terminated || target_agent.env_truncated)
-        {
-            return;
-        } // nothing to do
-
-        auto actions = target_agent.env->get_available_actions();
-        if (!actions)
-        {
-            Logger::error("Unable to retrieve actions, agent[" + std::to_string(agent) + "] environment didn't provide actions, unable to step.");
-            return;
-        }
-
-        if (action == -1)
-        {
-            // we need to select an action based on some criteria
-            switch (PipelineState::stepPolicy)
-            {
-            case PipelineState::RANDOM:
-                action = rand() % actions->size();
-                break;
-
-            case PipelineState::BEST_AGENT:
-            {
-                int best_agent = -1;
-                float best_score = std::numeric_limits<float>::min();
-                for (int i = 0; i < PipelineState::activeAgents.size(); ++i)
-                {
-                    if (best_agent == -1)
-                    {
-                        best_agent = i;
-                        continue;
-                    }
-                    auto score = evalAgent(i);
-                    if (best_score < score)
-                    {
-                        best_score = score;
-                        best_agent = i;
-                    }
-                }
-
-                // now we have the best agent
-                // time we select its action
-                auto &best = PipelineState::activeAgents[best_agent];
-                SafeWrapper::execute([&]
-                                     {
-                        auto prediction = best.agent->predict(target_agent.env->get_observations());
-                        action = PyScope::argmax( prediction); });
-            }
-            break;
-
-            case PipelineState::WORST_AGENT:
-            {
-                int worst_agent = -1;
-                float worst_score = std::numeric_limits<float>::min();
-                for (int i = 0; i < PipelineState::activeAgents.size(); ++i)
-                {
-                    if (worst_agent == -1)
-                    {
-                        worst_agent = i;
-                        continue;
-                    }
-                    auto score = evalAgent(i);
-                    if (worst_score > score)
-                    {
-                        worst_score = score;
-                        worst_agent = i;
-                    }
-                }
-
-                auto &worst = PipelineState::activeAgents[worst_agent];
-                SafeWrapper::execute([&]
-                                     {
-                        auto prediction = worst.agent->predict(target_agent.env->get_observations());
-                        action = PyScope::argmax( prediction); });
-            }
-            break;
-
-            case PipelineState::INDEPENDENT:
-            {
-                SafeWrapper::execute([&]
-                                     {
-                        auto prediction = target_agent.agent->predict(target_agent.env->get_observations());
-                        action = PyScope::argmax( prediction); });
-            }
-            break;
-
-            default:
-                action = 0; // default to just the first action
-            }
-        }
-
-        if (action != -1)
-        {
-            SafeWrapper::execute([&]
-                                 {
-                // get the observations
-                auto ops = target_agent.env->get_observations();
-
-                // notify all explainability methods
-                for (auto& method: target_agent.methods) {
-                    method->onStep(py::int_(action));
-                }
-
-                // do the action
-                auto result = target_agent.env->step(py::int_(action));
-
-                for (auto& method: target_agent.methods) {
-                    method->onStepAfter(py::int_(action), std::get<1>(result), std::get<2>(result) || std::get<3>(result), std::get<4>(result));
-                }
-
-                // update agent analytics
-                target_agent.total_steps           += 1;
-                target_agent.steps_current_episode += 1;
-                target_agent.env_terminated = std::get<2>(result);
-                target_agent.env_truncated  = std::get<3>(result);
-
-                for (int i = 0; i < target_agent.methods.size(); ++i) {
-                    auto value = target_agent.methods[i]->value(ops);
-                    target_agent.scores_total[i] += value;
-                    target_agent.scores_ep   [i] += value;
-                } });
-        }
+    void stepSim(int action_index){
+        // TODO
     }
 
-    void stepSim(int action_index)
-    {
-        _do_one_step(action_index);
-    }
-
-    void stepSim(int action_index, int agent_index)
-    {
-        _do_one_step(action_index, agent_index);
+    void stepSim(int action_index, int agent_index) {
+        // TODO
     }
 
     float evalAgent(int agent_index)
@@ -410,15 +439,15 @@ namespace Pipeline
         case PipelineState::PEARL:
         {
             float result = 0;
-            for (int i = 0; i < agent.scores_total.size(); ++i)
+            for (int i = 0; i < agent->scores_total.size(); ++i)
             {
-                result += agent.scores_total[i] * (PipelineConfig::pipelineMethods[i].active ? PipelineConfig::pipelineMethods[i].weight : 0);
+                result += agent->scores_total[i] * (PipelineConfig::pipelineMethods[i].active ? PipelineConfig::pipelineMethods[i].weight : 0);
             }
-            return result / agent.total_steps;
+            return result / agent->total_steps;
         }
         case PipelineState::REWARD:
         {
-            return agent.reward_total / agent.total_steps;
+            return agent->reward_total / agent->total_steps;
         }
         }
 
@@ -432,6 +461,8 @@ namespace Pipeline
             Logger::warning("Cannot set recipes while an experiment is running.");
             return;
         }
+
+        // todo: memory leak here
 
         recipes.clear();
         envs.clear();
@@ -645,7 +676,7 @@ namespace Pipeline
                         ImGui::BeginTooltip();
                         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
                         FontManager::pushFont("Light");
-                        std::string py_type_name = py::str(agent.recipe->acceptor->_tag);
+                        std::string py_type_name = std::string(agent.recipe->acceptor->_tag);
                         ImGui::Text(py_type_name.c_str());
                         FontManager::popFont();
                         ImGui::PopStyleColor();
@@ -726,11 +757,12 @@ namespace Pipeline
 
                     if (ImGui::IsItemHovered())
                     {
+
                         std::string id = "recipe_" + std::to_string(method.recipe_index);
                         ImGui::BeginTooltip();
                         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
                         FontManager::pushFont("Light");
-                        std::string py_type_name = py::str(method.recipe->acceptor->_tag);
+                        std::string py_type_name = std::string(method.recipe->acceptor->_tag);
                         ImGui::Text(py_type_name.c_str());
                         FontManager::popFont();
                         ImGui::PopStyleColor();
@@ -807,26 +839,75 @@ namespace Pipeline
         render_pipeline();
     }
 
-    void update()
-    {
-        if (isExperimenting())
-        {
-            for (int i = 0; i < PipelineState::StepSimFrames; i++)
-            {
-                _do_one_step();
+    void update() {
+        if (PipelineState::experimentState == STOPPED) {
+            // nothing
+        }
+
+        if (PipelineState::experimentState == INITIALIZING) {
+            if (PipelineState::_agentsCountOk == PipelineState::activeAgents.size()) {
+                // everyone is ready
+                Logger::info("Experiment started with " + std::to_string(PipelineConfig::pipelineAgents.size()) + " agents and " +
+                         std::to_string(PipelineConfig::pipelineMethods.size()) + " methods.");
+
+                PipelineState::experimentState = RUNNING;
+                PipelineState::Simulating = false;
+
+                resetSim();
+                Preview::onStart();
+            } else if (PipelineState::_agentsCountOk + PipelineState::_agentsCountFailed == PipelineState::activeAgents.size()) {
+                // someone failed
+                Logger::error("Experiment failed to start, one or more agent's failed to initialize, stopping experiment ...");
+                for (auto& agent: PipelineState::activeAgents) {
+                    agent->_worker_stop = true;
+                }
+                PipelineState::experimentState = FAILED;
+            }
+        }
+
+
+        if (PipelineState::experimentState == STOPPING || PipelineState::experimentState == FAILED) {
+            // nothing
+            bool _stopped = true;
+            for (auto& agent: PipelineState::activeAgents) {
+                if (!agent->_worker_running) {
+                    _stopped = false;
+                    break;
+                }
             }
 
+            if (_stopped) {
+                PipelineState::experimentState = STOPPED;
+
+                // now clean everything
+                PipelineState::Simulating = false;
+                _clearActiveAgents();
+                Logger::info("Experiment stopped.");
+                Preview::onStop();
+            }
+        }
+
+        if (PipelineState::experimentState == RUNNING) {
+            for (auto& agent: PipelineState::activeAgents) {
+                agent->steps_to_take += PipelineState::StepSimFrames;
+            }
             PipelineState::StepSimFrames = 0;
 
-            if (isSimRunning())
-            {
-                _do_one_step();
+            if (isSimRunning()) {
+                for (auto& agent: PipelineState::activeAgents) {
+                    agent->steps_to_take = 1;
+                }
             }
+
+            // each agent now has it's own worker that handles it's logic independently, we send signals to it to indicate the desired behavior
+            // _update_agents_state(-1); // update all agents
         }
     }
 
     void destroy()
     {
+        // TODO
+        // This isn't a correct way to clear ...
         recipes.clear();
         _clearActiveAgents();
     }
