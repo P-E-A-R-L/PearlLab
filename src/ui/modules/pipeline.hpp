@@ -10,6 +10,8 @@
 #include "../../backend/py_method.hpp"
 #include "../../backend/py_env.hpp"
 
+class GLTexture;
+
 namespace Pipeline
 {
     extern std::vector<PipelineGraph::ObjectRecipe> envs;
@@ -54,7 +56,83 @@ namespace Pipeline
         std::atomic<size_t>           steps_to_take = 0;
 
         std::atomic<bool> _worker_stop    = false; // a signal to notify the worker to stop
-        std::atomic<bool> _worker_running = true;  // is a worker running for this agent ?
+        std::atomic<bool> _worker_running = true;  // is a worker running for this agent?
+
+        // Visualization
+        // Moved here because from now on, Pipeline will handle all python related tasks
+
+    };
+
+    struct TextureBuffer {
+        std::vector<unsigned char> data;
+        int width;
+        int height;
+        int channels;
+    };
+
+    struct VisualizedObject
+    {
+        PyVisualizable *visualizable;
+
+        GLTexture *rgb_array                    = nullptr;
+        GLTexture *gray                         = nullptr;
+        GLTexture *heat_map                     = nullptr;
+
+        TextureBuffer rgb_array_buffer;
+        TextureBuffer gray_buffer;
+        TextureBuffer heat_map_buffer;
+
+        std::map<std::string, float>       bar_chart;
+        std::map<std::string, std::string> features;
+
+        PyLiveObject *rgb_array_params      = nullptr;
+        PyLiveObject *gray_params           = nullptr;
+        PyLiveObject *heat_map_params       = nullptr;
+        PyLiveObject *features_params       = nullptr;
+        PyLiveObject *bar_chart_params      = nullptr;
+
+        void init(PyVisualizable *);
+        [[nodiscard]] bool supports(VisualizationMethod method) const;
+
+        // update buffers only
+        void update();
+
+        // update textures only
+        void update_tex();
+
+        std::mutex* m_lock = nullptr;
+
+        ~VisualizedObject();
+
+    private:
+        void _init_rgb_array();
+        void _update_rgb_array();
+
+        void _init_gray();
+        void _update_gray();
+
+        void _init_heat_map();
+        void _update_heat_map();
+
+        void _init_features();
+        void _update_features();
+
+        void _init_bar_chart();
+        void _update_bar_chart();
+    };
+
+    struct VisualizedAgent
+    {
+        Pipeline::ActiveAgent *agent;
+        VisualizedObject *env_visualization = nullptr;
+        std::vector<VisualizedObject *> method_visualizations;
+
+        void init(Pipeline::ActiveAgent *agent);
+
+        void update() const;
+        void update_tex() const;
+
+        ~VisualizedAgent();
     };
 
     struct PipelineAgent
@@ -93,6 +171,7 @@ namespace Pipeline
     enum ExperimentState {
         STOPPED,
         INITIALIZING,
+        INITIALIZING_TEXTURES,
         FAILED,
         RUNNING,
         STOPPING,
@@ -123,6 +202,7 @@ namespace Pipeline
         extern ScorePolicy scorePolicy;
 
         extern std::vector<ActiveAgent*> activeAgents;
+        extern std::vector<VisualizedAgent *> previews;
     }
 
     // simulation control

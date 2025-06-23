@@ -270,6 +270,7 @@ namespace SharedUi
 
     void destroy()
     {
+
         modules.clear();
         loadedModules.clear();
     }

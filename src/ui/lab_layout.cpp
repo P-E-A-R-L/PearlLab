@@ -250,11 +250,13 @@ void LabLayout::render()
 
 void LabLayout::destroy()
 {
+    Pipeline::destroy();
     PyModuleWindow::destroy();
     PipelineGraph::destroy();
-    SharedUi::destroy();
     ObjectsPanel::destroy();
-    Pipeline::destroy();
     Preview::destroy();
+
+    SharedUi::destroy();
     PyScope::clearInstance();
+
 }

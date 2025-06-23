@@ -103,6 +103,7 @@ set(PEAR_LAB_SOURCES
         src/ui/utility/image_store.hpp
         src/ui/project_manager.cpp
         src/ui/project_manager.hpp
+        src/ui/modules/pipeline_visualizations.cpp
 
 )
 

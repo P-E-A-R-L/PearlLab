@@ -41,6 +41,7 @@ namespace Pipeline
         int StepSimFrames = 0;
 
         std::vector<ActiveAgent*> activeAgents{};
+        std::vector<VisualizedAgent *> previews{};
 
         StepPolicy stepPolicy = INDEPENDENT;
         ScorePolicy scorePolicy = PEARL;
@@ -54,7 +55,7 @@ namespace Pipeline
         return PipelineState::experimentState == RUNNING;
     }
 
-    static void _agent_worker_init(ActiveAgent* agent, PipelineAgent* recipe) {
+    static void _agent_worker_init(ActiveAgent* agent, PipelineAgent* recipe, VisualizedAgent* preview) {
         Logger::info("Initializing agent: " + std::string(agent->name));
         py::gil_scoped_acquire acquire; // take GIL lock
         agent->agent            = new PyAgent();
@@ -118,8 +119,10 @@ namespace Pipeline
         Logger::info("Initializing agent: " + std::string(agent->name) + ", Completed.");
     }
 
-    static void _agent_worker_update(ActiveAgent* agent) {
+    static void _agent_worker_update(ActiveAgent* agent, VisualizedAgent* preview) {
         // std::cout << "Agent[" << agent->name << "] steps=" << agent->steps_to_take << std::endl;
+        preview->update();
+
         if (agent->state == IDLE) {
             if (agent->steps_to_take > 0) {
                 agent->state = ActiveAgentState::SELECTING_ACTION;
@@ -256,16 +259,17 @@ namespace Pipeline
             });
 
             target_agent->state = IDLE;
+
             return;
         }
 
     }
 
-    static void _agent_worker(ActiveAgent* agent, PipelineAgent* recipe) {
-        std::thread([agent, recipe] {
+    static void _agent_worker(ActiveAgent* agent, PipelineAgent* recipe, VisualizedAgent* preview) {
+        std::thread([agent, recipe, preview] {
             agent->_worker_running = true;
 
-            _agent_worker_init(agent, recipe);
+            _agent_worker_init(agent, recipe, preview);
 
             agent->state = IDLE;
             agent->next_action = 0;
@@ -273,10 +277,28 @@ namespace Pipeline
 
             PipelineState::_agentsCountOk += 1;
 
-            while (!agent->_worker_stop ) {
-                _agent_worker_update(agent);
+            while (!agent->_worker_stop && PipelineState::experimentState == INITIALIZING) {
+                // wait for all agents to be initialized
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
 
+
+            if (PipelineState::experimentState == INITIALIZING_TEXTURES) { // set up preview
+                py::gil_scoped_acquire acquire;
+                try {
+                    preview->init(agent);
+                } catch (...) {
+                    // I don't give a fk if it fails at this point tbh ...
+                }
+                PipelineState::_agentsCountOk += 1;
+            }
+
+            while (!agent->_worker_stop) {
+                _agent_worker_update(agent, preview);
+                // std::cout << "Agent[" << agent->name << "] worker running." << std::endl;
+            }
+
+            // std::cout << "Agent[" << agent->name << "] worker stopped." << std::endl;
             agent->_worker_running = false;
         }).detach();
     }
@@ -325,28 +347,36 @@ namespace Pipeline
 
         for (int i = 0;i < PipelineConfig::pipelineAgents.size();i++) {
             auto activeAgent = new ActiveAgent();
+            auto preview     = new VisualizedAgent();
+
             strcpy(activeAgent->name, PipelineConfig::pipelineAgents[i].name);
-            _agent_worker(activeAgent, &PipelineConfig::pipelineAgents[i]);
+            _agent_worker(activeAgent, &PipelineConfig::pipelineAgents[i], preview);
 
             PipelineState::activeAgents.push_back(activeAgent);
+            PipelineState::previews.push_back(preview);
         }
     }
 
     void _clearActiveAgents()
     {
-        for (auto active : PipelineState::activeAgents)
-        {
+        py::gil_scoped_acquire acquire;
+        for (auto active : PipelineState::activeAgents) {
             delete active->agent;
             delete active->env;
-            for (auto &m : active->methods)
-            {
+
+            for (auto &m : active->methods) {
                 delete m;
             }
 
             delete active;
         }
 
+        for (auto preview : PipelineState::previews) {
+            delete preview;
+        }
+
         PipelineState::activeAgents.clear();
+        PipelineState::previews.clear();
     }
 
     void stopExperiment()
@@ -355,10 +385,11 @@ namespace Pipeline
             return;
 
         Logger::info("Stopping experiment ...");
+        PipelineState::experimentState = STOPPING;
+
         for (auto& agent: PipelineState::activeAgents) {
             agent->_worker_stop = true;
         }
-        PipelineState::experimentState = STOPPING;
     }
 
     bool isSimRunning()
@@ -436,19 +467,17 @@ namespace Pipeline
         auto &agent = PipelineState::activeAgents[agent_index];
         switch (PipelineState::scorePolicy)
         {
-        case PipelineState::PEARL:
-        {
-            float result = 0;
-            for (int i = 0; i < agent->scores_total.size(); ++i)
-            {
-                result += agent->scores_total[i] * (PipelineConfig::pipelineMethods[i].active ? PipelineConfig::pipelineMethods[i].weight : 0);
+            case PipelineState::PEARL: {
+                float result = 0;
+                for (int i = 0; i < agent->scores_total.size(); ++i)
+                {
+                    result += agent->scores_total[i] * (PipelineConfig::pipelineMethods[i].active ? PipelineConfig::pipelineMethods[i].weight : 0);
+                }
+                return result / agent->total_steps;
             }
-            return result / agent->total_steps;
-        }
-        case PipelineState::REWARD:
-        {
-            return agent->reward_total / agent->total_steps;
-        }
+            case PipelineState::REWARD: {
+                return agent->reward_total / agent->total_steps;
+            }
         }
 
         return -1;
@@ -850,11 +879,13 @@ namespace Pipeline
                 Logger::info("Experiment started with " + std::to_string(PipelineConfig::pipelineAgents.size()) + " agents and " +
                          std::to_string(PipelineConfig::pipelineMethods.size()) + " methods.");
 
-                PipelineState::experimentState = RUNNING;
-                PipelineState::Simulating = false;
 
                 resetSim();
                 Preview::onStart();
+
+                PipelineState::_agentsCountOk = 0;
+                PipelineState::experimentState = INITIALIZING_TEXTURES; // must be set AFTER resetSim(), because Agent depends on this call
+                PipelineState::Simulating = false;
             } else if (PipelineState::_agentsCountOk + PipelineState::_agentsCountFailed == PipelineState::activeAgents.size()) {
                 // someone failed
                 Logger::error("Experiment failed to start, one or more agent's failed to initialize, stopping experiment ...");
@@ -865,12 +896,20 @@ namespace Pipeline
             }
         }
 
+        if (PipelineState::experimentState == INITIALIZING_TEXTURES) {
+            // wait for textures to be initialized
+            if (PipelineState::_agentsCountOk == PipelineState::activeAgents.size()) {
+                PipelineState::experimentState = RUNNING;
+                PipelineState::Simulating = false;
+                Logger::info("Experiment is running.");
+            }
+        }
+
 
         if (PipelineState::experimentState == STOPPING || PipelineState::experimentState == FAILED) {
-            // nothing
             bool _stopped = true;
             for (auto& agent: PipelineState::activeAgents) {
-                if (!agent->_worker_running) {
+                if (agent->_worker_running) {
                     _stopped = false;
                     break;
                 }
@@ -904,11 +943,17 @@ namespace Pipeline
         }
     }
 
-    void destroy()
-    {
-        // TODO
-        // This isn't a correct way to clear ...
-        recipes.clear();
-        _clearActiveAgents();
+    void destroy() {
+        if (agents.size()) {
+            py::gil_scoped_release release; // release GIL lock
+            PipelineState::experimentState = STOPPING;
+            for (auto& agent: PipelineState::activeAgents) {
+                agent->_worker_stop = true;
+            }
+
+            while (PipelineState::experimentState != STOPPED) {
+                update();
+            }
+        }
     }
 }
