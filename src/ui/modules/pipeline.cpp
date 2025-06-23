@@ -643,28 +643,20 @@ namespace Pipeline
 
         static int rename_agent_index = -1;
 
-        if (PipelineConfig::pipelineAgents.empty())
-        {
+        if (PipelineConfig::pipelineAgents.empty()) {
             ImGui::Text("<drag agents from recipes>");
-        }
-        else
-        {
-            for (int i = 0; i < PipelineConfig::pipelineAgents.size(); ++i)
-            {
+        } else {
+            for (int i = 0; i < PipelineConfig::pipelineAgents.size(); ++i) {
                 ImGui::PushID(i);
                 auto &agent = PipelineConfig::pipelineAgents[i];
 
                 // Handle rename input field
-                if (rename_agent_index == i)
-                {
+                if (rename_agent_index == i) {
                     ImGui::SetNextItemWidth(150);
-                    if (ImGui::InputText("##rename", agent.name, IM_ARRAYSIZE(agent.name), ImGuiInputTextFlags_EnterReturnsTrue))
-                    {
+                    if (ImGui::InputText("##rename", agent.name, IM_ARRAYSIZE(agent.name), ImGuiInputTextFlags_EnterReturnsTrue)) {
                         rename_agent_index = -1; // Done renaming
                     }
-                }
-                else
-                {
+                } else {
 
                     ImVec2 group_start = ImGui::GetCursorScreenPos();
                     ImGui::BeginGroup();
@@ -681,26 +673,24 @@ namespace Pipeline
                     ImGui::InvisibleButton("##context_target", g_size);
 
                     // Right-click context menu
-                    if (ImGui::BeginPopupContextItem())
-                    {
-                        if (ImGui::MenuItem("Rename"))
-                        {
+                    if (ImGui::BeginPopupContextItem()) {
+                        if (ImGui::MenuItem("Rename")) {
                             rename_agent_index = i;
                         }
-                        if (ImGui::MenuItem("Delete"))
-                        {
+
+                        if (ImGui::MenuItem("Delete")) {
                             PipelineConfig::pipelineAgents.erase(PipelineConfig::pipelineAgents.begin() + i);
                             if (rename_agent_index == i)
                                 rename_agent_index = -1;
-                            ImGui::PopID();
                             ImGui::EndPopup();
+                            ImGui::PopID();
                             break; // Exit now (one frame will be corrupted, but well it is what it is).
                         }
+
                         ImGui::EndPopup();
                     }
 
-                    if (ImGui::IsItemHovered())
-                    {
+                    if (ImGui::IsItemHovered()) {
                         std::string id = "recipe_" + std::to_string(agent.recipe_index);
                         ImGui::BeginTooltip();
                         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
