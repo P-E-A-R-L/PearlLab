@@ -1,0 +1,242 @@
+[
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/application.cpp.o -c /home/sobhy/PearlLab/src/application.cpp",
+  "file": "/home/sobhy/PearlLab/src/application.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/application.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/launcher.cpp.o -c /home/sobhy/PearlLab/src/launcher.cpp",
+  "file": "/home/sobhy/PearlLab/src/launcher.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/launcher.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/font_manager.cpp.o -c /home/sobhy/PearlLab/src/ui/font_manager.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/font_manager.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/font_manager.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/lab_layout.cpp.o -c /home/sobhy/PearlLab/src/ui/lab_layout.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/lab_layout.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/lab_layout.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/modules/logger.cpp.o -c /home/sobhy/PearlLab/src/ui/modules/logger.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/modules/logger.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/modules/logger.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/backend/py_scope.cpp.o -c /home/sobhy/PearlLab/src/backend/py_scope.cpp",
+  "file": "/home/sobhy/PearlLab/src/backend/py_scope.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/backend/py_scope.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/modules/py_module_window.cpp.o -c /home/sobhy/PearlLab/src/ui/modules/py_module_window.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/modules/py_module_window.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/modules/py_module_window.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/backend/py_param.cpp.o -c /home/sobhy/PearlLab/src/backend/py_param.cpp",
+  "file": "/home/sobhy/PearlLab/src/backend/py_param.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/backend/py_param.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/modules/pipeline_graph.cpp.o -c /home/sobhy/PearlLab/src/ui/modules/pipeline_graph.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/modules/pipeline_graph.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/modules/pipeline_graph.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/shared_ui.cpp.o -c /home/sobhy/PearlLab/src/ui/shared_ui.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/shared_ui.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/shared_ui.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/modules/objects_panel.cpp.o -c /home/sobhy/PearlLab/src/ui/modules/objects_panel.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/modules/objects_panel.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/modules/objects_panel.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/utility/drawing.cpp.o -c /home/sobhy/PearlLab/src/ui/utility/drawing.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/utility/drawing.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/utility/drawing.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/modules/pipeline.cpp.o -c /home/sobhy/PearlLab/src/ui/modules/pipeline.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/modules/pipeline.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/modules/pipeline.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/backend/py_agent.cpp.o -c /home/sobhy/PearlLab/src/backend/py_agent.cpp",
+  "file": "/home/sobhy/PearlLab/src/backend/py_agent.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/backend/py_agent.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/startup_loader.cpp.o -c /home/sobhy/PearlLab/src/ui/startup_loader.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/startup_loader.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/startup_loader.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/backend/py_safe_wrapper.cpp.o -c /home/sobhy/PearlLab/src/backend/py_safe_wrapper.cpp",
+  "file": "/home/sobhy/PearlLab/src/backend/py_safe_wrapper.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/backend/py_safe_wrapper.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/backend/py_env.cpp.o -c /home/sobhy/PearlLab/src/backend/py_env.cpp",
+  "file": "/home/sobhy/PearlLab/src/backend/py_env.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/backend/py_env.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/backend/py_method.cpp.o -c /home/sobhy/PearlLab/src/backend/py_method.cpp",
+  "file": "/home/sobhy/PearlLab/src/backend/py_method.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/backend/py_method.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/modules/inspector.cpp.o -c /home/sobhy/PearlLab/src/ui/modules/inspector.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/modules/inspector.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/modules/inspector.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/modules/preview.cpp.o -c /home/sobhy/PearlLab/src/ui/modules/preview.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/modules/preview.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/modules/preview.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/utility/layout.cpp.o -c /home/sobhy/PearlLab/src/ui/utility/layout.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/utility/layout.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/utility/layout.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/utility/gl_texture.cpp.o -c /home/sobhy/PearlLab/src/ui/utility/gl_texture.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/utility/gl_texture.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/utility/gl_texture.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/backend/py_visualizable.cpp.o -c /home/sobhy/PearlLab/src/backend/py_visualizable.cpp",
+  "file": "/home/sobhy/PearlLab/src/backend/py_visualizable.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/backend/py_visualizable.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/backend/py_object.cpp.o -c /home/sobhy/PearlLab/src/backend/py_object.cpp",
+  "file": "/home/sobhy/PearlLab/src/backend/py_object.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/backend/py_object.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/utility/image_store.cpp.o -c /home/sobhy/PearlLab/src/ui/utility/image_store.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/utility/image_store.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/utility/image_store.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/src/ui/project_manager.cpp.o -c /home/sobhy/PearlLab/src/ui/project_manager.cpp",
+  "file": "/home/sobhy/PearlLab/src/ui/project_manager.cpp",
+  "output": "CMakeFiles/PearlLab.dir/src/ui/project_manager.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/libs/imgui/imgui.cpp.o -c /home/sobhy/PearlLab/libs/imgui/imgui.cpp",
+  "file": "/home/sobhy/PearlLab/libs/imgui/imgui.cpp",
+  "output": "CMakeFiles/PearlLab.dir/libs/imgui/imgui.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/libs/imgui/imgui_demo.cpp.o -c /home/sobhy/PearlLab/libs/imgui/imgui_demo.cpp",
+  "file": "/home/sobhy/PearlLab/libs/imgui/imgui_demo.cpp",
+  "output": "CMakeFiles/PearlLab.dir/libs/imgui/imgui_demo.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/libs/imgui/imgui_draw.cpp.o -c /home/sobhy/PearlLab/libs/imgui/imgui_draw.cpp",
+  "file": "/home/sobhy/PearlLab/libs/imgui/imgui_draw.cpp",
+  "output": "CMakeFiles/PearlLab.dir/libs/imgui/imgui_draw.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/libs/imgui/imgui_tables.cpp.o -c /home/sobhy/PearlLab/libs/imgui/imgui_tables.cpp",
+  "file": "/home/sobhy/PearlLab/libs/imgui/imgui_tables.cpp",
+  "output": "CMakeFiles/PearlLab.dir/libs/imgui/imgui_tables.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/libs/imgui/imgui_widgets.cpp.o -c /home/sobhy/PearlLab/libs/imgui/imgui_widgets.cpp",
+  "file": "/home/sobhy/PearlLab/libs/imgui/imgui_widgets.cpp",
+  "output": "CMakeFiles/PearlLab.dir/libs/imgui/imgui_widgets.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/libs/imgui/backends/imgui_impl_glfw.cpp.o -c /home/sobhy/PearlLab/libs/imgui/backends/imgui_impl_glfw.cpp",
+  "file": "/home/sobhy/PearlLab/libs/imgui/backends/imgui_impl_glfw.cpp",
+  "output": "CMakeFiles/PearlLab.dir/libs/imgui/backends/imgui_impl_glfw.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/libs/imgui/backends/imgui_impl_opengl3.cpp.o -c /home/sobhy/PearlLab/libs/imgui/backends/imgui_impl_opengl3.cpp",
+  "file": "/home/sobhy/PearlLab/libs/imgui/backends/imgui_impl_opengl3.cpp",
+  "output": "CMakeFiles/PearlLab.dir/libs/imgui/backends/imgui_impl_opengl3.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/cc -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/libs/glad/src/glad.c.o -c /home/sobhy/PearlLab/libs/glad/src/glad.c",
+  "file": "/home/sobhy/PearlLab/libs/glad/src/glad.c",
+  "output": "CMakeFiles/PearlLab.dir/libs/glad/src/glad.c.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/libs/imgui-node-editor/crude_json.cpp.o -c /home/sobhy/PearlLab/libs/imgui-node-editor/crude_json.cpp",
+  "file": "/home/sobhy/PearlLab/libs/imgui-node-editor/crude_json.cpp",
+  "output": "CMakeFiles/PearlLab.dir/libs/imgui-node-editor/crude_json.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/libs/imgui-node-editor/imgui_canvas.cpp.o -c /home/sobhy/PearlLab/libs/imgui-node-editor/imgui_canvas.cpp",
+  "file": "/home/sobhy/PearlLab/libs/imgui-node-editor/imgui_canvas.cpp",
+  "output": "CMakeFiles/PearlLab.dir/libs/imgui-node-editor/imgui_canvas.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/libs/imgui-node-editor/imgui_node_editor.cpp.o -c /home/sobhy/PearlLab/libs/imgui-node-editor/imgui_node_editor.cpp",
+  "file": "/home/sobhy/PearlLab/libs/imgui-node-editor/imgui_node_editor.cpp",
+  "output": "CMakeFiles/PearlLab.dir/libs/imgui-node-editor/imgui_node_editor.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/libs/imgui-node-editor/imgui_node_editor_api.cpp.o -c /home/sobhy/PearlLab/libs/imgui-node-editor/imgui_node_editor_api.cpp",
+  "file": "/home/sobhy/PearlLab/libs/imgui-node-editor/imgui_node_editor_api.cpp",
+  "output": "CMakeFiles/PearlLab.dir/libs/imgui-node-editor/imgui_node_editor_api.cpp.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/cc -DBOOST_PYTHON_DYN_LINK -DBOOST_PYTHON_NO_LIB -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -isystem /usr/include/python3.12 -g -Wno-attributes -Wno-unknown-pragmas -o CMakeFiles/PearlLab.dir/libs/tinyfiledialogs/tinyfiledialogs.c.o -c /home/sobhy/PearlLab/libs/tinyfiledialogs/tinyfiledialogs.c",
+  "file": "/home/sobhy/PearlLab/libs/tinyfiledialogs/tinyfiledialogs.c",
+  "output": "CMakeFiles/PearlLab.dir/libs/tinyfiledialogs/tinyfiledialogs.c.o"
+},
+{
+  "directory": "/home/sobhy/PearlLab/build",
+  "command": "/usr/bin/c++ -I/usr/include/python3.12 -I/mnt/d/pearl/Pearl/.venv/lib/python3.12/site-packages/numpy/core/include -I/home/sobhy/PearlLab/libs/imgui -I/home/sobhy/PearlLab/libs/imgui/backends -I/home/sobhy/PearlLab/libs/glad/include -I/home/sobhy/PearlLab/libs/imgui-node-editor -I/home/sobhy/PearlLab/libs/stb -I/home/sobhy/PearlLab/libs/ImGuiFileDialog -I/home/sobhy/PearlLab/libs/nlohmannjson -I/home/sobhy/PearlLab/libs/tinyfiledialogs -g -std=gnu++20 -Wno-attributes -Wno-unknown-pragmas -o libs/ImGuiFileDialog/CMakeFiles/ImGuiFileDialog.dir/ImGuiFileDialog.cpp.o -c /home/sobhy/PearlLab/libs/ImGuiFileDialog/ImGuiFileDialog.cpp",
+  "file": "/home/sobhy/PearlLab/libs/ImGuiFileDialog/ImGuiFileDialog.cpp",
+  "output": "libs/ImGuiFileDialog/CMakeFiles/ImGuiFileDialog.dir/ImGuiFileDialog.cpp.o"
+}
+]

@@ -1,0 +1,5 @@
+version: "1.0"
+window:
+  width: 1280
+  height: 720
+venv: "/mnt/d/pearl/Pearl/.venv"

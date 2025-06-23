@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.28)
 project(PearlLab)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -22,6 +22,7 @@ execute_process(
 
 message("Virtual Environment: ${VENV_PATH}")
 
+set(VENV_PATH "/mnt/d/pearl/Pearl/.venv")
 set(Python3_EXECUTABLE "${VENV_PATH}/bin/python3")
 set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/libs/imgui")
 set(IMGUI_NODE_DIR "${CMAKE_SOURCE_DIR}/libs/imgui-node-editor")
