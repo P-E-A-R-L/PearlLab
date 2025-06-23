@@ -14,6 +14,8 @@
 #include "ui/utility/image_store.hpp"
 #include <filesystem>
 
+#include "ui/widgets/image_viewer.hpp"
+
 namespace fs = std::filesystem;
 static bool _run_application         = false;
 static bool _application_initialized = false;
@@ -75,6 +77,8 @@ void ShowLauncherUI() {
     centerX = (screenSize.x - 360) * 0.5f;
     centerY = screenSize.y * 0.1f;
     ImGui::SetCursorPos(ImVec2(centerX, centerY));
+    // static ImageViewer img(ImageStore::idOf("./assets/icons/pearl.png"), {360, 360});
+    // img.Render("##botato");
     ImGui::Image(ImageStore::idOf("./assets/icons/pearl.png"), {360, 360});
 
     // Display file dialog

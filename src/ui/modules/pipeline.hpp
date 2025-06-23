@@ -9,6 +9,7 @@
 #include "../../backend/py_agent.hpp"
 #include "../../backend/py_method.hpp"
 #include "../../backend/py_env.hpp"
+#include "../widgets/image_viewer.hpp"
 
 class GLTexture;
 
@@ -81,6 +82,10 @@ namespace Pipeline
         TextureBuffer rgb_array_buffer;
         TextureBuffer gray_buffer;
         TextureBuffer heat_map_buffer;
+
+        ImageViewer* rgb_array_viewer = nullptr;
+        ImageViewer* gray_viewer      = nullptr;
+        ImageViewer* heat_map_viewer  = nullptr;
 
         std::map<std::string, float>       bar_chart;
         std::map<std::string, std::string> features;

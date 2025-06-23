@@ -83,6 +83,8 @@ namespace Pipeline {
             } else {
                 rgb_array->update(rgbData);
             }
+
+            rgb_array_viewer->imageSize = ImVec2(rgb_array->width(), rgb_array->height());
         }
 
         if (gray != nullptr) {
@@ -93,6 +95,8 @@ namespace Pipeline {
             } else {
                 gray->update(rgbData);
             }
+
+            gray_viewer->imageSize = ImVec2(gray->width(), gray->height());
         }
 
         if (heat_map != nullptr) {
@@ -103,6 +107,8 @@ namespace Pipeline {
             } else {
                 heat_map->update(rgbData);
             }
+
+            heat_map_viewer->imageSize = ImVec2(heat_map->width(), heat_map->height());
         }
     }
 
@@ -120,6 +126,10 @@ namespace Pipeline {
 
         delete features_params;
         delete bar_chart_params;
+
+        delete rgb_array_viewer;
+        delete gray_viewer;
+        delete heat_map_viewer;
 
         rgb_array = nullptr;
         rgb_array_params = nullptr;
@@ -155,6 +165,7 @@ namespace Pipeline {
         }
 
         rgb_array = new GLTexture();
+        rgb_array_viewer = new ImageViewer(rgb_array->id(), {0, 0});
 
         // if (!SafeWrapper::execute([&]{
         //
@@ -272,6 +283,7 @@ namespace Pipeline {
         }
 
         gray = new GLTexture();
+        gray_viewer = new ImageViewer(gray->id(), {0, 0});
 
         // if (!SafeWrapper::execute([&]{
         //
@@ -374,6 +386,7 @@ namespace Pipeline {
         }
 
         heat_map = new GLTexture();
+        heat_map_viewer = new ImageViewer(heat_map->id(), {0, 0});
 
         // if (!SafeWrapper::execute([&]
         //                           {

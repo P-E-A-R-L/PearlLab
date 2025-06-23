@@ -532,7 +532,8 @@ static void _render_visualizable(Pipeline::VisualizedObject *obj, const std::str
             {
                 std::lock_guard guard(*obj->m_lock);
                 auto obs = obj->rgb_array;
-                ImGui::Image(obs->id(), ImVec2(obs->width(), obs->height()));
+                obj->rgb_array_viewer->Render("##RGBArrayView");
+                // ImGui::Image(obs->id(), ImVec2(obs->width(), obs->height()));
             }
             ImGui::EndTabItem();
         }
@@ -542,7 +543,8 @@ static void _render_visualizable(Pipeline::VisualizedObject *obj, const std::str
             {
                 std::lock_guard guard(*obj->m_lock);
                 auto obs = obj->gray;
-                ImGui::Image(obs->id(), ImVec2(obs->width(), obs->height()));
+                obj->gray_viewer->Render("##GrayView");
+                // ImGui::Image(obs->id(), ImVec2(obs->width(), obs->height()));
             }
 
             ImGui::EndTabItem();
@@ -553,7 +555,8 @@ static void _render_visualizable(Pipeline::VisualizedObject *obj, const std::str
             {
                 std::lock_guard guard(*obj->m_lock);
                 auto obs = obj->heat_map;
-                ImGui::Image(obs->id(), ImVec2(obs->width(), obs->height()));
+                obj->heat_map_viewer->Render("##HeatMapView");
+                // ImGui::Image(obs->id(), ImVec2(obs->width(), obs->height()));
             }
 
             ImGui::EndTabItem();
@@ -881,9 +884,7 @@ void Preview::render()
 {
     ImGui::Begin("Preview");
 
-    if (!Pipeline::isExperimenting())
-    {
-
+    if (!Pipeline::isExperimenting()) {
         auto size = ImGui::GetContentRegionAvail();
         auto text_size = ImGui::CalcTextSize("No active experiment.\nStart an experiment in the pipeline tab.");
 
