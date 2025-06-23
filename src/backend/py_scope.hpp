@@ -45,8 +45,11 @@ public:
 
     // handy functions
     py::object inspect_isabstrct;
+    py::object inspect_signature;
+
     py::object issubclass;
     py::object isgeneric;
+
 
     // output redirectors
     py::module redirect_msg_mod;

@@ -766,9 +766,7 @@ namespace PipelineGraph
             ImGui::EndPopup();
         }
 
-        auto &io = ImGui::GetIO();
-
-        ImGui::Text("FPS: %.2f (%.2gms) \t\t %ld node(s)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f, nodes.size());
+        ImGui::Text(" %ld node(s)", nodes.size());
         ImGui::SameLine();
         ImGui::Dummy({50, 0});
         ImGui::SameLine();
@@ -1781,11 +1779,13 @@ namespace PipelineGraph
 
         if (_pointer)
         {
+            py::gil_scoped_acquire acquire{};
             outputs[0].type = _type->module;
             inputs = {};
         }
         else
         {
+            py::gil_scoped_acquire acquire{};
             outputs[0].type = _type->returnType;
             inputs = _inputs;
         }

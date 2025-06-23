@@ -137,9 +137,10 @@ namespace SharedUi
                 // now load all parameters if we can
                 if (hasattr(init, "__code__"))
                 {
-                    for (const auto &name : init.attr("__code__").attr("co_varnames"))
-                    {
-                        std::string attrName = py::str(name);
+                    py::object sig = python.inspect_signature(init);
+                    py::dict params = sig.attr("parameters");
+                    for (auto item : params) {
+                        std::string attrName = py::str(item.first);
                         if (attrName == "self")
                             continue; // skip self
                         if (annotations.find(attrName) != annotations.end())
@@ -220,9 +221,10 @@ namespace SharedUi
             // now load all parameters if we can
             if (hasattr(module, "__code__"))
             {
-                for (const auto &name : module.attr("__code__").attr("co_varnames"))
-                {
-                    std::string attrName = py::str(name);
+                py::object sig = python.inspect_signature(module);
+                py::dict params = sig.attr("parameters");
+                for (auto item : params) {
+                    std::string attrName = py::str(item.first);
                     if (attrName == "self")
                         continue; // skip self
                     if (annotations.find(attrName) != annotations.end())

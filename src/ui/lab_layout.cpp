@@ -47,7 +47,6 @@ void LabLayout::init(const std::string &project_path)
     PyScope::init();
 
     project_details = ProjectManager::loadProject(project_path);
-    ImGui::LoadIniSettingsFromDisk(project_details.imgui_file.c_str());
 
     PyModuleWindow::init();
     PipelineGraph::init(project_details.graph_file);
@@ -70,6 +69,14 @@ void LabLayout::render()
     ///
     static bool open_modules_debugger = false;
     static bool show_metrics = false;
+    static bool menu_reset_window = true;
+
+    static bool window_objects   = true;
+    static bool window_logger    = true;
+    static bool window_preview   = true;
+    static bool window_pipeline  = true;
+    static bool window_inspector = true;
+    static bool window_graph     = true;
 
     if (ImGui::BeginMainMenuBar())
     {
@@ -133,13 +140,35 @@ void LabLayout::render()
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("Help"))
-        {
-            if (ImGui::MenuItem("About"))
-            {
+        if (ImGui::BeginMenu("Window")) {
+            if (ImGui::MenuItem("Reset Docking")) {
+                menu_reset_window = true;
+            }
+
+            ImGui::Separator();
+            ImGui::MenuItem("Objects"  , nullptr, &window_objects);
+            ImGui::MenuItem("Pipeline" , nullptr, &window_pipeline);
+            ImGui::MenuItem("Preview"  , nullptr, &window_preview);
+            ImGui::MenuItem("Graph"    , nullptr, &window_graph);
+            ImGui::MenuItem("Event Log", nullptr, &window_logger);
+            ImGui::MenuItem("Inspector", nullptr, &window_inspector);
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Help")) {
+            if (ImGui::MenuItem("About")) {
             }
             ImGui::EndMenu();
         }
+
+
+        ImGui::Dummy({50, 1});
+        ImGui::SameLine();
+
+        auto& io = ImGui::GetIO();
+        ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
+        ImGui::SameLine();
 
         ImGui::EndMainMenuBar(); // Closes the menu bar
     }
@@ -163,7 +192,7 @@ void LabLayout::render()
     /// WINDOW CONTENT
     ///
     static bool p_open = true;
-    static bool first_time = true;
+    static bool first_run = true;
     static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar |
@@ -186,11 +215,9 @@ void LabLayout::render()
     ImGui::DockSpace(dockspace_id, ImVec2(0, 0), dockspace_flags);
 
     // Build default layout once
-    if (first_time)
+    if (menu_reset_window)
     {
         Logger::info("Initializing Lab Layout...");
-
-        first_time = false;
 
         ImGui::DockBuilderRemoveNode(dockspace_id); // clear any existing layout
         ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
@@ -227,25 +254,28 @@ void LabLayout::render()
         Logger::info("Done.");
 
         StartupLoader::load_modules();
+
+        menu_reset_window = false;
     }
 
     ImGui::End();
 
-
-
     // Render individual windows
-    renderParamsModule();
+    if (window_inspector) renderParamsModule();
 
-    if (open_modules_debugger)
-        PyModuleWindow::render();
-    if (show_metrics)
-        ImGui::ShowMetricsWindow();
+    if (open_modules_debugger) PyModuleWindow::render();
+    if (show_metrics) ImGui::ShowMetricsWindow();
 
-    Logger::render();
-    PipelineGraph::render();
-    ObjectsPanel::render();
-    Pipeline::render();
-    Preview::render();
+    if (window_logger)   Logger::render();
+    if (window_graph)    PipelineGraph::render();
+    if (window_objects)  ObjectsPanel::render();
+    if (window_pipeline) Pipeline::render();
+    if (window_preview)  Preview::render();
+
+    if (first_run) {
+        menu_reset_window = true; // reset layout on first run
+        first_run = false;
+    }
 }
 
 void LabLayout::destroy()

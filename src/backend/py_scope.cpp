@@ -262,11 +262,9 @@ bool PyScope::parseLoadedModule(py::object module, PyScope::LoadedModule &l)
         {
             py::object init = module.attr("__init__");
             std::unordered_map<std::string, Param> annotations;
-            if (hasattr(init, "__annotations__"))
-            {
+            if (hasattr(init, "__annotations__")) {
                 py::dict init_annotations = init.attr("__annotations__");
-                for (auto &[key, value] : init_annotations)
-                {
+                for (auto &[key, value] : init_annotations) {
                     std::string attrName = py::str(key);
                     if (py::isinstance(value, python.param_type))
                     {
@@ -304,9 +302,10 @@ bool PyScope::parseLoadedModule(py::object module, PyScope::LoadedModule &l)
             // now load all parameters if we can
             if (hasattr(init, "__code__"))
             {
-                for (const auto &name : init.attr("__code__").attr("co_varnames"))
-                {
-                    std::string attrName = py::str(name);
+                py::object sig = python.inspect_signature(init);
+                py::dict params = sig.attr("parameters");
+                for (auto item : params) {
+                    std::string attrName = py::str(item.first);
                     if (attrName == "self")
                         continue; // skip self
                     if (annotations.find(attrName) != annotations.end())
@@ -385,9 +384,10 @@ bool PyScope::parseLoadedModule(py::object module, PyScope::LoadedModule &l)
         // now load all parameters if we can
         if (hasattr(module, "__code__"))
         {
-            for (const auto &name : module.attr("__code__").attr("co_varnames"))
-            {
-                std::string attrName = py::str(name);
+            py::object sig = python.inspect_signature(module);
+            py::dict params = sig.attr("parameters");
+            for (auto item : params) {
+                std::string attrName = py::str(item.first);
                 if (attrName == "self")
                     continue; // skip self
                 if (annotations.find(attrName) != annotations.end())
@@ -480,6 +480,7 @@ void PyScope::init()
     instance->number_type = instance->numbers.attr("Number");
 
     instance->inspect_isabstrct = instance->inspect.attr("isabstract");
+    instance->inspect_signature = instance->inspect.attr("signature");
     instance->issubclass = instance->builtins.attr("issubclass");
 
     auto dummy = instance->sys.attr("path").attr("append")("./py");
