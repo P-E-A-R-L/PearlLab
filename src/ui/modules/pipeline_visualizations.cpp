@@ -273,7 +273,7 @@ namespace Pipeline {
                     std::vector<unsigned char>& rgbData = gray_buffer.data;
                     gray_buffer.width    = width;
                     gray_buffer.height   = height;
-                    gray_buffer.channels = channels;
+                    gray_buffer.channels = 3;
                     rgbData.resize(width * height * 3);
 
                     auto data_ptr = arr.data();
@@ -340,7 +340,7 @@ namespace Pipeline {
                     std::vector<unsigned char>& rgbData = heat_map_buffer.data;
                     heat_map_buffer.width    = width;
                     heat_map_buffer.height   = height;
-                    heat_map_buffer.channels = channels;
+                    heat_map_buffer.channels = 3;
                     rgbData.resize(width * height * 3);
 
                     auto data_ptr = arr.data();
