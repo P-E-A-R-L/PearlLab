@@ -4,6 +4,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 from tqdm import tqdm
+from annotations import Param
 
 from pearl.provided.LunarLander import LunarLanderTabularMask
 from pearl.methods.TabularShapExplainability import TabularShapExplainability
@@ -28,6 +29,8 @@ class REINFORCE_Net(nn.Module):
 
 
 class LunarWrapper(ObservationWrapper):
+    integer: Param(int, disc="a super fancy way to edit variables.") = 45
+
     def __init__(self, env):
         super().__init__(env)
         self.observation_space = env.observation_space
@@ -46,6 +49,7 @@ class LunarWrapper(ObservationWrapper):
     def step(self, action):
         obs, reward, terminated, truncated, info = self.env.step(action)
         obs = obs[:, 0]
+        print(f"Current value of 'integer' = {integer}")
         return self.observation(obs), reward, terminated, truncated, info
 
 

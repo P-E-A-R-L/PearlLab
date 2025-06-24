@@ -7,58 +7,7 @@
 
 namespace Preview
 {
-    // struct VisualizedObject
-    // {
-    //     PyVisualizable *visualizable;
-    //
-    //     GLTexture *rgb_array = nullptr;
-    //     GLTexture *gray = nullptr;
-    //     GLTexture *heat_map = nullptr;
-    //     std::map<std::string, float> bar_chart;
-    //     std::map<std::string, std::string> features;
-    //
-    //     PyLiveObject *rgb_array_params = nullptr;
-    //     PyLiveObject *gray_params = nullptr;
-    //     PyLiveObject *heat_map_params = nullptr;
-    //     PyLiveObject *features_params = nullptr;
-    //     PyLiveObject *bar_chart_params = nullptr;
-    //
-    //     void init(PyVisualizable *);
-    //     [[nodiscard]] bool supports(VisualizationMethod method) const;
-    //     void update();
-    //
-    //     ~VisualizedObject();
-    //
-    // private:
-    //     void _init_rgb_array();
-    //     void _update_rgb_array() const;
-    //
-    //     void _init_gray();
-    //     void _update_gray() const;
-    //
-    //     void _init_heat_map();
-    //     void _update_heat_map() const;
-    //
-    //     void _init_features();
-    //     void _update_features();
-    //
-    //     void _init_bar_chart();
-    //     void _update_bar_chart();
-    // };
-    //
-    // struct VisualizedAgent
-    // {
-    //     Pipeline::ActiveAgent *agent;
-    //     VisualizedObject *env_visualization = nullptr;
-    //     std::vector<VisualizedObject *> method_visualizations;
-    //
-    //     void init(Pipeline::ActiveAgent *agent);
-    //     void update() const;
-    //
-    //     ~VisualizedAgent();
-    // };
-    //
-    // extern std::vector<Preview::VisualizedAgent *> previews;
+    extern Pipeline::VisualizedAgent* curr_selected_preview;
 
     void init();
     void render();

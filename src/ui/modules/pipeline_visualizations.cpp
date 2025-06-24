@@ -13,7 +13,9 @@
 namespace Pipeline {
     void VisualizedObject::init(PyVisualizable * obj) {
         py::gil_scoped_acquire acquire{};
+
         this->visualizable = obj;
+        this->visualizable->init_members();
         this->m_lock       = new std::mutex();
 
         if (visualizable->supports(VisualizationMethod::RGB_ARRAY)) {
@@ -35,6 +37,8 @@ namespace Pipeline {
         if (visualizable->supports(VisualizationMethod::BAR_CHART)) {
             _init_bar_chart();
         }
+
+
     }
 
     bool VisualizedObject::supports(VisualizationMethod method) const {
@@ -56,6 +60,13 @@ namespace Pipeline {
 
 
     void VisualizedObject::update() {
+        if (visualizable)     visualizable->update_members();
+        if (rgb_array_params) rgb_array_params->update_members();
+        if (gray_params)      gray_params->update_members();
+        if (heat_map_params)  heat_map_params->update_members();
+        if (features_params)  features_params->update_members();
+        if (bar_chart_params) bar_chart_params->update_members();
+
         if (rgb_array)        _update_rgb_array();
         if (gray)             _update_gray();
         if (heat_map)         _update_heat_map();
@@ -156,8 +167,10 @@ namespace Pipeline {
                 PyScope::parseLoadedModule(py::getattr(rgb_array_params->object, "__class__"), *rgb_array_params);
             } else {
                 rgb_array_params->object = py::none();
-            } }))
-        {
+            }
+
+            rgb_array_params->init_members();
+        })) {
             Logger::error("Failed to initialize RGB Array visualization (params) for object: " + std::string(visualizable->moduleName));
             delete rgb_array_params;
             rgb_array_params = nullptr;
@@ -166,51 +179,6 @@ namespace Pipeline {
 
         rgb_array = new GLTexture();
         rgb_array_viewer = new ImageViewer(rgb_array->id(), {0, 0});
-
-        // if (!SafeWrapper::execute([&]{
-        //
-        //     auto data = visualizable->getVisualization(VisualizationMethod::RGB_ARRAY, rgb_array_params->object);
-        //     if (data.has_value()) {
-        //         py::array_t<float> arr = data->cast<py::array>();
-        //         if (arr.ndim() == 3 || arr.ndim() == 4) { // assuming RGB image / RGBA image
-        //             int width = arr.shape(1);
-        //             int height = arr.shape(0);
-        //             int channels = arr.shape(2);
-        //             //Logger::info(std::format("RGB Array Size: <{}, {}>", width, height));
-        //             Logger::info("RGB Array Size: <" + std::to_string(width) + ", " + std::to_string(height) + ">");
-        //             if (channels == 3 || channels == 4) {
-        //                 std::vector<unsigned char>& rgbData = rgb_array_buffer.data;
-        //                 rgb_array_buffer.width    = width;
-        //                 rgb_array_buffer.height   = height;
-        //                 rgb_array_buffer.channels = channels;
-        //
-        //                 auto data_ptr = arr.data();
-        //                 for (int i = 0; i < width * height; i++) {
-        //                     rgbData[i * channels + 0]     = static_cast<unsigned char>(data_ptr[i * channels + 0] * 255.0f);
-        //                     rgbData[i * channels + 1]     = static_cast<unsigned char>(data_ptr[i * channels + 1] * 255.0f);
-        //                     rgbData[i * channels + 2]     = static_cast<unsigned char>(data_ptr[i * channels + 2] * 255.0f);
-        //
-        //                     if (channels == 4)
-        //                         rgbData[i * channels + 3] = static_cast<unsigned char>(data_ptr[i * channels + 3] * 255.0f);
-        //                 }
-        //                 // rgb_array->set(rgbData, width, height, channels);
-        //             } else {
-        //                 Logger::error("Unsupported number of channels: " + std::to_string(channels));
-        //             }
-        //         } else {
-        //             Logger::error("Unsupported visualization shape: " + std::to_string(arr.ndim()) + "D");
-        //         }
-        //     } else {
-        //         Logger::warning("No RGB Array visualization available for object: " + std::string(visualizable->moduleName));
-        //     }
-        // })) {
-        //     Logger::error("Failed to initialize RGB Array visualization (buffer) for object: " + std::string(visualizable->moduleName));
-        //     delete rgb_array_params;
-        //     rgb_array_params = nullptr;
-        //     delete rgb_array;
-        //     rgb_array = nullptr;
-        //     return;
-        // }
 
         _update_rgb_array();
     }
@@ -275,6 +243,8 @@ namespace Pipeline {
             } else {
                 gray_params->object = py::none();
             }
+
+            gray_params->init_members();
         })) {
             Logger::error("Failed to initialize Gray Scale visualization (params) for object: " + std::string(visualizable->moduleName));
             delete gray_params;
@@ -284,41 +254,6 @@ namespace Pipeline {
 
         gray = new GLTexture();
         gray_viewer = new ImageViewer(gray->id(), {0, 0});
-
-        // if (!SafeWrapper::execute([&]{
-        //
-        //     auto data = visualizable->getVisualization(VisualizationMethod::GRAY_SCALE, gray_params->object);
-        //     if (data.has_value()) {
-        //         py::array_t<float> arr = data->cast<py::array>();
-        //         if (arr.ndim() == 2) { // assuming Gray image
-        //             int width = arr.shape(1);
-        //             int height = arr.shape(0);
-        //             int channels = 1;
-        //             //Logger::info(std::format("Gray Size: <{}, {}>", width, height));
-        //             Logger::info("Gray Size: <" + std::to_string(width) + ", " + std::to_string(height) + ">");
-        //
-        //             std::vector<unsigned char> rgbData(width * height * 3);
-        //             auto data_ptr = arr.data();
-        //             for (int i = 0; i < width * height; i++) { // convert to RGB
-        //                 rgbData[i * 3 + 0]     = static_cast<unsigned char>(data_ptr[i * channels + 0] * 255.0f);
-        //                 rgbData[i * 3 + 1]     = static_cast<unsigned char>(data_ptr[i * channels + 0] * 255.0f);
-        //                 rgbData[i * 3 + 2]     = static_cast<unsigned char>(data_ptr[i * channels + 0] * 255.0f);
-        //             }
-        //             gray->set(rgbData, width, height, 3);
-        //         } else {
-        //             Logger::error("Unsupported visualization shape: " + std::to_string(arr.ndim()) + "D");
-        //         }
-        //     } else {
-        //         Logger::warning("No Gray Scale visualization available for object: " + std::string(visualizable->moduleName));
-        //     } }))
-        // {
-        //     Logger::error("Failed to initialize Gray Scale visualization (buffer) for object: " + std::string(visualizable->moduleName));
-        //     delete gray_params;
-        //     gray_params = nullptr;
-        //     delete gray;
-        //     gray = nullptr;
-        //     return;
-        // }
 
         _update_gray();
     }
@@ -367,8 +302,7 @@ namespace Pipeline {
     }
 
     void VisualizedObject::_init_heat_map() {
-        if (!SafeWrapper::execute([&]
-                                  {
+        if (!SafeWrapper::execute([&]{
             auto type = visualizable->getVisualizationParamsType(VisualizationMethod::HEAT_MAP);
             heat_map_params = new PyLiveObject();
             if (type != std::nullopt && !type->is_none() && py::hasattr(*type, "__bases__")) {
@@ -377,8 +311,9 @@ namespace Pipeline {
                 PyScope::parseLoadedModule(py::getattr(heat_map_params->object, "__class__"), *heat_map_params);
             } else {
                 heat_map_params->object = py::none();
-            } }))
-        {
+            }
+            heat_map_params->init_members();
+        })) {
             Logger::error("Failed to initialize Heat map visualization (params) for object: " + std::string(visualizable->moduleName));
             delete heat_map_params;
             heat_map_params = nullptr;
@@ -387,46 +322,6 @@ namespace Pipeline {
 
         heat_map = new GLTexture();
         heat_map_viewer = new ImageViewer(heat_map->id(), {0, 0});
-
-        // if (!SafeWrapper::execute([&]
-        //                           {
-        //
-        //     auto data = visualizable->getVisualization(VisualizationMethod::HEAT_MAP, heat_map_params->object);
-        //     if (data.has_value()) {
-        //         py::array_t<float> arr = data->cast<py::array>();
-        //         if (arr.ndim() == 2) { // assuming Gray image
-        //             int width = arr.shape(1);
-        //             int height = arr.shape(0);
-        //             int channels = 1;
-        //             //Logger::info(std::format("Heat map Size: <{}, {}>", width, height));
-        //             Logger::info("Heat map Size: <" + std::to_string(width) + ", " + std::to_string(height) + ">");
-        //
-        //             std::vector<unsigned char> rgbData(width * height * 3);
-        //             auto data_ptr = arr.data();
-        //             auto max = *std::max_element(data_ptr, data_ptr + width * height);
-        //             auto min = *std::min_element(data_ptr, data_ptr + width * height);
-        //
-        //             for (int i = 0; i < width * height; i++) { // convert to RGB
-        //                 auto weight = (data_ptr[i * channels + 0] - min) / (max - min);
-        //                 rgbData[i * 3 + 0]     = static_cast<unsigned char>(weight       * 255.0f);
-        //                 rgbData[i * 3 + 1]     = static_cast<unsigned char>(0);
-        //                 rgbData[i * 3 + 2]     = static_cast<unsigned char>((1 - weight) * 255.0f);
-        //             }
-        //             heat_map->set(rgbData, width, height, 3);
-        //         } else {
-        //             Logger::error("Unsupported visualization shape: " + std::to_string(arr.ndim()) + "D");
-        //         }
-        //     } else {
-        //         Logger::warning("No Heat map visualization available for object: " + std::string(visualizable->moduleName));
-        //     } }))
-        // {
-        //     Logger::error("Failed to initialize Heat map visualization (buffer) for object: " + std::string(visualizable->moduleName));
-        //     delete heat_map_params;
-        //     heat_map_params = nullptr;
-        //     delete heat_map;
-        //     heat_map = nullptr;
-        //     return;
-        // }
 
         _update_heat_map();
     }
@@ -477,8 +372,7 @@ namespace Pipeline {
     }
 
     void VisualizedObject::_init_features() {
-        if (!SafeWrapper::execute([&]
-                                  {
+        if (!SafeWrapper::execute([&]{
             auto type = visualizable->getVisualizationParamsType(VisualizationMethod::FEATURES);
             features_params = new PyLiveObject();
             if (type != std::nullopt && !type->is_none() && py::hasattr(*type, "__bases__")) {
@@ -487,8 +381,10 @@ namespace Pipeline {
                 PyScope::parseLoadedModule(py::getattr(features_params->object, "__class__"), *features_params);
             } else {
                 features_params->object = py::none();
-            } }))
-        {
+            }
+
+            features_params->init_members();
+        })) {
             Logger::error("Failed to initialize Features visualization (params) for object: " + std::string(visualizable->moduleName));
             delete features_params;
             features_params = nullptr;
@@ -521,8 +417,7 @@ namespace Pipeline {
     }
 
     void VisualizedObject::_init_bar_chart() {
-        if (!SafeWrapper::execute([&]
-                                  {
+        if (!SafeWrapper::execute([&] {
             auto type = visualizable->getVisualizationParamsType(VisualizationMethod::BAR_CHART);
             bar_chart_params = new PyLiveObject();
             if (type != std::nullopt && !type->is_none() && py::hasattr(*type, "__bases__")) {
@@ -531,8 +426,10 @@ namespace Pipeline {
                 PyScope::parseLoadedModule(py::getattr(bar_chart_params->object, "__class__"), *bar_chart_params);
             } else {
                 bar_chart_params->object = py::none();
-            } }))
-        {
+            }
+
+            bar_chart_params->init_members();
+        })) {
             Logger::error("Failed to initialize Bar Chart visualization (params) for object: " + std::string(visualizable->moduleName));
             delete bar_chart_params;
             bar_chart_params = nullptr;
@@ -571,16 +468,15 @@ namespace Pipeline {
 
     void VisualizedAgent::init(Pipeline::ActiveAgent *agent) {
         this->agent = agent;
-        if (agent->env)
-        {
+        this->agent->agent->init_members();
+
+        if (agent->env) {
             env_visualization = new VisualizedObject();
             env_visualization->init(agent->env);
         }
 
-        for (auto &method : agent->methods)
-        {
-            if (method)
-            {
+        for (auto &method : agent->methods) {
+            if (method) {
                 auto vis_obj = new VisualizedObject();
                 vis_obj->init(method);
                 method_visualizations.push_back(vis_obj);
@@ -590,6 +486,8 @@ namespace Pipeline {
 
     void VisualizedAgent::update() const {
         py::gil_scoped_acquire acquire{};
+
+        agent->agent->update_members();
 
         if (env_visualization){
             env_visualization->update();

@@ -8,6 +8,7 @@
 #include "imgui_internal.h"
 #include "preview.hpp"
 #include "../../backend/py_safe_wrapper.hpp"
+#include "../utility/helpers.hpp"
 
 namespace Pipeline
 {
@@ -55,15 +56,27 @@ namespace Pipeline
         return PipelineState::experimentState == RUNNING;
     }
 
-    static void _agent_worker_init(ActiveAgent* agent, PipelineAgent* recipe, VisualizedAgent* preview) {
+    static void _agent_worker_init(ActiveAgent* agent, PipelineAgent* recipe) {
         Logger::info("Initializing agent: " + std::string(agent->name));
         py::gil_scoped_acquire acquire; // take GIL lock
+
         agent->agent            = new PyAgent();
         agent->agent->object    = recipe->recipe->create();
 
         if (agent->agent->object.is_none()) {
             Logger::error("Failed to create agent: " + std::string(agent->name));
             PipelineState::_agentsCountFailed += 1;
+
+            delete agent->env;
+            delete agent->agent;
+            agent->agent = nullptr;
+            agent->env = nullptr;
+
+            for (auto& m: agent->methods) {
+                delete m;
+            }
+            agent->methods.clear();
+
             return;
         }
 
@@ -75,10 +88,21 @@ namespace Pipeline
         if (agent->env->object.is_none()) {
             Logger::error("Failed to create environment for agent: " + std::string(agent->name));
             PipelineState::_agentsCountFailed += 1;
+
+            delete agent->env;
+            delete agent->agent;
+            agent->agent = nullptr;
+            agent->env = nullptr;
+
+            for (auto& m: agent->methods) {
+                delete m;
+            }
+            agent->methods.clear();
+
             return;
         }
 
-        PyScope::parseLoadedModule(py::getattr(agent->agent->object, "__class__"), *agent->env);
+        PyScope::parseLoadedModule(py::getattr(agent->env->object, "__class__"), *agent->env);
 
         agent->reward_total = 0;
         agent->reward_ep    = 0;
@@ -91,7 +115,6 @@ namespace Pipeline
         agent->env_terminated        = false;
         agent->env_truncated         = false;
 
-
         for (auto& method: PipelineConfig::pipelineMethods) {
             const auto methodPtr          = new PyMethod();
             methodPtr->object             = method.recipe->create();
@@ -100,11 +123,22 @@ namespace Pipeline
                 delete methodPtr;
                 Logger::error("Failed to create method for agent: " + std::string(agent->name));
                 PipelineState::_agentsCountFailed += 1;
+
+                delete agent->env;
+                delete agent->agent;
+                agent->agent = nullptr;
+                agent->env = nullptr;
+
+                for (auto& m: agent->methods) {
+                    delete m;
+                }
+                agent->methods.clear();
+
                 return;
             }
 
             PyScope::parseLoadedModule(
-            py::getattr(methodPtr->object, "__class__"), *methodPtr
+                py::getattr(methodPtr->object, "__class__"), *methodPtr
             );
 
             agent->methods      .push_back(methodPtr);
@@ -121,6 +155,7 @@ namespace Pipeline
 
     static void _agent_worker_update(ActiveAgent* agent, VisualizedAgent* preview) {
         // std::cout << "Agent[" << agent->name << "] steps=" << agent->steps_to_take << std::endl;
+
         preview->update();
 
         if (agent->state == IDLE) {
@@ -269,7 +304,13 @@ namespace Pipeline
         std::thread([agent, recipe, preview] {
             agent->_worker_running = true;
 
-            _agent_worker_init(agent, recipe, preview);
+            _agent_worker_init(agent, recipe);
+
+            if (agent->agent == nullptr) {
+                // some error happened in init
+                agent->_worker_running = false;
+                return; // early exit
+            }
 
             agent->state = IDLE;
             agent->next_action = 0;
@@ -578,59 +619,38 @@ namespace Pipeline
     {
         ImGui::Begin("Pipeline");
 
-        if (isExperimenting())
-        {
-            if (ImGui::Button("Stop Experiment"))
-            {
+        if (isExperimenting()) {
+            if (ImGui::Button("Stop Experiment")) {
                 stopExperiment();
             }
-        }
-        else
-        {
-            if (ImGui::Button("Start Experiment"))
-            {
+        } else {
+            if (ImGui::Button("Start Experiment")) {
                 beginExperiment();
             }
         }
 
-        if (isExperimenting())
-        {
+        if (isExperimenting()) {
             ImGui::BeginDisabled();
         }
 
         ImGui::TextDisabled("Configuration");
 
         std::vector<std::string> names;
-        for (auto recipe : envs)
-        {
+        for (auto recipe : envs) {
             names.push_back(recipe.acceptor->_tag);
         }
 
-        if (names.empty())
-        {
+        if (names.empty()) {
             names.push_back("<empty>");
         }
 
-        size_t size = 0;
-        for (auto &name : names)
-        {
-            size += name.length() + 1;
-        }
+        auto data = Helpers::toImGuiList(names);
 
-        char *data = new char[size + 1];
-        size_t offset = 0;
-        for (int i = 0; i < names.size(); i++)
-        {
-            strcpy(data + offset, names[i].c_str());
-            offset += names[i].size() + 1;
-        }
-
-        data[size] = '\0'; // Null-terminate the for list
-
-        if (ImGui::Combo("##<empty>", &PipelineConfig::activeEnv, data, size))
-        {
+        if (ImGui::Combo("##<empty>", &PipelineConfig::activeEnv, data.first, data.second)) {
             // nothing to do here
         }
+
+        delete[] data.first;
 
         ImGui::SameLine();
         ImGui::Text("Environment");
@@ -892,6 +912,11 @@ namespace Pipeline
                 PipelineState::experimentState = RUNNING;
                 PipelineState::Simulating = false;
                 Logger::info("Experiment is running.");
+
+                const char* windowName = "Preview";
+                ImGuiWindow* window = ImGui::FindWindowByName(windowName);
+                if (window)
+                    ImGui::FocusWindow(window);
             }
         }
 

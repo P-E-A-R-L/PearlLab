@@ -106,6 +106,10 @@ set(PEAR_LAB_SOURCES
         src/ui/modules/pipeline_visualizations.cpp
         src/ui/widgets/image_viewer.cpp
         src/ui/widgets/image_viewer.hpp
+        src/ui/widgets/splitter.cpp
+        src/ui/widgets/splitter.hpp
+        src/ui/utility/helpers.cpp
+        src/ui/utility/helpers.hpp
 
 )
 

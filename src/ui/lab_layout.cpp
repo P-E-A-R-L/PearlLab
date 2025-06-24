@@ -7,6 +7,7 @@
 #include "shared_ui.hpp"
 #include "startup_loader.hpp"
 #include "../backend/py_scope.hpp"
+#include "modules/inspector.hpp"
 #include "modules/logger.hpp"
 #include "modules/objects_panel.hpp"
 #include "modules/pipeline.hpp"
@@ -20,26 +21,14 @@ namespace LabLayout
     // hidden because normally not other module would need these functions
     // these are just some demo functions to make the UI .. well .. do something
     // they are to be changed with the actual modules
-    void renderParamsModule();
+    // void renderParamsModule();
+    // they are no more :)
 
     ProjectManager::ProjectDetails project_details;
 
 }
 
 extern GLFWwindow *AppWindow;
-
-void LabLayout::renderParamsModule()
-{
-    static char modelPath[128] = "models/agent_a.model";
-    static float noise = 0.1f;
-    static float learningRate = 0.01f;
-
-    ImGui::Begin("Inspector");
-    ImGui::InputText("Model Path", modelPath, IM_ARRAYSIZE(modelPath));
-    ImGui::SliderFloat("Noise", &noise, 0.0f, 1.0f);
-    ImGui::SliderFloat("Learning Rate", &learningRate, 0.001f, 1.0f);
-    ImGui::End();
-}
 
 void LabLayout::init(const std::string &project_path)
 {
@@ -54,6 +43,7 @@ void LabLayout::init(const std::string &project_path)
     ObjectsPanel::init();
     Pipeline::init();
     Preview::init();
+    Inspector::init();
 }
 
 void LabLayout::update() {
@@ -261,7 +251,6 @@ void LabLayout::render()
     ImGui::End();
 
     // Render individual windows
-    if (window_inspector) renderParamsModule();
 
     if (open_modules_debugger) PyModuleWindow::render();
     if (show_metrics) ImGui::ShowMetricsWindow();
@@ -271,6 +260,7 @@ void LabLayout::render()
     if (window_objects)  ObjectsPanel::render();
     if (window_pipeline) Pipeline::render();
     if (window_preview)  Preview::render();
+    if (window_inspector) Inspector::render();
 
     if (first_run) {
         menu_reset_window = true; // reset layout on first run
@@ -285,6 +275,7 @@ void LabLayout::destroy()
     PipelineGraph::destroy();
     ObjectsPanel::destroy();
     Preview::destroy();
+    Inspector::destroy();
 
     SharedUi::destroy();
     PyScope::clearInstance();

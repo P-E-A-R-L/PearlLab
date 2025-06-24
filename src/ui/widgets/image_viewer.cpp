@@ -15,9 +15,10 @@ void ImageViewer::Render(const char *label) {
     ImVec2 drawPos = ComputeDrawPosition(avail, drawSize);
 
     ImGui::SetCursorPos(drawPos);
-    ImGui::Image(textureId, drawSize);
-
-    HandleContextMenu();
+    ImGui::BeginChild(label, drawSize);
+        ImGui::Image(textureId, drawSize);
+        HandleContextMenu();
+    ImGui::EndChild();
 }
 
 ImVec2 ImageViewer::ComputeDrawSize(const ImVec2 &avail) const  {

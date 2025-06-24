@@ -14,13 +14,6 @@ namespace py = pybind11;
 namespace PipelineGraph
 {
 
-    union PrimitiveValue
-    {
-        std::string *str;
-        float *f;
-        int *i;
-    };
-
     enum PinDirection
     {
         INPUT,

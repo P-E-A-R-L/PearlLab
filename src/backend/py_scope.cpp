@@ -594,12 +594,12 @@ Param PyScope::parseParamFromAnnotation(py::handle value)
     py::gil_scoped_acquire acquire{};
 
     py::object typ = value.attr("typ");
-    bool editable = py::bool_(value.attr("editable"));
+    bool editable  = py::bool_(value.attr("editable"));
     std::string rangeStart = py::str(value.attr("range_start"));
-    std::string rangeEnd = py::str(value.attr("range_end"));
+    std::string rangeEnd   = py::str(value.attr("range_end"));
     std::string isFilePath = py::str(value.attr("isFilePath"));
     auto choices = value.attr("choices");
-    std::string def = py::str(value.attr("default"));
+    std::string def  = py::str(value.attr("default"));
     std::string disc = py::str(value.attr("disc"));
 
     std::vector<std::string> choice_list;
@@ -625,8 +625,8 @@ Param PyScope::parseParamFromAnnotation(py::handle value)
     result.hasChoices = hasChoices;
     result.editable = editable;
     result.isFilePath = false;
-    result.rangeStart = "None"; // maybe use optional ? idk tbh ...
-    result.rangeEnd = "None";
+    result.rangeStart   = "None"; // maybe use optional ? idk tbh ...
+    result.rangeEnd     = "None";
     result.defaultValue = "None";
     result.disc = disc;
 

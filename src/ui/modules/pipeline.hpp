@@ -99,10 +99,10 @@ namespace Pipeline
         void init(PyVisualizable *);
         [[nodiscard]] bool supports(VisualizationMethod method) const;
 
-        // update buffers only
+        // update buffers & data [worker thread]
         void update();
 
-        // update textures only
+        // update textures only [ui thread]
         void update_tex();
 
         std::mutex* m_lock = nullptr;
@@ -129,7 +129,7 @@ namespace Pipeline
     struct VisualizedAgent
     {
         Pipeline::ActiveAgent *agent;
-        VisualizedObject *env_visualization = nullptr;
+        VisualizedObject      *env_visualization = nullptr;
         std::vector<VisualizedObject *> method_visualizations;
 
         void init(Pipeline::ActiveAgent *agent);
