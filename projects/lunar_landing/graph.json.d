@@ -105,7 +105,7 @@
             "src": 83
         }
     ],
-    "next_id": 101,
+    "next_id": 103,
     "nodes": [
         {
             "data": {
@@ -414,6 +414,19 @@
                 "tag": "REINFORCE Agent (500)"
             },
             "type": "PipelineGraph.Nodes.AgentAcceptorNode"
+        },
+        {
+            "data": {
+                "id": 101,
+                "inputs": [],
+                "module": "test_lunarlander.cudaDevice",
+                "outputs": [
+                    102
+                ],
+                "pointer": true,
+                "tag": "<tag>"
+            },
+            "type": "PipelineGraph.Nodes.PythonFunctionNode"
         }
     ]
 }

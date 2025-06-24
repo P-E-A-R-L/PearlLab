@@ -49,7 +49,7 @@ class LunarWrapper(ObservationWrapper):
     def step(self, action):
         obs, reward, terminated, truncated, info = self.env.step(action)
         obs = obs[:, 0]
-        print(f"Current value of 'integer' = {integer}")
+        print(f"Current value of 'integer' = {self.integer}")
         return self.observation(obs), reward, terminated, truncated, info
 
 

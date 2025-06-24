@@ -753,7 +753,7 @@ namespace Pipeline
                     ImGui::SetNextItemWidth(150);
                     if (ImGui::InputText("##rename", method.name, IM_ARRAYSIZE(method.name), ImGuiInputTextFlags_EnterReturnsTrue))
                     {
-                        rename_agent_index = -1; // Done renaming
+                        rename_method_index = -1; // Done renaming
                     }
                 }
                 else
@@ -780,13 +780,13 @@ namespace Pipeline
                     {
                         if (ImGui::MenuItem("Rename"))
                         {
-                            rename_agent_index = i;
+                            rename_method_index = i;
                         }
                         if (ImGui::MenuItem("Delete"))
                         {
                             PipelineConfig::pipelineMethods.erase(PipelineConfig::pipelineMethods.begin() + i);
-                            if (rename_agent_index == i)
-                                rename_agent_index = -1;
+                            if (rename_method_index == i)
+                                rename_method_index = -1;
                             ImGui::EndPopup();
                             ImGui::PopID();
                             break; // Exit now (one frame will be corrupted, but well it is what it is).
