@@ -118,6 +118,7 @@ class StabilityExplainability(ExplainabilityMethod):
                  noise_type: Optional[str] = 'gaussian',
                  noise_strength: Optional[float] = 0.01,
                  num_samples: Optional[int] = 20,
+                 reward_weight: Optional[bool] = True,
                  visualize: Optional[bool] = True,
                  save_dir: Optional[str] = "./temp"):
         """
@@ -147,6 +148,10 @@ class StabilityExplainability(ExplainabilityMethod):
 
         self.visualizer = Visualizer(save_dir) if visualize else None
         self._first_observation = True
+        self.prev_stability_score = 0
+        self.current_stability_score = 0
+        self.last_reward: Optional[Dict[str, np.ndarray]] = None
+        self.reward_weight = reward_weight
 
     def set(self, env: RLEnvironment) -> None:
         """Set the environment."""
@@ -163,7 +168,8 @@ class StabilityExplainability(ExplainabilityMethod):
 
     def onStepAfter(self, action: Any, reward: Dict[str, np.ndarray], done: bool, info: dict):
         # nothing for shap
-        pass
+        self.last_reward = reward
+        print(f"StabilityExplainability: onStepAfter called with action={action}, reward={reward}, done={done}, info={info}")
 
     def _apply_noise(self, tensor: torch.Tensor) -> torch.Tensor:
         """Apply the specified type of noise to the tensor."""
@@ -222,13 +228,19 @@ class StabilityExplainability(ExplainabilityMethod):
         score = self._measure_agent_stability(self.agent, obs_tensor)
         return score
 
-    def value(self, obs: np.ndarray, reward: Optional[float] = None) -> List[float]:
-        stability_score = self.explain(obs)
+    def value(self, obs) -> float:
+      self.current_stability_score = self.explain(obs)
 
-        if reward is not None:
-            return float(stability_score * reward)
+      result = 0.0
+      if self.reward_weight and self.last_reward is not None:
+        result = self.prev_stability_score * float(self.last_reward['reward'])
+      else:
+        result = self.current_stability_score
 
-        return stability_score
+      # Always update the previous score for next iteration
+      self.prev_stability_score = self.current_stability_score
+
+      return result
 
     def supports(self, m: VisualizationMethod) -> bool:
         return False

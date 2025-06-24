@@ -103,9 +103,33 @@
         {
             "dst": 90,
             "src": 83
+        },
+        {
+            "dst": 103,
+            "src": 2
+        },
+        {
+            "dst": 104,
+            "src": 111
+        },
+        {
+            "dst": 105,
+            "src": 115
+        },
+        {
+            "dst": 106,
+            "src": 117
+        },
+        {
+            "dst": 122,
+            "src": 102
+        },
+        {
+            "dst": 107,
+            "src": 125
         }
     ],
-    "next_id": 101,
+    "next_id": 127,
     "nodes": [
         {
             "data": {
@@ -414,6 +438,92 @@
                 "tag": "REINFORCE Agent (500)"
             },
             "type": "PipelineGraph.Nodes.AgentAcceptorNode"
+        },
+        {
+            "data": {
+                "id": 101,
+                "inputs": [
+                    103,
+                    104,
+                    105,
+                    106,
+                    107,
+                    108,
+                    64
+                ],
+                "module": "StabilityExplainability.StabilityExplainability",
+                "outputs": [
+                    102
+                ],
+                "tag": "<tag>"
+            },
+            "type": "PipelineGraph.Nodes.PythonModuleNode"
+        },
+        {
+            "data": {
+                "file": false,
+                "id": 110,
+                "inputs": [],
+                "outputs": [
+                    111
+                ],
+                "tag": "<tag>",
+                "value": "gaussian"
+            },
+            "type": "PipelineGraph.Nodes.PrimitiveStringNode"
+        },
+        {
+            "data": {
+                "id": 114,
+                "inputs": [],
+                "outputs": [
+                    115
+                ],
+                "rangeEnd": -1.0,
+                "rangeStart": -1.0,
+                "tag": "<tag>",
+                "value": 0.0
+            },
+            "type": "PipelineGraph.Nodes.PrimitiveFloatNode"
+        },
+        {
+            "data": {
+                "id": 116,
+                "inputs": [],
+                "outputs": [
+                    117
+                ],
+                "rangeEnd": -1,
+                "rangeStart": -1,
+                "tag": "<tag>",
+                "value": 20
+            },
+            "type": "PipelineGraph.Nodes.PrimitiveIntNode"
+        },
+        {
+            "data": {
+                "id": 121,
+                "inputs": [
+                    122
+                ],
+                "outputs": [],
+                "tag": "Stability Explainability"
+            },
+            "type": "PipelineGraph.Nodes.MethodAcceptorNode"
+        },
+        {
+            "data": {
+                "id": 124,
+                "inputs": [],
+                "outputs": [
+                    125
+                ],
+                "rangeEnd": -1,
+                "rangeStart": -1,
+                "tag": "<tag>",
+                "value": 0
+            },
+            "type": "PipelineGraph.Nodes.PrimitiveIntNode"
         }
     ]
 }
