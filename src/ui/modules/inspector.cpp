@@ -185,16 +185,14 @@ static void _render_content() {
     static std::vector<float> sizes = {0.1, 0.3, 0.3, 0.3};
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4, 4));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2, 2));
-
         Splitter::Vertical(sizes, [](int i) {
-            if (i == 0) _render_info();
-            if (i == 1) _render_control();
-            if (i == 2) _render_env_details();
-            if (i == 3) _render_methods_details();
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2, 2));
+                if (i == 0) _render_info();
+                if (i == 1) _render_control();
+                if (i == 2) _render_env_details();
+                if (i == 3) _render_methods_details();
+            ImGui::PopStyleVar();
         });
-
-    ImGui::PopStyleVar();
     ImGui::PopStyleVar();
 }
 

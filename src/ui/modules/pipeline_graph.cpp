@@ -722,18 +722,12 @@ namespace PipelineGraph
 
             ImGui::Separator();
 
-            if (ImGui::BeginMenu("Objects"))
-            {
-                for (auto &module : SharedUi::loadedModules)
-                {
-                    if (ImGui::MenuItem(module.moduleName.c_str()))
-                    {
-                        if (module.type == PyScope::Function)
-                        {
+            if (ImGui::BeginMenu("Objects")) {
+                for (auto &module : SharedUi::loadedModules) {
+                    if (ImGui::MenuItem(module.moduleName.c_str())) {
+                        if (module.type == PyScope::Function) {
                             _addNode(new Nodes::PythonFunctionNode(&module));
-                        }
-                        else
-                        {
+                        } else {
                             _addNode(new Nodes::PythonModuleNode(&module));
                         }
                     }
@@ -1817,6 +1811,8 @@ namespace PipelineGraph
 
     void Nodes::PythonFunctionNode::save(nlohmann::json &custom_data)
     {
+        py::gil_scoped_acquire acquire{};
+
         inputs = _inputs;
         SingleOutputNode::save(custom_data);
 
@@ -1827,26 +1823,24 @@ namespace PipelineGraph
     void Nodes::PythonFunctionNode::load(nlohmann::json &custom_data)
     {
         std::string moduleName = custom_data.value("module", "");
-        if (moduleName == "")
-        {
+        if (moduleName == "") {
             throw std::runtime_error("No module name specified");
         }
 
         bool found = false;
-        for (auto &mod : SharedUi::loadedModules)
-        {
-            if (mod.moduleName == moduleName)
-            {
+        for (auto &mod : SharedUi::loadedModules) {
+            if (mod.moduleName == moduleName) {
                 _type = &mod;
                 found = true;
                 break;
             }
         }
 
-        if (!found)
-        {
+        if (!found) {
             throw std::runtime_error("Module: " + moduleName + ", was not loaded.");
         }
+
+        this->_pointer = custom_data["pointer"];
 
         _preparePins();
         SingleOutputNode::load(custom_data);
@@ -1977,8 +1971,7 @@ namespace PipelineGraph
         input.type = PyScope::getInstance().object_type;
         inputs.push_back(input);
 
-        for (int i = 0; i < numOutputs; ++i)
-        {
+        for (int i = 0; i < numOutputs; ++i) {
             Pin output;
             output.id = GetNextId();
             // output.name = std::format("obj[{}]", i + 1);
