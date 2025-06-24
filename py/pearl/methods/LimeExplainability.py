@@ -123,6 +123,5 @@ class LimeExplainability(ExplainabilityMethod):
             for segment, importance in self.last_explain.local_exp[idx]:
                 heatmap[segs == segment] = importance
                 
-            resized_heatmap = resize(heatmap, (336, 336), preserve_range=True, anti_aliasing=True)
-            return resized_heatmap
+            return heatmap
         return None

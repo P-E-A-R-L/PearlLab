@@ -1,10 +1,9 @@
-import cv2
-import gymnasium as gym
 import torch
 import numpy as np
 import torch.nn as nn
 from tqdm import tqdm
 from annotations import Param
+
 
 from pearl.provided.LunarLander import LunarLanderTabularMask
 from pearl.methods.TabularShapExplainability import TabularShapExplainability
@@ -29,8 +28,6 @@ class REINFORCE_Net(nn.Module):
 
 
 class LunarWrapper(ObservationWrapper):
-    integer: Param(int, disc="a super fancy way to edit variables.") = 45
-
     def __init__(self, env):
         super().__init__(env)
         self.observation_space = env.observation_space
@@ -71,7 +68,7 @@ if __name__ == "__main__":
     agent_good = TorchPolicyAgent('models/lunar_lander_reinforce_2000.pth', policy_net_good, device)
     
     policy_net_bad = REINFORCE_Net(input_dim, n_actions)
-    agent_bad = TorchPolicyAgent('models/lunar_lander_reinforce_500.pth', policy_net_bad, device)
+    agent_bad = TorchPolicyAgent('models/lunar_lander_reinforce_10.pth', policy_net_bad, device)
     
     agents = [agent_good, agent_bad]
     

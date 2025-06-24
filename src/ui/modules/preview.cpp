@@ -279,10 +279,10 @@ static void _render_agent_basic(const Pipeline::ActiveAgent* agent, float width,
 
 typedef std::function<void(Pipeline::ActiveAgent*, float, int)> _agent_render_function;
 
-static int agents_per_row = 3;
+static int agents_per_row = 2;
 static void tab_wrapper(const _agent_render_function &_f)
 {
-    ImGui::BeginChild("AgentsScrollArea", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::BeginChild("AgentsScrollArea", ImVec2(0, 0), false, ImGuiWindowFlags_NoScrollbar);
     
     { // agents previews (env)
         auto available_width = ImGui::GetContentRegionAvail().x;
