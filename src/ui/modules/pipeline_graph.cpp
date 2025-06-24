@@ -1811,6 +1811,8 @@ namespace PipelineGraph
 
     void Nodes::PythonFunctionNode::save(nlohmann::json &custom_data)
     {
+        py::gil_scoped_acquire acquire{};
+
         inputs = _inputs;
         SingleOutputNode::save(custom_data);
 
