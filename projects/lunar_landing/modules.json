@@ -1,3 +1,7 @@
 [
-    "./py/test_lunarlander.py"
+    "./py/test_lunarlander.py",
+    "/home/sobhy/PearlLab/py/pearl/methods/StabilityExplainability.py",
+    "/home/sobhy/PearlLab/py/pearl/methods/StabilityExplainability.py",
+    "/home/sobhy/PearlLab/py/pearl/methods/StabilityExplainability.py",
+    "/home/sobhy/PearlLab/py/pearl/methods/StabilityExplainability.py"
 ]
