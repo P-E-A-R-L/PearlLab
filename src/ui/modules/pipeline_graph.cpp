@@ -624,10 +624,10 @@ namespace PipelineGraph
         ImGui::Dummy({0, 0}); // I swear I have no idea how that works ..
 
         ImGui::BeginTooltip();
-        ImGui::Text("%s (%ul)", p->name.c_str(), p->id.Get());
+        ImGui::Text("%s (%lu)", p->name.c_str(), p->id.Get());
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
         FontManager::pushFont("Light");
-        ImGui::Text(p->type_name.c_str());
+        ImGui::Text("%s",p->type_name.c_str());
         FontManager::popFont();
         ImGui::PopStyleColor();
 
@@ -905,11 +905,11 @@ namespace PipelineGraph
                     return py::none();
                 }
             }
-        } catch (const std::exception &e) {
-            Logger::error("Exception while creating recipe: " + std::string(e.what()));
-            return py::none();
         } catch (py::error_already_set &e) {
             Logger::error("Python error while creating recipe: " + std::string(e.what()));
+            return py::none();
+        } catch (const std::exception &e) {
+            Logger::error("Exception while creating recipe: " + std::string(e.what()));
             return py::none();
         } catch (...) {
             Logger::error("Unknown error while creating recipe");
@@ -1004,7 +1004,7 @@ namespace PipelineGraph
 
                 ImGui::SetCursorPosX(ImGui::GetCursorPosX() + availWidth - totalWidth);
 
-                ImGui::Text(output.name.c_str());
+                ImGui::Text("%s",output.name.c_str());
                 ImGui::SameLine();
                 ed::BeginPin(output.id, ed::PinKind::Output);
                 ax::Drawing::DrawIcon(ImVec2(20, 20), ax::Drawing::IconType::Circle, pinLinkLookup.contains(output.id));
@@ -1094,7 +1094,7 @@ namespace PipelineGraph
 
     void Nodes::PrimitiveIntNode::render()
     {
-        ImGui::Text(this->name.c_str());
+        ImGui::Text("%s",this->name.c_str());
         auto &elem = outputs[0];
 
         renderNodeTag(this);
@@ -1221,7 +1221,7 @@ namespace PipelineGraph
 
     void Nodes::PrimitiveFloatNode::render()
     {
-        ImGui::Text(this->name.c_str());
+        ImGui::Text("%s",this->name.c_str());
         auto &elem = outputs[0];
 
         renderNodeTag(this);
@@ -1349,7 +1349,7 @@ namespace PipelineGraph
 
     void Nodes::PrimitiveStringNode::render()
     {
-        ImGui::Text(this->name.c_str());
+        ImGui::Text("%s",this->name.c_str());
         auto &elem = outputs[0];
 
         renderNodeTag(this);
@@ -1476,7 +1476,7 @@ namespace PipelineGraph
 
     void Nodes::AdderNode::render()
     {
-        ImGui::Text(this->name.c_str());
+        ImGui::Text("%s",this->name.c_str());
         renderNodeTag(this);
 
         ImVec2 tableSize(150, 0);
@@ -1610,14 +1610,14 @@ namespace PipelineGraph
         int max_node_header_size = 0;
 
         max_node_header_size = std::max(max_node_header_size, static_cast<int>(ImGui::CalcTextSize(this->name.c_str()).x));
-        ImGui::Text(this->name.c_str());
+        ImGui::Text("%s",this->name.c_str());
 
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
         FontManager::pushFont("Light");
 
         std::string name = "<" + _type->moduleName + ">";
         max_node_header_size = std::max(max_node_header_size, static_cast<int>(ImGui::CalcTextSize(name.c_str()).x));
-        ImGui::Text(name.c_str());
+        ImGui::Text("%s",name.c_str());
         FontManager::popFont();
         ImGui::PopStyleColor();
 
@@ -1750,14 +1750,14 @@ namespace PipelineGraph
         int max_node_header_size = 0;
 
         max_node_header_size = std::max(max_node_header_size, static_cast<int>(ImGui::CalcTextSize(this->name.c_str()).x));
-        ImGui::Text(this->name.c_str());
+        ImGui::Text("%s",this->name.c_str());
 
         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
         FontManager::pushFont("Light");
 
         std::string name = "<" + _type->moduleName + ">";
         max_node_header_size = std::max(max_node_header_size, static_cast<int>(ImGui::CalcTextSize(name.c_str()).x));
-        ImGui::Text(name.c_str());
+        ImGui::Text("%s",name.c_str());
         FontManager::popFont();
         ImGui::PopStyleColor();
 
@@ -1765,31 +1765,24 @@ namespace PipelineGraph
 
         bool _p = _pointer;
         ImGui::Checkbox("Pointer", &_pointer);
-        if (_p != _pointer)
-        {
+
+        if (_p != _pointer) {
             // changed, so we should clear all links
             clearNode(this->id);
+
+            py::gil_scoped_acquire acquire{};
+            if (_pointer){
+                outputs[0].type = _type->module;
+                inputs = {};
+            } else {
+                outputs[0].type = _type->returnType;
+                inputs = _inputs;
+            }
         }
 
-        if (_pointer)
-        {
-            py::gil_scoped_acquire acquire{};
-            outputs[0].type = _type->module;
-            inputs = {};
-        }
-        else
-        {
-            py::gil_scoped_acquire acquire{};
-            outputs[0].type = _type->returnType;
-            inputs = _inputs;
-        }
-
-        if (!_pointer)
-        {
+        if (!_pointer) {
             renderNodeAsTable(this, max_node_header_size);
-        }
-        else
-        {
+        } else {
             float textWidth = ImGui::CalcTextSize("func").x;
             int avail_width = std::max(max_node_header_size, (int)textWidth + 20 + 4);
             float iconSize = 20.0f;
@@ -1844,6 +1837,15 @@ namespace PipelineGraph
 
         _preparePins();
         SingleOutputNode::load(custom_data);
+
+        py::gil_scoped_acquire acquire{};
+        if (_pointer){
+            outputs[0].type = _type->module;
+            inputs = {};
+        } else {
+            outputs[0].type = _type->returnType;
+            inputs = _inputs;
+        }
     }
 
     void Nodes::PythonFunctionNode::_preparePins() {
@@ -1886,7 +1888,7 @@ namespace PipelineGraph
 
     void Nodes::AcceptorNode::render()
     {
-        ImGui::Text(this->name.c_str());
+        ImGui::Text("%s",this->name.c_str());
         renderNodeTag(this);
         ed::BeginPin(inputs[0].id, ed::PinKind::Input);
         ax::Drawing::DrawIcon(ImVec2(20, 20), ax::Drawing::IconType::Circle, pinLinkLookup.contains(inputs[0].id));
@@ -1938,7 +1940,7 @@ namespace PipelineGraph
     {
         int max_node_header_size = 0;
         max_node_header_size = std::max(max_node_header_size, static_cast<int>(ImGui::CalcTextSize(this->name.c_str()).x));
-        ImGui::Text(this->name.c_str());
+        ImGui::Text("%s",this->name.c_str());
         max_node_header_size = std::max(max_node_header_size, renderNodeTag(this));
         renderNodeAsTable(this, max_node_header_size);
     }

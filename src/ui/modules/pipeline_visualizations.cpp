@@ -18,27 +18,31 @@ namespace Pipeline {
         this->visualizable->init_members();
         this->m_lock       = new std::mutex();
 
+
         if (visualizable->supports(VisualizationMethod::RGB_ARRAY)) {
+            // std::cout << "VisualizedObject::init::_init_rgb_array" << std::endl;
             _init_rgb_array();
         }
 
         if (visualizable->supports(VisualizationMethod::GRAY_SCALE)) {
+            // std::cout << "VisualizedObject::init::_init_gray" << std::endl;
             _init_gray();
         }
 
         if (visualizable->supports(VisualizationMethod::HEAT_MAP)) {
+            // std::cout << "VisualizedObject::init::_init_heat_map" << std::endl;
             _init_heat_map();
         }
 
         if (visualizable->supports(VisualizationMethod::FEATURES)) {
+            // std::cout << "VisualizedObject::init::_init_features" << std::endl;
             _init_features();
         }
 
         if (visualizable->supports(VisualizationMethod::BAR_CHART)) {
+            // std::cout << "VisualizedObject::init::_init_bar_chart" << std::endl;
             _init_bar_chart();
         }
-
-
     }
 
     bool VisualizedObject::supports(VisualizationMethod method) const {
@@ -60,7 +64,10 @@ namespace Pipeline {
 
 
     void VisualizedObject::update() {
-        if (visualizable)     visualizable->update_members();
+        if (!visualizable) return;
+
+        visualizable->update_members();
+
         if (rgb_array_params) rgb_array_params->update_members();
         if (gray_params)      gray_params->update_members();
         if (heat_map_params)  heat_map_params->update_members();
@@ -73,53 +80,74 @@ namespace Pipeline {
         if (features_params)  _update_features();
         if (bar_chart_params) _update_bar_chart();
 
-        if (rgb_array == nullptr && visualizable->supports(VisualizationMethod::RGB_ARRAY))
+        if (rgb_array == nullptr        && visualizable->supports(VisualizationMethod::RGB_ARRAY))
             _init_rgb_array();
-        if (gray == nullptr && visualizable->supports(VisualizationMethod::GRAY_SCALE))
+        if (gray == nullptr             && visualizable->supports(VisualizationMethod::GRAY_SCALE))
             _init_gray();
-        if (heat_map == nullptr && visualizable->supports(VisualizationMethod::HEAT_MAP))
+        if (heat_map == nullptr         && visualizable->supports(VisualizationMethod::HEAT_MAP))
             _init_heat_map();
-        if (features_params == nullptr && visualizable->supports(VisualizationMethod::FEATURES))
+        if (features_params == nullptr  && visualizable->supports(VisualizationMethod::FEATURES))
             _init_features();
         if (bar_chart_params == nullptr && visualizable->supports(VisualizationMethod::BAR_CHART))
             _init_bar_chart();
     }
 
     void VisualizedObject::update_tex() {
-        if (rgb_array != nullptr) {
+        if (rgb_array_params != nullptr) {
             std::lock_guard guard(*m_lock);
-            auto& [rgbData, width, height, channels] = rgb_array_buffer;
-            if (width != rgb_array->width() || height != rgb_array->height()) { // size changed
-                rgb_array->set(rgbData, width, height, channels);
-            } else {
-                rgb_array->update(rgbData);
+            auto& [rgbData, width, height, channels, valid] = rgb_array_buffer;
+            if (rgb_array == nullptr) {
+                rgb_array        = new GLTexture();
+                rgb_array_viewer = new ImageViewer(rgb_array->id(), {0, 0});
             }
 
-            rgb_array_viewer->imageSize = ImVec2(rgb_array->width(), rgb_array->height());
+            if (rgb_array_buffer.valid) {
+                if (width != rgb_array->width() || height != rgb_array->height()) { // size changed
+                    rgb_array->set(rgbData, width, height, channels);
+                } else {
+                    rgb_array->update(rgbData);
+                }
+
+                rgb_array_viewer->imageSize = ImVec2(rgb_array->width(), rgb_array->height());
+            }
         }
 
-        if (gray != nullptr) {
+        if (gray_params != nullptr) {
             std::lock_guard guard(*m_lock);
-            auto& [rgbData, width, height, channels] = gray_buffer;
-            if (width != gray->width() || height != gray->height()) { // size changed
-                gray->set(rgbData, width, height, channels);
-            } else {
-                gray->update(rgbData);
+            auto& [rgbData, width, height, channels, valid] = gray_buffer;
+            if (gray == nullptr) {
+                gray        = new GLTexture();
+                gray_viewer = new ImageViewer(gray->id(), {0, 0});
             }
 
-            gray_viewer->imageSize = ImVec2(gray->width(), gray->height());
+            if (valid) {
+                if (width != gray->width() || height != gray->height()) { // size changed
+                    gray->set(rgbData, width, height, channels);
+                } else {
+                    gray->update(rgbData);
+                }
+
+                gray_viewer->imageSize = ImVec2(gray->width(), gray->height());
+            }
         }
 
-        if (heat_map != nullptr) {
+        if (heat_map_params != nullptr) {
             std::lock_guard guard(*m_lock);
-            auto& [rgbData, width, height, channels] = heat_map_buffer;
-            if (width != heat_map->width() || height != heat_map->height()) { // size changed
-                heat_map->set(rgbData, width, height, channels);
-            } else {
-                heat_map->update(rgbData);
+            auto& [rgbData, width, height, channels, valid] = heat_map_buffer;
+            if (heat_map == nullptr) {
+                heat_map        = new GLTexture();
+                heat_map_viewer = new ImageViewer(heat_map->id(), {0, 0});
             }
 
-            heat_map_viewer->imageSize = ImVec2(heat_map->width(), heat_map->height());
+            if (valid) {
+                if (width != heat_map->width() || height != heat_map->height()) { // size changed
+                    heat_map->set(rgbData, width, height, channels);
+                } else {
+                    heat_map->update(rgbData);
+                }
+
+                heat_map_viewer->imageSize = ImVec2(heat_map->width(), heat_map->height());
+            }
         }
     }
 
@@ -159,38 +187,54 @@ namespace Pipeline {
 
     void VisualizedObject::_init_rgb_array() {
         if (!SafeWrapper::execute([&]{
+            // std::cout << "visualizable->getVisualizationParamsType(VisualizationMethod::RGB)" << std::endl;
             auto type = visualizable->getVisualizationParamsType(VisualizationMethod::RGB_ARRAY);
+            // std::cout << "new PyLiveObject()" << std::endl;
             rgb_array_params = new PyLiveObject();
+            // std::cout << "type != std::nullopt && !type->is_none() && py::hasattr(*type, \"__bases__\")" << std::endl;
             if (type != std::nullopt && !type->is_none() && py::hasattr(*type, "__bases__")) {
+                // std::cout << "create custom param" << std::endl;
                 py::tuple args(0);
                 rgb_array_params->object = (*type)(*args);
+
+                // std::cout << "PyScope::parseLoadedModule" << std::endl;
                 PyScope::parseLoadedModule(py::getattr(rgb_array_params->object, "__class__"), *rgb_array_params);
             } else {
+                // std::cout << "None" << std::endl;
                 rgb_array_params->object = py::none();
             }
 
+            // std::cout << "init_members" << std::endl;
             rgb_array_params->init_members();
         })) {
             Logger::error("Failed to initialize RGB Array visualization (params) for object: " + std::string(visualizable->moduleName));
             delete rgb_array_params;
             rgb_array_params = nullptr;
+            rgb_array_buffer.valid = false;
             return;
         }
 
-        rgb_array = new GLTexture();
-        rgb_array_viewer = new ImageViewer(rgb_array->id(), {0, 0});
+        // rgb_array        = new GLTexture();
+        // rgb_array_viewer = new ImageViewer(rgb_array->id(), {0, 0});
 
+        // std::cout << "_update_rgb_array" << std::endl;
         _update_rgb_array();
     }
 
     void VisualizedObject::_update_rgb_array() {
         SafeWrapper::execute([&]{
+            py::gil_scoped_acquire acquire;
+            // std::cout << "visualizable->getVisualization(VisualizationMethod::RGB_ARRAY, rgb_array_params->object)" << std::endl;
             auto data = visualizable->getVisualization(VisualizationMethod::RGB_ARRAY, rgb_array_params->object);
-            if (data.has_value()) {
-                py::array_t<float> arr = data->cast<py::array>();
+            if (data.has_value() && !data->is_none() && py::isinstance<py::array>(*data)) {
+                const auto& py_data = *data;
+                // std::cout << std::string(py::str(py_data)) << std::endl;
+                // std::cout << "data->cast<py::array>()" << std::endl;
+                py::array_t<float> arr = py_data.cast<py::array>();
+                // std::cout << "data->cast<py::array>() done" << std::endl;
                 if (arr.ndim() == 3 || arr.ndim() == 4) { // assuming RGB image / RGBA image
-                    int width = arr.shape(1);
-                    int height = arr.shape(0);
+                    int width    = arr.shape(1);
+                    int height   = arr.shape(0);
                     int channels = arr.shape(2);
                     if (channels == 3 || channels == 4) {
 
@@ -199,6 +243,8 @@ namespace Pipeline {
                         rgb_array_buffer.width    = width;
                         rgb_array_buffer.height   = height;
                         rgb_array_buffer.channels = channels;
+                        rgb_array_buffer.valid    = true;
+                        // std::cout << "rgbData.resize(width * height * channels)" << std::endl;
                         rgbData.resize(width * height * channels);
 
                         auto data_ptr = arr.data();
@@ -214,22 +260,27 @@ namespace Pipeline {
                         // {
                         //     if (width != rgb_array->width() || height != rgb_array->height()) { // size changed
                         //         rgb_array->set(rgbData, width, height, channels);
-                        //         std::cout << "rgb - updated (size changed)" << std::endl;
+                        //         // std::cout << "rgb - updated (size changed)" << std::endl;
                         //     } else {
                         //         rgb_array->update(rgbData);
-                        //         std::cout << "rgb - updated (same size)" << std::endl;
+                        //         // std::cout << "rgb - updated (same size)" << std::endl;
                         //     }
                         // }
                     } else {
                         Logger::error("Unsupported number of channels: " + std::to_string(channels));
+                        rgb_array_buffer.valid = false;
                     }
                 } else {
                     Logger::error("Unsupported visualization shape: " + std::to_string(arr.ndim()) + "D");
+                    rgb_array_buffer.valid = false;
                 }
             } else {
                 Logger::warning("No RGB Array visualization available for object: " + std::string(visualizable->moduleName));
+                rgb_array_buffer.valid = false;
             }
         });
+
+        // std::cout << "VisualizedObject::_update_rgb_array done" << std::endl;
     }
 
     void VisualizedObject::_init_gray() {
@@ -249,11 +300,12 @@ namespace Pipeline {
             Logger::error("Failed to initialize Gray Scale visualization (params) for object: " + std::string(visualizable->moduleName));
             delete gray_params;
             gray_params = nullptr;
+            gray_buffer.valid = false;
             return;
         }
 
-        gray = new GLTexture();
-        gray_viewer = new ImageViewer(gray->id(), {0, 0});
+        // gray = new GLTexture();
+        // gray_viewer = new ImageViewer(gray->id(), {0, 0});
 
         _update_gray();
     }
@@ -274,6 +326,7 @@ namespace Pipeline {
                     gray_buffer.width    = width;
                     gray_buffer.height   = height;
                     gray_buffer.channels = 3;
+                    gray_buffer.valid    = true;
                     rgbData.resize(width * height * 3);
 
                     auto data_ptr = arr.data();
@@ -283,20 +336,13 @@ namespace Pipeline {
                         rgbData[i * 3 + 2]     = static_cast<unsigned char>(data_ptr[i * channels + 0] * 255.0f);
                     }
 
-                    // {
-                    //     std::lock_guard guard(*m_lock);
-                    //     if (width != gray->width() || height != gray->height()) {
-                    //         gray->set(rgbData, width, height, 3);
-                    //     } else {
-                    //         gray->update(rgbData);
-                    //     }
-                    // }
-
                 } else {
                     Logger::error("Unsupported visualization shape: " + std::to_string(arr.ndim()) + "D");
+                    gray_buffer.valid = false;
                 }
             } else {
                 Logger::warning("No Gray Scale visualization available for object: " + std::string(visualizable->moduleName));
+                gray_buffer.valid = false;
             }
         });
     }
@@ -320,8 +366,8 @@ namespace Pipeline {
             return;
         }
 
-        heat_map = new GLTexture();
-        heat_map_viewer = new ImageViewer(heat_map->id(), {0, 0});
+        // heat_map = new GLTexture();
+        // heat_map_viewer = new ImageViewer(heat_map->id(), {0, 0});
 
         _update_heat_map();
     }
@@ -332,7 +378,7 @@ namespace Pipeline {
             if (data.has_value()) {
                 py::array_t<float> arr = data->cast<py::array>();
                 if (arr.ndim() == 2) { // assuming Gray image
-                    int width = arr.shape(1);
+                    int width  = arr.shape(1);
                     int height = arr.shape(0);
                     int channels = 1;
 
@@ -341,6 +387,7 @@ namespace Pipeline {
                     heat_map_buffer.width    = width;
                     heat_map_buffer.height   = height;
                     heat_map_buffer.channels = 3;
+                    heat_map_buffer.valid    = true;
                     rgbData.resize(width * height * 3);
 
                     auto data_ptr = arr.data();
@@ -364,9 +411,11 @@ namespace Pipeline {
                     // }
                 } else {
                     Logger::error("Unsupported visualization shape: " + std::to_string(arr.ndim()) + "D");
+                    heat_map_buffer.valid    = false;
                 }
             } else {
                 Logger::warning("No Heat map visualization available for object: " + std::string(visualizable->moduleName));
+                heat_map_buffer.valid    = false;
             }
         });
     }
@@ -466,17 +515,22 @@ namespace Pipeline {
         });
     }
 
-    void VisualizedAgent::init(Pipeline::ActiveAgent *agent) {
-        this->agent = agent;
+    void VisualizedAgent::init(Pipeline::ActiveAgent *agent, int agent_index) {
+        this->agent       = agent;
+        this->agent_index = agent_index;
+
+        // std::cout << "Init members" << std::endl;
         this->agent->agent->init_members();
 
         if (agent->env) {
+            // std::cout << "Env visuals" << std::endl;
             env_visualization = new VisualizedObject();
             env_visualization->init(agent->env);
         }
 
         for (auto &method : agent->methods) {
             if (method) {
+                // std::cout << "Method visuals" << std::endl;
                 auto vis_obj = new VisualizedObject();
                 vis_obj->init(method);
                 method_visualizations.push_back(vis_obj);

@@ -7,9 +7,8 @@
 
 namespace Preview
 {
-    extern Pipeline::VisualizedAgent* curr_selected_preview;
-
     void init();
+    void update();
     void render();
     void onStart();
     void onStop();

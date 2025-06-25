@@ -105,7 +105,7 @@
             "src": 83
         }
     ],
-    "next_id": 103,
+    "next_id": 105,
     "nodes": [
         {
             "data": {
@@ -417,11 +417,11 @@
         },
         {
             "data": {
-                "id": 101,
+                "id": 103,
                 "inputs": [],
                 "module": "test_lunarlander.cudaDevice",
                 "outputs": [
-                    102
+                    104
                 ],
                 "pointer": true,
                 "tag": "<tag>"

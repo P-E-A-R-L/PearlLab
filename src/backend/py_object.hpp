@@ -32,10 +32,10 @@ struct PyLiveObject : public PyScope::LoadedModule
     void init(const py::dict &kwargs = py::dict());
 
     // Calls: self.__call__(**kwargs)
-    py::object call(const py::dict &kwargs = py::dict()) const;
+    [[nodiscard]] py::object call(const py::dict &kwargs = py::dict()) const;
 
     // Calls: self.__repr__()
-    std::string repr() const;
+    [[nodiscard]] std::string repr() const;
 
     std::vector<py::object> _private_members_values;
     std::vector<PyPrimitive> public_members_values;
@@ -43,7 +43,7 @@ struct PyLiveObject : public PyScope::LoadedModule
     void init_members();
     void update_members();
 
-    PyLiveObject() = default;
+    PyLiveObject();
     PyLiveObject(const PyLiveObject&) = delete;
 
     virtual ~PyLiveObject();

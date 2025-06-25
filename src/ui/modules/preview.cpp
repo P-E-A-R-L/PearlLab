@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <iostream>
 
+#include "inspector.hpp"
 #include "logger.hpp"
 #include "pipeline.hpp"
 #include "../font_manager.hpp"
@@ -11,17 +12,25 @@
 #include "../utility/image_store.hpp"
 
 namespace Preview {
-    Pipeline::VisualizedAgent* curr_selected_preview = nullptr;
-
-    struct PreviewCache{
+    struct PreviewCache {
         ImVec2 content_size          = ImVec2(1, 1);
     };
 
-    static std::map<Pipeline::VisualizedAgent*, PreviewCache> _previewCache;
+
 }
 
+static bool isRunning = false;
+static std::map<Pipeline::VisualizedAgent*, Preview::PreviewCache> _previewCache;
 
-void Preview::init() {}
+void Preview::init() {
+    isRunning = false;
+}
+
+void Preview::update() {
+    if (isRunning) {
+        Pipeline::stepSim(-1); // step all agents
+    }
+}
 
 static void _render_visualizable(Pipeline::VisualizedObject *obj, const std::string &message)
 {
@@ -74,7 +83,7 @@ static void _render_visualizable(Pipeline::VisualizedObject *obj, const std::str
                     ImGui::TextUnformatted(name.c_str());
 
                     ImGui::TableSetColumnIndex(1);
-                    ImGui::Text(value.c_str());
+                    ImGui::Text("%s", value.c_str());
                 }
 
                 ImGui::EndTable();
@@ -194,8 +203,8 @@ static void _render_visualizable(Pipeline::VisualizedObject *obj, const std::str
 static void _render_agent_basic(const Pipeline::ActiveAgent* agent, float width, int index)
 {
     ImVec2 childStart = ImGui::GetCursorScreenPos();
-    auto& vis = Pipeline::PipelineState::previews[index];
-    auto& cache = Preview::_previewCache[vis];
+    auto& vis = Pipeline::PipelineState::activeVisualizations[index];
+    auto& cache              = _previewCache[vis];
 
     ImVec2 contentRegion = cache.content_size;
     ImVec2 buttonPos = ImGui::GetCursorScreenPos();
@@ -208,12 +217,15 @@ static void _render_agent_basic(const Pipeline::ActiveAgent* agent, float width,
     bool clicked = ImGui::IsItemClicked();
     ImGui::PopID();
 
+    /*
     if (Preview::curr_selected_preview == vis) {
         ImGui::GetWindowDrawList()->AddRectFilled(
             buttonPos, ImVec2(buttonPos.x + contentRegion.x , buttonPos.y + contentRegion.y),
             IM_COL32(91, 150, 204, 150)
         );
-    } else if (ImGui::IsItemHovered()) {
+    } else
+     */
+    if (ImGui::IsItemHovered()) {
         ImGui::GetWindowDrawList()->AddRectFilled(
             buttonPos, ImVec2(buttonPos.x + contentRegion.x , buttonPos.y + contentRegion.y),
             IM_COL32(255, 255, 0, 50)
@@ -221,7 +233,7 @@ static void _render_agent_basic(const Pipeline::ActiveAgent* agent, float width,
     }
 
     if (clicked) {
-        Preview::curr_selected_preview = vis;
+        Inspector::open(vis);
     }
 
     ImGui::SetCursorScreenPos(childPos);
@@ -231,7 +243,7 @@ static void _render_agent_basic(const Pipeline::ActiveAgent* agent, float width,
     FontManager::popFont();
 
     if (agent->env) {
-        _render_visualizable(Pipeline::PipelineState::previews[index]->env_visualization, "No observations available.");
+        _render_visualizable(Pipeline::PipelineState::activeVisualizations[index]->env_visualization, "No observations available.");
     } else {
         ImGui::Text("No environment available.");
     }
@@ -324,36 +336,34 @@ static void tab_wrapper(const _agent_render_function &_f)
     ImGui::EndChild();
 }
 
-static void _render_preview()
-{
+
+static void _render_preview() {
     for (int i = 0; i < Pipeline::PipelineState::activeAgents.size(); i++) {
-        Pipeline::PipelineState::previews[i]->update_tex(); // update the visualizations (textures)
+        Pipeline::PipelineState::activeVisualizations[i]->update_tex(); // update the visualizations (textures)
     }
 
     { // control zone
-        auto playing = Pipeline::isSimRunning();
         auto size = ImGui::GetContentRegionAvail();
         auto control_size = 16 * 2 + ImGui::GetStyle().ItemSpacing.x;
         auto x = (size.x - control_size) / 2;
 
         std::string Icon = "./assets/icons/play-grad.png";
-        if (playing)
+        if (isRunning)
             Icon = "./assets/icons/pause-grad.png";
 
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 4));
         ImGui::SetCursorPosX(x);
         if (ImGui::ImageButton("##play_btn", ImageStore::idOf(Icon), {20, 20}))
         {
-            if (!playing)
-                Pipeline::continueSim();
+            if (!isRunning)
+                isRunning = true;
             else
-                Pipeline::pauseSim();
+                isRunning = false;
         }
 
         ImGui::SameLine();
-        if (ImGui::ImageButton("##step_btn", ImageStore::idOf("./assets/icons/step-grad.png"), {20, 20}))
-        {
-            Pipeline::stepSim();
+        if (ImGui::ImageButton("##step_btn", ImageStore::idOf("./assets/icons/step-grad.png"), {20, 20})) {
+            Pipeline::stepSim(-1);
         }
         ImGui::PopStyleVar();
     }
@@ -379,7 +389,7 @@ static void _render_preview()
                     FontManager::popFont();
 
                     if (agent->methods[i]) {
-                        _render_visualizable(Pipeline::PipelineState::previews[index]->method_visualizations[i], "No observations available.");
+                        _render_visualizable(Pipeline::PipelineState::activeVisualizations[index]->method_visualizations[i], "No observations available.");
                     } else {
                         ImGui::Text("No method visualization available.");
                     }
@@ -415,21 +425,20 @@ void Preview::render()
     } else {
         _render_preview();
     }
+
     ImGui::End();
 }
 
-// std::vector<Preview::VisualizedAgent *> Preview::previews;
+void Preview::onStart() {
+    std::lock_guard guard(Pipeline::PipelineState::agentsLock);
 
-void Preview::onStart()
-{
     _previewCache.clear();
-    for (auto& a: Pipeline::PipelineState::previews) {
+    for (auto& a: Pipeline::PipelineState::activeVisualizations) {
         _previewCache[a] = {};
     }
 }
 
-void Preview::onStop()
-{
+void Preview::onStop() {
     _previewCache.clear();
 }
 

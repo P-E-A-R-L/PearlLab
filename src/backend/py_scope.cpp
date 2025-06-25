@@ -66,8 +66,7 @@ static PyScope *instance = nullptr;
 
 PyScope &PyScope::getInstance()
 {
-    if (instance == nullptr)
-    {
+    if (instance == nullptr) {
         instance = new PyScope();
     }
     return *instance;
@@ -190,14 +189,25 @@ std::vector<py::object> PyScope::LoadModuleForClasses(const std::string &path)
     return result;
 }
 
+PyScope::LoadedModule::LoadedModule() {
+    module     = py::none();
+    returnType = py::none();
+    moduleName = "";
+    annotations = {};
+    constructor = {};
+    type = PyScope::Other;
+}
+
 bool PyScope::parseLoadedModule(py::object module, PyScope::LoadedModule &l)
 {
+    auto &python = PyScope::getInstance();
+
     py::gil_scoped_acquire acquire{};
 
     l.module = module;
     l.moduleName = std::string(py::str(module.attr("__module__"))) + std::string(".") + std::string(py::str(module.attr("__qualname__")));
 
-    auto &python = PyScope::getInstance();
+
     bool isClass = py::hasattr(module, "__bases__");
 
     if (isClass)
@@ -449,6 +459,29 @@ ssize_t PyScope::argmax(const py::array &array)
     else
         throw std::runtime_error("Unsupported data type");
 }
+
+std::vector<float> PyScope::asFloatArray(const py::array &array) {
+    auto dtype = array.dtype();
+
+    if (py::isinstance<py::array_t<float>>(array))
+        return float_array_impl<float>(array.cast<py::array_t<float>>());
+    else if (py::isinstance<py::array_t<double>>(array))
+        return float_array_impl<double>(array.cast<py::array_t<double>>());
+    else if (py::isinstance<py::array_t<int>>(array))
+        return float_array_impl<int>(array.cast<py::array_t<int>>());
+    else if (py::isinstance<py::array_t<long>>(array))
+        return float_array_impl<long>(array.cast<py::array_t<long>>());
+    else
+        throw std::runtime_error("Unsupported data type");
+}
+
+
+
+// void PyScope::gil(const std::function<void()>& f) {
+//     std::lock_guard guard(getInstance().gil_lock);
+//     py::gil_scoped_acquire acquire{};
+//     f();
+// }
 
 PyScope::PyScope() {}
 

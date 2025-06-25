@@ -23,6 +23,7 @@ class TorchPolicyAgent(RLAgent):
             # Apply softmax to get probabilities
             probs = torch.softmax(logits, dim=-1)  # safer dim
         probs = probs.squeeze()                # removes all dims of size 1
+        # print("Action probabilities:", probs)
         return probs.cpu().numpy()
 
 

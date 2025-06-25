@@ -43,7 +43,7 @@ void PyLiveObject::init_members() {
         if (!SafeWrapper::execute([&] {
             _private_members_values.push_back(object.attr(anno.attrName.c_str()));
 
-            PyPrimitive primitive;
+            PyPrimitive primitive{};
             if (PyScope::isSubclassOrInstance(anno.type, python.int_type)) {
                 primitive.type = INTEGER;
                 primitive.value.i = new int();
@@ -147,6 +147,10 @@ void PyLiveObject::update_members() {
             Logger::error("Failed to update attr: " + anno.attrName + " <" + this->moduleName + ">");
         }
     }
+}
+
+PyLiveObject::PyLiveObject() {
+    object = py::none();
 }
 
 PyLiveObject::~PyLiveObject() {

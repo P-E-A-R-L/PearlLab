@@ -32,7 +32,7 @@ namespace Logger
 
     // some people may think it's a bad idea to make level & color disjointed,
     // but I don't think to begin with :)
-    void log(const std::string &message, Level level, ImVec4 color, time_t time);
+    void log(const std::string &message, Level level, const ImVec4& color, const time_t& time);
     void log(const std::string &message, Level level);
 
     void info(const std::string &message);

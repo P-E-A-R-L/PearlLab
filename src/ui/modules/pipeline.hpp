@@ -23,6 +23,7 @@ namespace Pipeline
         IDLE,
         SELECTING_ACTION,
         STEPPING,
+        RESET_ENV
     };
 
     struct ActiveActionStateData {
@@ -52,15 +53,27 @@ namespace Pipeline
         double last_move_reward = 0;
 
         // state variables
+        std::mutex                    looper_lock;                // looper master lock,
+                                                                  // agent worker will attempt to obtain this
+                                                                  // lock at each loop iteration
+        std::mutex                    available_actions_lock;     // this lock is only locked when the agent
+                                                                  // worker updates `available_actions`
+
+        std::atomic<size_t>           request_pause = 0;          // request the main looper to pause
+
         std::atomic<ActiveAgentState> state = IDLE;
         std::atomic<size_t>           next_action   = 0;
         std::atomic<size_t>           steps_to_take = 0;
 
+        struct Action {
+            std::string name;
+            float probability;
+        };
+
+        std::vector<Action> available_actions;
+
         std::atomic<bool> _worker_stop    = false; // a signal to notify the worker to stop
         std::atomic<bool> _worker_running = true;  // is a worker running for this agent?
-
-        // Visualization
-        // Moved here because from now on, Pipeline will handle all python related tasks
 
     };
 
@@ -69,6 +82,7 @@ namespace Pipeline
         int width;
         int height;
         int channels;
+        bool valid = true;
     };
 
     struct VisualizedObject
@@ -129,10 +143,11 @@ namespace Pipeline
     struct VisualizedAgent
     {
         Pipeline::ActiveAgent *agent;
+        int agent_index;
         VisualizedObject      *env_visualization = nullptr;
         std::vector<VisualizedObject *> method_visualizations;
 
-        void init(Pipeline::ActiveAgent *agent);
+        void init(Pipeline::ActiveAgent *agent, int agent_index);
 
         void update() const;
         void update_tex() const;
@@ -185,8 +200,8 @@ namespace Pipeline
     namespace PipelineState
     {
         extern std::atomic<ExperimentState> experimentState;
-        extern bool Simulating;
-        extern int StepSimFrames;
+
+        extern std::mutex agentsLock;
 
         enum StepPolicy
         {
@@ -207,7 +222,7 @@ namespace Pipeline
         extern ScorePolicy scorePolicy;
 
         extern std::vector<ActiveAgent*> activeAgents;
-        extern std::vector<VisualizedAgent *> previews;
+        extern std::vector<VisualizedAgent *> activeVisualizations;
     }
 
     // simulation control
@@ -223,14 +238,14 @@ namespace Pipeline
     void stopExperiment();
 
     // returns either the simulation is running freely or not
-    bool isSimRunning();
 
-    void pauseSim();
-    void continueSim();
-    void stepSim();
-    void resetSim();
-    void stepSim(int action_index);
-    void stepSim(int action_index, int agent_index);
+    void resetExperiment();
+
+    // step simulation for one agent
+    void stepSim(int agent_index);
+    void stepSim(int agent_index, int action_index);
+    void resetEnv(int agent_index);
+
     float evalAgent(int agent_index);
 
     void setRecipes(std::vector<PipelineGraph::ObjectRecipe>);

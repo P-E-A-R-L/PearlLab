@@ -1,6 +1,7 @@
 #ifndef PYSCOPE_HPP
 #define PYSCOPE_HPP
 
+#include <mutex>
 #include <pybind11/embed.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
@@ -89,6 +90,8 @@ public:
         std::vector<Param> annotations;
         std::vector<Param> constructor;
         ModuleType type = Other; // default to Other
+
+        LoadedModule();
     };
 
     static bool parseLoadedModule(py::object obj, PyScope::LoadedModule &l);
@@ -96,8 +99,6 @@ public:
     template <typename T>
     static ssize_t argmax_impl(py::array_t<T> array)
     {
-        py::gil_scoped_acquire acquire{};
-
         auto buf = array.unchecked();
         if (buf.size() == 0)
             throw std::runtime_error("Input array is empty");
@@ -115,8 +116,32 @@ public:
         return max_index;
     }
 
-    static ssize_t argmax(const py::array &array);
+    template <typename T>
+    static std::vector<float> float_array_impl(py::array_t<T> array)
+    {
 
+        auto buf = array.unchecked();
+        std::vector<float> result;
+        for (ssize_t i = 0; i < buf.size(); ++i)
+        {
+            result.push_back(static_cast<float>(*buf.data(i)));
+        }
+        return result;
+    }
+
+    static ssize_t argmax(const py::array &array);
+    static std::vector<float> asFloatArray(const py::array &array);
+
+    // static void gil(const std::function<void()>&);
+    //
+    // std::recursive_mutex gil_lock;
+    //
+    // template<typename T>
+    // static T gil(const std::function<T()>& f) {
+    //     std::lock_guard guard(getInstance().gil_lock);
+    //     py::gil_scoped_acquire acquire{};
+    //     return f();
+    // }
 private:
     PyScope();
 };

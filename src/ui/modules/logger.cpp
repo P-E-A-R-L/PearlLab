@@ -13,9 +13,11 @@ static bool sortByTime = false;
 
 static std::vector<Logger::Entry> entries{};
 
-static std::mutex mutex{};
+static std::mutex* mutex;
 
 void Logger::init() {
+    mutex = new std::mutex();
+
     LevelsNames = {
         {Level::INFO, "Info"},
         {Level::ERROR, "Error"},
@@ -25,10 +27,9 @@ void Logger::init() {
     types = {Level::INFO, Level::ERROR, Level::WARNING, Level::MESSAGE};
 }
 
-void Logger::log(const std::string &message, Level level, ImVec4 color, time_t time) {
-    mutex.lock();
-        entries.push_back({message, level, color, time});
-    mutex.unlock();
+void Logger::log(const std::string &message, const Level level, const ImVec4& color, const time_t& time) {
+    std::lock_guard guard(*mutex);
+    entries.push_back({message, level, color, time});
 }
 
 void Logger::log(const std::string &message, Level level) {
@@ -51,7 +52,7 @@ void Logger::log(const std::string &message, Level level) {
         break;
     }
 
-    time_t now = std::chrono::system_clock::now();
+    const time_t now = std::chrono::system_clock::now();
     log(message, level, color, now);
 }
 
@@ -117,37 +118,41 @@ void Logger::render()
         ImGui::EndPopup();
     }
 
-    std::vector<Entry> filteredEntries;
-    for (const auto &entry : entries)
     {
-        if (std::find(types.begin(), types.end(), entry.level) != types.end())
+        std::lock_guard guard(*mutex);
+        std::vector<Entry> filteredEntries;
+        for (const auto &entry : entries)
         {
-            filteredEntries.push_back(entry);
+            if (std::find(types.begin(), types.end(), entry.level) != types.end())
+            {
+                filteredEntries.push_back(entry);
+            }
         }
+
+        if (sortByTime)
+        {
+            std::sort(filteredEntries.begin(), filteredEntries.end(), [](const Entry &a, const Entry &b)
+                      { return a.time < b.time; });
+        }
+
+        ImGui::BeginChild("LogRegion", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+        for (const auto &entry : filteredEntries)
+        {
+            std::time_t time = std::chrono::system_clock::to_time_t(entry.time);
+            std::tm *tm = std::localtime(&time);
+            std::stringstream ss;
+            ss << "[" << std::put_time(tm, "%H:%M:%S") << "] ";
+
+            ImGui::PushStyleColor(ImGuiCol_Text, entry.color);
+            ImGui::TextWrapped("%s[%s] %s", ss.str().c_str(), LevelsNames[entry.level].c_str(), entry.message.c_str());
+            ImGui::PopStyleColor();
+        }
+
+        if (autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+            ImGui::SetScrollHereY(1.0f);
+
+        ImGui::EndChild();
     }
 
-    if (sortByTime)
-    {
-        std::sort(filteredEntries.begin(), filteredEntries.end(), [](const Entry &a, const Entry &b)
-                  { return a.time < b.time; });
-    }
-
-    ImGui::BeginChild("LogRegion", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
-    for (const auto &entry : filteredEntries)
-    {
-        std::time_t time = std::chrono::system_clock::to_time_t(entry.time);
-        std::tm *tm = std::localtime(&time);
-        std::stringstream ss;
-        ss << "[" << std::put_time(tm, "%H:%M:%S") << "] ";
-
-        ImGui::PushStyleColor(ImGuiCol_Text, entry.color);
-        ImGui::TextWrapped("%s[%s] %s", ss.str().c_str(), LevelsNames[entry.level].c_str(), entry.message.c_str());
-        ImGui::PopStyleColor();
-    }
-
-    if (autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
-        ImGui::SetScrollHereY(1.0f);
-
-    ImGui::EndChild();
     ImGui::End();
 }

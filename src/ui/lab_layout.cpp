@@ -48,7 +48,10 @@ void LabLayout::init(const std::string &project_path)
 
 void LabLayout::update() {
     // before we render any content
-    Pipeline::update();
+
+    Pipeline ::update();
+    Preview  ::update();
+    Inspector::update();
 }
 
 void LabLayout::render()
@@ -280,5 +283,4 @@ void LabLayout::destroy()
 
     SharedUi::destroy();
     PyScope::clearInstance();
-
 }

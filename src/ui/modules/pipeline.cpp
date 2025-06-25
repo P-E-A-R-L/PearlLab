@@ -6,6 +6,7 @@
 #include "logger.hpp"
 #include "../font_manager.hpp"
 #include "imgui_internal.h"
+#include "inspector.hpp"
 #include "preview.hpp"
 #include "../../backend/py_safe_wrapper.hpp"
 #include "../utility/helpers.hpp"
@@ -38,11 +39,10 @@ namespace Pipeline
     namespace PipelineState
     {
         std::atomic<ExperimentState> experimentState = STOPPED;
-        bool Simulating = false;
-        int StepSimFrames = 0;
 
+        std::mutex agentsLock;
         std::vector<ActiveAgent*> activeAgents{};
-        std::vector<VisualizedAgent *> previews{};
+        std::vector<VisualizedAgent *> activeVisualizations{};
 
         StepPolicy stepPolicy = INDEPENDENT;
         ScorePolicy scorePolicy = PEARL;
@@ -51,10 +51,14 @@ namespace Pipeline
         static std::atomic<int> _agentsCountFailed;
     }
 
-    bool isExperimenting()
-    {
+    bool isExperimenting() {
         return PipelineState::experimentState == RUNNING;
     }
+
+
+    static void _agent_worker_init(ActiveAgent* agent, PipelineAgent* recipe);
+    static void _agent_worker_update(ActiveAgent* agent, VisualizedAgent* preview);
+    static void _agent_worker_update_actions(ActiveAgent* agent);
 
     static void _agent_worker_init(ActiveAgent* agent, PipelineAgent* recipe) {
         Logger::info("Initializing agent: " + std::string(agent->name));
@@ -154,7 +158,7 @@ namespace Pipeline
     }
 
     static void _agent_worker_update(ActiveAgent* agent, VisualizedAgent* preview) {
-        // std::cout << "Agent[" << agent->name << "] steps=" << agent->steps_to_take << std::endl;
+        // // std::cout << "Agent[" << agent->name << "] steps=" << agent->steps_to_take << std::endl;
 
         preview->update();
 
@@ -168,26 +172,32 @@ namespace Pipeline
         } else if (agent->state == ActiveAgentState::SELECTING_ACTION) {
             goto _update_agents_state_select_action;
         } else if (agent->state == ActiveAgentState::STEPPING) {
-            goto update_state;
+            goto _update_state;
+        } else if (agent->state == ActiveAgentState::RESET_ENV) {
+            goto _reset_env;
         } else {
             // unknown state, just continue
+            return;
         }
 
         return;
 
         _update_agents_state_select_action: {
+            if (agent->env_truncated || agent->env_terminated) {
+                return;
+            }
+
             py::gil_scoped_acquire acquire; // take GIL lock
-            auto target_agent = agent;
-            auto actions = target_agent->env->get_available_actions();
+            auto actions = agent->env->get_available_actions();
 
             if (!actions) {
-                Logger::error("Unable to retrieve actions, agent[" + std::string(py::str(target_agent->agent->object)) + "] environment didn't provide actions, unable to step.");
+                Logger::error("Unable to retrieve actions, agent[" + std::string(py::str(agent->agent->object)) + "] environment didn't provide actions, unable to step.");
                 return;
             }
 
             switch (PipelineState::stepPolicy) {
                 case PipelineState::RANDOM:
-                    target_agent->next_action = rand() % actions->size();
+                    agent->next_action = rand() % actions->size();
                     break;
                 case PipelineState::BEST_AGENT: {
                     int best_agent = -1;
@@ -207,11 +217,11 @@ namespace Pipeline
                     // now we have the best agent
                     // time we select its action
                     auto &best = PipelineState::activeAgents[best_agent];
-                    SafeWrapper::execute([target_agent, best]{
+                    SafeWrapper::execute([agent, best]{
                         py::gil_scoped_acquire acquire;
-                        auto observations = target_agent->env->get_observations();
+                        auto observations = agent->env->get_observations();
                         auto prediction = best->agent->predict(observations);
-                        target_agent->next_action = PyScope::argmax(prediction);
+                        agent->next_action = PyScope::argmax(prediction);
                     });
                 }
                     break;
@@ -232,79 +242,161 @@ namespace Pipeline
                     }
 
                     auto &worst = PipelineState::activeAgents[worst_agent];
-                    SafeWrapper::execute([target_agent, worst]{
+                    SafeWrapper::execute([agent, worst]{
                         py::gil_scoped_acquire acquire;
-                        auto observations = target_agent->env->get_observations();
+                        auto observations = agent->env->get_observations();
                         auto prediction = worst->agent->predict(observations);
-                        target_agent->next_action = PyScope::argmax( prediction);
+                        agent->next_action = PyScope::argmax( prediction);
                     });
                 }
                     break;
 
                 case PipelineState::INDEPENDENT: {
-                    SafeWrapper::execute([target_agent]{
+                    SafeWrapper::execute([agent]{
                         py::gil_scoped_acquire acquire;
-                        auto observations = target_agent->env->get_observations();
-                        auto prediction = target_agent->agent->predict(observations);
-                        target_agent->next_action = PyScope::argmax( prediction);
+                        auto observations = agent->env->get_observations();
+                        auto prediction = agent->agent->predict(observations);
+                        agent->next_action = PyScope::argmax( prediction);
                     });
                 }
                     break;
 
                 default:
-                    target_agent->next_action = 0; // default to just the first action
+                    agent->next_action = 0; // default to just the first action
             }
 
-            target_agent->state = ActiveAgentState::STEPPING; // update to indate we are ready for the next state :)
+            agent->state = ActiveAgentState::STEPPING; // update to indate we are ready for the next state :)
             return;
         }
 
-        update_state: {
+        _update_state: {
+            if (agent->env_truncated || agent->env_terminated) {
+                return;
+            }
+
             py::gil_scoped_acquire acquire; // take GIL lock
-            auto target_agent = agent;
 
             SafeWrapper::execute([&]{
                 // get the observations
-                auto ops = target_agent->env->get_observations();
+                auto ops = agent->env->get_observations();
 
                 // notify all explainability methods
-                size_t action = target_agent->next_action;
-                for (auto& method: target_agent->methods) {
+                size_t action = agent->next_action;
+                for (auto& method: agent->methods) {
                     method->onStep(py::int_(action));
                 }
 
                 // do the action
-                auto result = target_agent->env->step(py::int_(action));
+                auto result = agent->env->step(py::int_(action));
 
-                for (auto& method: target_agent->methods) {
+                for (auto& method: agent->methods) {
                     method->onStepAfter(py::int_(action), std::get<1>(result), std::get<2>(result) || std::get<3>(result), std::get<4>(result));
                 }
 
                 // update agent analytics
-                target_agent->total_steps           += 1;
-                target_agent->steps_current_episode += 1;
-                target_agent->env_terminated = std::get<2>(result);
-                target_agent->env_truncated  = std::get<3>(result);
+                agent->total_steps           += 1;
+                agent->steps_current_episode += 1;
+                agent->env_terminated = std::get<2>(result);
+                agent->env_truncated  = std::get<3>(result);
 
-                for (int i = 0; i < target_agent->methods.size(); ++i) {
-                    auto value = target_agent->methods[i]->value(ops);
-                    target_agent->scores_total[i] += value;
-                    target_agent->scores_ep   [i] += value;
+                for (int i = 0; i < agent->methods.size(); ++i) {
+                    auto value = agent->methods[i]->value(ops);
+                    agent->scores_total[i] += value;
+                    agent->scores_ep   [i] += value;
                 }
             });
 
-            target_agent->state = IDLE;
+            agent->state = IDLE;
+            _agent_worker_update_actions(agent);
+            return;
+        }
 
+        _reset_env: {
+            py::gil_scoped_acquire acquire;
+
+            agent->env->reset(); // reset env
+
+            for (auto method : agent->methods) { // reset methods
+                method->set(agent->env->object);
+                method->prepare(agent->agent->object);
+            }
+
+            // reset scores and rewards
+            agent->reward_ep = 0;
+            // agent->reward_total = 0;
+
+            agent->steps_current_episode = 0;
+            agent->total_episodes ++;
+            // agent->total_steps = 0;
+
+            agent->last_move_reward = 0;
+            agent->env_terminated   = false;
+            agent->env_truncated    = false;
+
+            for (int i = 0; i < agent->scores_ep.size(); i++)
+            {
+                agent->scores_ep[i] = 0;
+                // agent->scores_total[i] = 0;
+            }
+
+            agent->state = IDLE;
+            agent->next_action = 0;
+            agent->steps_to_take = 0;
+            _agent_worker_update_actions(agent);
             return;
         }
 
     }
 
-    static void _agent_worker(ActiveAgent* agent, PipelineAgent* recipe, VisualizedAgent* preview) {
-        std::thread([agent, recipe, preview] {
+    static void _agent_worker_update_actions(ActiveAgent* agent) {
+        {
+            py::gil_scoped_acquire acquire;
+
+            // update the list of available actions
+            auto actions = agent->env->get_available_actions();
+
+            if (!actions) {
+                Logger::error("Unable to retrieve actions, agent[" + std::string(py::str(agent->agent->object)) + "] environment didn't provide actions, unable to step.");
+                return;
+            }
+
+            std::vector<float> probs;
+            SafeWrapper::execute([agent, &probs]{
+                const auto observations = agent->env->get_observations();
+                const auto prediction = agent->agent->predict(observations);
+                probs = PyScope::asFloatArray(prediction);
+            });
+
+            if (probs.size() != actions->size()) {
+                // this is wrong.
+                Logger::error("Agent predictions and environment actions doesn't match, prob.size() = " + std::to_string(probs.size()) +
+                              ", actions.size() = " + std::to_string(actions->size()) +
+                              ", agent[" + std::string(py::str(agent->agent->object)) + "]");
+                return;
+            }
+
+            std::vector<ActiveAgent::Action> new_actions;
+            for (int i = 0;i < probs.size();i++) {
+                new_actions.push_back({
+                    .name = std::string(py::str((*actions)[i])),
+                    .probability = probs[i]
+                });
+            }
+
+            {
+                std::lock_guard guard(agent->available_actions_lock);
+                agent->available_actions = new_actions;
+            }
+        }
+    }
+
+    static void _agent_worker(ActiveAgent* agent, PipelineAgent* recipe, VisualizedAgent* preview, int index) {
+        std::thread([agent, recipe, preview, index] {
             agent->_worker_running = true;
 
+            // std::cout << "_agent_worker[" << index << "] started for agent: " << recipe->name << std::endl;
             _agent_worker_init(agent, recipe);
+            // std::cout << "_agent_worker[" << index << "]" << " object build done" << std::endl;
 
             if (agent->agent == nullptr) {
                 // some error happened in init
@@ -312,40 +404,58 @@ namespace Pipeline
                 return; // early exit
             }
 
-            agent->state = IDLE;
-            agent->next_action = 0;
+            agent->state         = IDLE;
+            agent->next_action   = 0;
             agent->steps_to_take = 0;
 
             PipelineState::_agentsCountOk += 1;
 
-            while (!agent->_worker_stop && PipelineState::experimentState == INITIALIZING) {
-                // wait for all agents to be initialized
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            }
+            // std::cout << "_agent_worker[" << index << "]" << " waiting for textures pulse" << std::endl;
+            while (!agent->_worker_stop && PipelineState::experimentState == INITIALIZING) {}
 
-
-            if (PipelineState::experimentState == INITIALIZING_TEXTURES) { // set up preview
-                py::gil_scoped_acquire acquire;
+            std::this_thread::sleep_for(std::chrono::milliseconds(index * 100 - 100 + rand() % 100));
+            if (!agent->_worker_stop && PipelineState::experimentState == INITIALIZING_TEXTURES) { // set up preview
+                // std::cout << "_agent_worker[" << index << "]" << " initializing textures buffers" << std::endl;
+                py::gil_scoped_acquire acquire{};
                 try {
-                    preview->init(agent);
+                    if (preview == nullptr) {
+                        // std::cout << "Somehow the preview is null" << std::endl;
+                    } else {
+                        preview->init(agent, index);
+                    }
                 } catch (...) {
                     // I don't give a fk if it fails at this point tbh ...
                 }
                 PipelineState::_agentsCountOk += 1;
+                // std::cout << "_agent_worker[" << index << "]" << " initializing textures buffers, done" << std::endl;
             }
 
+            // std::cout << "_agent_worker[" << index << "]" << " waiting for RUNNING flag" << std::endl;
+            while (!agent->_worker_stop && PipelineState::experimentState == INITIALIZING_TEXTURES) {}
+
+            if (!agent->_worker_stop) {
+                // std::cout << "_agent_worker[" << index << "]" << " updating actions .." << std::endl;
+                _agent_worker_update_actions(agent);
+            }
+
+            // std::cout << "_agent_worker[" << index << "]" << " entering work loop" << std::endl;
             while (!agent->_worker_stop) {
-                _agent_worker_update(agent, preview);
-                // std::cout << "Agent[" << agent->name << "] worker running." << std::endl;
+                agent->looper_lock.lock();
+                    _agent_worker_update(agent, preview);
+                agent->looper_lock.unlock();
+
+                while (agent->request_pause) {
+                    if (agent->_worker_stop) break;
+                }
+                // // std::cout << "Agent[" << agent->name << "] worker running." << std::endl;
             }
 
-            // std::cout << "Agent[" << agent->name << "] worker stopped." << std::endl;
+            // // std::cout << "Agent[" << agent->name << "] worker stopped." << std::endl;
             agent->_worker_running = false;
         }).detach();
     }
 
-    void beginExperiment()
-    {
+    void beginExperiment() {
         if (PipelineState::experimentState != STOPPED)
             return;
 
@@ -373,33 +483,43 @@ namespace Pipeline
             return;
         }
 
-        if (PipelineConfig::maxSteps <= 0)
-        {
+        if (PipelineConfig::maxSteps <= 0) {
             Logger::error("Max steps must be greater than 0.");
+            return;
+        }
+
+        std::lock_guard guard(PipelineState::agentsLock);
+
+        if (!PipelineState::activeAgents.empty() || !PipelineState::activeVisualizations.empty()) {
+            Logger::error("Pipeline state memory corruption, please restart the application");
+            Logger::error("if you see this message, this is probably a code error, please contact");
+            Logger::error("developers @ Pearl, with the steps to re-produce the error.");
             return;
         }
 
         // now prepare the actual agents
         Logger::info("Preparing agents for the experiment...");
 
-        PipelineState::experimentState    = INITIALIZING;
         PipelineState::_agentsCountOk     = 0;
         PipelineState::_agentsCountFailed = 0;
+        PipelineState::experimentState    = INITIALIZING;
 
         for (int i = 0;i < PipelineConfig::pipelineAgents.size();i++) {
             auto activeAgent = new ActiveAgent();
             auto preview     = new VisualizedAgent();
 
-            strcpy(activeAgent->name, PipelineConfig::pipelineAgents[i].name);
-            _agent_worker(activeAgent, &PipelineConfig::pipelineAgents[i], preview);
+            PipelineState::activeAgents         .push_back(activeAgent);
+            PipelineState::activeVisualizations .push_back(preview);
 
-            PipelineState::activeAgents.push_back(activeAgent);
-            PipelineState::previews.push_back(preview);
+            strncpy(activeAgent->name, PipelineConfig::pipelineAgents[i].name, 255);
+            activeAgent->name[255] = '\0'; // ensure null termination
+            _agent_worker(activeAgent, &PipelineConfig::pipelineAgents[i], preview, i);
         }
     }
 
-    void _clearActiveAgents()
-    {
+    void _clearActiveAgents() {
+        std::lock_guard guard(PipelineState::agentsLock);
+
         py::gil_scoped_acquire acquire;
         for (auto active : PipelineState::activeAgents) {
             delete active->agent;
@@ -412,12 +532,12 @@ namespace Pipeline
             delete active;
         }
 
-        for (auto preview : PipelineState::previews) {
+        for (auto preview : PipelineState::activeVisualizations) {
             delete preview;
         }
 
         PipelineState::activeAgents.clear();
-        PipelineState::previews.clear();
+        PipelineState::activeVisualizations.clear();
     }
 
     void stopExperiment()
@@ -433,29 +553,10 @@ namespace Pipeline
         }
     }
 
-    bool isSimRunning()
-    {
-        return PipelineState::Simulating;
-    }
-
-    void pauseSim()
-    {
-        PipelineState::Simulating = false;
-    }
-
-    void continueSim()
-    {
-        PipelineState::Simulating = true;
-    }
-
-    void stepSim() {
-        PipelineState::StepSimFrames = 1; // step one frame
-    }
-
-    void resetSim() {
+    void resetExperiment() {
         py::gil_scoped_acquire acquire{};
-        for (auto active : PipelineState::activeAgents)
-        {
+        for (auto active : PipelineState::activeAgents) {
+
             // reset stats
             active->env->reset();
 
@@ -489,12 +590,112 @@ namespace Pipeline
         }
     }
 
-    void stepSim(int action_index){
-        // TODO
+    void stepSim(int agent_index) {
+        if (PipelineState::experimentState != RUNNING) {
+            Logger::error("Cannot step simulation, experiment is not running.");
+            return;
+        }
+
+        if (agent_index == -1) { // all agents
+            std::lock_guard guard(PipelineState::agentsLock);
+            for (int i = 0; i < PipelineState::activeAgents.size(); ++i) {
+                stepSim(i);
+            }
+            return;
+        }
+
+        std::thread([agent_index] {
+            std::lock_guard guard(PipelineState::agentsLock);
+
+            if (agent_index < 0 || agent_index >= PipelineState::activeAgents.size()) {
+                Logger::error("Invalid agent index, tried to step agent[" + std::to_string(agent_index) + "] which doesn't exist.");
+                return;
+            }
+
+            {
+                auto agent = PipelineState::activeAgents[agent_index];
+                if (agent->steps_to_take == 0) {
+                    agent->steps_to_take = 1;
+                }
+            }
+
+        }).detach();
     }
 
-    void stepSim(int action_index, int agent_index) {
-        // TODO
+    void stepSim(int agent_index, int action_index) {
+        if (PipelineState::experimentState != RUNNING) {
+            Logger::error("Cannot step simulation, experiment is not running.");
+            return;
+        }
+
+        if (agent_index == -1) { // all agents
+            std::lock_guard guard(PipelineState::agentsLock);
+            for (int i = 0; i < PipelineState::activeAgents.size(); ++i) {
+                stepSim(i);
+            }
+            return;
+        }
+
+        if (action_index < 0) {
+            Logger::error("Invalid action index, tried to step agent[" + std::to_string(agent_index) + "] with invalid action.");
+            return;
+        }
+
+        std::thread([agent_index, action_index] {
+            std::lock_guard guard(PipelineState::agentsLock);
+
+            if (agent_index < 0 || agent_index >= PipelineState::activeAgents.size()) {
+                Logger::error("Invalid agent index, tried to step agent[" + std::to_string(agent_index) + "] which doesn't exist.");
+                return;
+            }
+
+            {
+                auto agent = PipelineState::activeAgents[agent_index];
+                ++agent->request_pause;
+                {
+                    std::lock_guard looper_guard(agent->looper_lock);
+                    if (agent->state == Pipeline::IDLE) {
+                        agent->next_action = action_index;
+                        agent->state = Pipeline::STEPPING;
+                    }
+                }
+                --agent->request_pause;
+            }
+        }).detach();
+    }
+
+    void resetEnv(int agent_index) {
+        if (PipelineState::experimentState != RUNNING) {
+            Logger::error("Cannot step simulation, experiment is not running.");
+            return;
+        }
+
+        if (agent_index == -1) { // all agents
+            std::lock_guard guard(PipelineState::agentsLock);
+            for (int i = 0; i < PipelineState::activeAgents.size(); ++i) {
+                stepSim(i);
+            }
+            return;
+        }
+
+        std::thread([agent_index] {
+            std::lock_guard guard(PipelineState::agentsLock);
+
+            if (agent_index < 0 || agent_index >= PipelineState::activeAgents.size()) {
+                Logger::error("Invalid agent index, tried to step agent[" + std::to_string(agent_index) + "] which doesn't exist.");
+                return;
+            }
+
+            {
+                auto agent = PipelineState::activeAgents[agent_index];
+                ++agent->request_pause;
+                {
+                    std::lock_guard looper_guard(agent->looper_lock);
+                    agent->state = Pipeline::RESET_ENV; // hard reset
+                }
+                --agent->request_pause;
+            }
+        }).detach();
     }
 
     float evalAgent(int agent_index)
@@ -580,7 +781,7 @@ namespace Pipeline
             if (recipe.type == PipelineGraph::Method)
                 typeName = "M";
 
-            ImGui::Text(typeName.c_str());
+            ImGui::Text("%s",typeName.c_str());
             ImGui::SameLine();
 
             ImGui::SetCursorPos({30, ImGui::GetCursorPos().y});
@@ -716,7 +917,7 @@ namespace Pipeline
                         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
                         FontManager::pushFont("Light");
                         std::string py_type_name = std::string(agent.recipe->acceptor->_tag);
-                        ImGui::Text(py_type_name.c_str());
+                        ImGui::Text("%s",py_type_name.c_str());
                         FontManager::popFont();
                         ImGui::PopStyleColor();
                         ImGui::EndTooltip();
@@ -802,7 +1003,7 @@ namespace Pipeline
                         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(150, 150, 150, 255));
                         FontManager::pushFont("Light");
                         std::string py_type_name = std::string(method.recipe->acceptor->_tag);
-                        ImGui::Text(py_type_name.c_str());
+                        ImGui::Text("%s",py_type_name.c_str());
                         FontManager::popFont();
                         ImGui::PopStyleColor();
                         ImGui::EndTooltip();
@@ -879,23 +1080,25 @@ namespace Pipeline
     }
 
     void update() {
+
+        // // std::cout << "update pulse" << std::endl;
+
         if (PipelineState::experimentState == STOPPED) {
             // nothing
         }
 
         if (PipelineState::experimentState == INITIALIZING) {
             if (PipelineState::_agentsCountOk == PipelineState::activeAgents.size()) {
+                // std::cout << "Experiment is ready to start, initializing textures..." << std::endl;
                 // everyone is ready
                 Logger::info("Experiment started with " + std::to_string(PipelineConfig::pipelineAgents.size()) + " agents and " +
                          std::to_string(PipelineConfig::pipelineMethods.size()) + " methods.");
 
-
-                resetSim();
-                Preview::onStart();
-
+                // std::cout << "Experiment is ready to start, reset ..." << std::endl;
+                resetExperiment();
                 PipelineState::_agentsCountOk = 0;
-                PipelineState::experimentState = INITIALIZING_TEXTURES; // must be set AFTER resetSim(), because Agent depends on this call
-                PipelineState::Simulating = false;
+                PipelineState::experimentState = INITIALIZING_TEXTURES; // must be set AFTER resetExperiment(), because Agent depends on this call
+                // std::cout << "Experiment is ready to start, flag setup ..." << std::endl;
             } else if (PipelineState::_agentsCountOk + PipelineState::_agentsCountFailed == PipelineState::activeAgents.size()) {
                 // someone failed
                 Logger::error("Experiment failed to start, one or more agent's failed to initialize, stopping experiment ...");
@@ -904,20 +1107,30 @@ namespace Pipeline
                 }
                 PipelineState::experimentState = FAILED;
             }
+
+            return;
         }
 
         if (PipelineState::experimentState == INITIALIZING_TEXTURES) {
             // wait for textures to be initialized
             if (PipelineState::_agentsCountOk == PipelineState::activeAgents.size()) {
+                // std::cout << "Experiment textures initialized, starting experiment..." << std::endl;
+
                 PipelineState::experimentState = RUNNING;
-                PipelineState::Simulating = false;
-                Logger::info("Experiment is running.");
 
                 const char* windowName = "Preview";
                 ImGuiWindow* window = ImGui::FindWindowByName(windowName);
                 if (window)
                     ImGui::FocusWindow(window);
+
+                Preview::onStart();
+                Inspector::onStart();
+
+                Logger::info("Experiment is running.");
+
             }
+
+            return;
         }
 
 
@@ -933,28 +1146,32 @@ namespace Pipeline
             if (_stopped) {
                 PipelineState::experimentState = STOPPED;
 
-                // now clean everything
-                PipelineState::Simulating = false;
+                Preview::onStop();
+                Inspector::onStop();
+
                 _clearActiveAgents();
                 Logger::info("Experiment stopped.");
-                Preview::onStop();
             }
+
+            return;
         }
 
         if (PipelineState::experimentState == RUNNING) {
-            for (auto& agent: PipelineState::activeAgents) {
-                agent->steps_to_take += PipelineState::StepSimFrames;
-            }
-            PipelineState::StepSimFrames = 0;
-
-            if (isSimRunning()) {
-                for (auto& agent: PipelineState::activeAgents) {
-                    agent->steps_to_take = 1;
-                }
-            }
+            // for (auto& agent: PipelineState::activeAgents) {
+            //     agent->steps_to_take += PipelineState::StepSimFrames;
+            // }
+            // PipelineState::StepSimFrames = 0;
+            //
+            // if (isSimRunning()) {
+            //     for (auto& agent: PipelineState::activeAgents) {
+            //         agent->steps_to_take = 1;
+            //     }
+            // }
 
             // each agent now has it's own worker that handles it's logic independently, we send signals to it to indicate the desired behavior
             // _update_agents_state(-1); // update all agents
+
+            return;
         }
     }
 

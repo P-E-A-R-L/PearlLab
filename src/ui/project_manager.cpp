@@ -44,8 +44,7 @@ ProjectManager::ProjectDetails ProjectManager::loadProject(const std::string &p_
     else
     {
         // now load modules
-        if (!SafeWrapper::execute([&]
-                                  {
+        if (!SafeWrapper::execute([&]{
             auto modules_json = ReadFileToString(modules_file.string());
             auto modules_data = nlohmann::json::parse(modules_json);
 
@@ -55,8 +54,8 @@ ProjectManager::ProjectDetails ProjectManager::loadProject(const std::string &p_
                     SharedUi::pushModule(obj);
                     Logger::info("Loaded module: " + std::string(py::str(obj.attr("__name__"))));
                 }
-            } }))
-        {
+            }
+        })) {
             Logger::error("Failed to load modules from: " + modules_file.string());
         }
     }

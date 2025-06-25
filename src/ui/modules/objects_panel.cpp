@@ -87,7 +87,7 @@ void ObjectsPanel::render()
             else if (module.type == PyScope::Function)
                 typeName = "F";
 
-            ImGui::Text(typeName.c_str());
+            ImGui::Text("%s", typeName.c_str());
             ImGui::SameLine();
 
             ImGui::SetCursorPos({30, ImGui::GetCursorPos().y});
