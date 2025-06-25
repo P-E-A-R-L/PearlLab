@@ -167,6 +167,7 @@ void LabLayout::render()
     {
         if (ImGuiFileDialog::Instance()->IsOk()) // If user selects a file
         {
+            py::gil_scoped_acquire acquire{};
             std::string filePath = ImGuiFileDialog::Instance()->GetFilePathName();
             auto result = PyScope::LoadModuleForClasses(filePath);
             for (auto obj : result)
