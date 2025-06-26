@@ -110,6 +110,8 @@ namespace Pipeline
 
         agent->reward_total = 0;
         agent->reward_ep    = 0;
+        agent->steps_rewards_total = {};
+        agent->steps_rewards_ep    = {};
 
         agent->steps_current_episode = 0;
         agent->total_episodes        = 0;
@@ -148,6 +150,9 @@ namespace Pipeline
             agent->methods      .push_back(methodPtr);
             agent->scores_total .push_back(0);
             agent->scores_ep    .push_back(0);
+
+            agent->steps_scores_ep    .emplace_back();
+            agent->steps_scores_total .emplace_back();
         }
 
         agent->steps_to_take = 0;
@@ -160,7 +165,7 @@ namespace Pipeline
     static void _agent_worker_update(ActiveAgent* agent, VisualizedAgent* preview) {
         // // std::cout << "Agent[" << agent->name << "] steps=" << agent->steps_to_take << std::endl;
 
-        preview->update();
+        if (agent->state != ActiveAgentState::RESET_ENV) preview->update(); // only update if we are not going to reset the env
 
         if (agent->state == IDLE) {
             if (agent->steps_to_take > 0) {
@@ -172,9 +177,9 @@ namespace Pipeline
         } else if (agent->state == ActiveAgentState::SELECTING_ACTION) {
             goto _update_agents_state_select_action;
         } else if (agent->state == ActiveAgentState::STEPPING) {
-            goto _update_state;
+            goto _update_agents_state_step;
         } else if (agent->state == ActiveAgentState::RESET_ENV) {
-            goto _reset_env;
+            goto _update_agents_state_reset_env;
         } else {
             // unknown state, just continue
             return;
@@ -269,7 +274,7 @@ namespace Pipeline
             return;
         }
 
-        _update_state: {
+        _update_agents_state_step: {
             if (agent->env_truncated || agent->env_terminated) {
                 return;
             }
@@ -294,15 +299,26 @@ namespace Pipeline
                 }
 
                 // update agent analytics
-                agent->total_steps           += 1;
-                agent->steps_current_episode += 1;
-                agent->env_terminated = std::get<2>(result);
-                agent->env_truncated  = std::get<3>(result);
 
-                for (int i = 0; i < agent->methods.size(); ++i) {
-                    auto value = agent->methods[i]->value(ops);
-                    agent->scores_total[i] += value;
-                    agent->scores_ep   [i] += value;
+                {
+                    std::lock_guard guard(agent->score_update_lock);
+
+                    // todo: add reward
+
+                    // steps
+                    agent->total_steps           += 1;
+                    agent->steps_current_episode += 1;
+                    agent->env_terminated = std::get<2>(result);
+                    agent->env_truncated  = std::get<3>(result);
+
+                    // methods rewards
+                    for (int i = 0; i < agent->methods.size(); ++i) {
+                        auto value = agent->methods[i]->value(ops);
+                        agent->scores_total[i] += value;
+                        agent->scores_ep   [i] += value;
+                        agent->steps_scores_ep[i]  .scores.push_back(value);
+                        agent->steps_scores_total[i].scores.push_back(value);
+                    }
                 }
             });
 
@@ -311,7 +327,7 @@ namespace Pipeline
             return;
         }
 
-        _reset_env: {
+        _update_agents_state_reset_env: {
             py::gil_scoped_acquire acquire;
 
             agent->env->reset(); // reset env
@@ -323,11 +339,10 @@ namespace Pipeline
 
             // reset scores and rewards
             agent->reward_ep = 0;
-            // agent->reward_total = 0;
+            agent->steps_rewards_ep = {};
 
             agent->steps_current_episode = 0;
             agent->total_episodes ++;
-            // agent->total_steps = 0;
 
             agent->last_move_reward = 0;
             agent->env_terminated   = false;
@@ -335,8 +350,8 @@ namespace Pipeline
 
             for (int i = 0; i < agent->scores_ep.size(); i++)
             {
-                agent->scores_ep[i] = 0;
-                // agent->scores_total[i] = 0;
+                agent->scores_ep[i]         = 0;
+                agent->steps_scores_ep[i] = {};
             }
 
             agent->state = IDLE;
@@ -414,6 +429,9 @@ namespace Pipeline
             while (!agent->_worker_stop && PipelineState::experimentState == INITIALIZING) {}
 
             std::this_thread::sleep_for(std::chrono::milliseconds(index * 100 - 100 + rand() % 100));
+            // agent->state         = RESET_ENV;
+            // _agent_worker_update(agent, preview);
+
             if (!agent->_worker_stop && PipelineState::experimentState == INITIALIZING_TEXTURES) { // set up preview
                 // std::cout << "_agent_worker[" << index << "]" << " initializing textures buffers" << std::endl;
                 py::gil_scoped_acquire acquire{};
@@ -553,7 +571,7 @@ namespace Pipeline
         }
     }
 
-    void resetExperiment() {
+    static void resetExperiment() {
         py::gil_scoped_acquire acquire{};
         for (auto active : PipelineState::activeAgents) {
 
@@ -569,6 +587,8 @@ namespace Pipeline
             // reset scores and rewards
             active->reward_total = 0;
             active->reward_ep = 0;
+            active->steps_rewards_ep = {};
+            active->steps_rewards_total = {};
 
             active->steps_current_episode = 0;
             active->total_episodes = 0;
@@ -582,6 +602,8 @@ namespace Pipeline
             {
                 active->scores_ep[i] = 0;
                 active->scores_total[i] = 0;
+                active->steps_scores_ep[i]    = {};
+                active->steps_scores_total[i] = {};
             }
 
             active->state = IDLE;

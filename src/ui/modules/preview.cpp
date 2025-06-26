@@ -32,7 +32,7 @@ void Preview::update() {
     }
 }
 
-static void _render_visualizable(Pipeline::VisualizedObject *obj, const std::string &message)
+static void render_visualizable(Pipeline::VisualizedObject *obj, const std::string &message)
 {
     if (ImGui::BeginTabBar("##vis")) {
         if (obj->supports(VisualizationMethod::RGB_ARRAY) && ImGui::BeginTabItem("RGB")) {
@@ -243,7 +243,7 @@ static void _render_agent_basic(const Pipeline::ActiveAgent* agent, float width,
     FontManager::popFont();
 
     if (agent->env) {
-        _render_visualizable(Pipeline::PipelineState::activeVisualizations[index]->env_visualization, "No observations available.");
+        render_visualizable(Pipeline::PipelineState::activeVisualizations[index]->env_visualization, "No observations available.");
     } else {
         ImGui::Text("No environment available.");
     }
@@ -353,8 +353,7 @@ static void _render_preview() {
 
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 4));
         ImGui::SetCursorPosX(x);
-        if (ImGui::ImageButton("##play_btn", ImageStore::idOf(Icon), {20, 20}))
-        {
+        if (ImGui::ImageButton("##play_btn", ImageStore::idOf(Icon), {20, 20})) {
             if (!isRunning)
                 isRunning = true;
             else
@@ -389,7 +388,7 @@ static void _render_preview() {
                     FontManager::popFont();
 
                     if (agent->methods[i]) {
-                        _render_visualizable(Pipeline::PipelineState::activeVisualizations[index]->method_visualizations[i], "No observations available.");
+                        render_visualizable(Pipeline::PipelineState::activeVisualizations[index]->method_visualizations[i], "No observations available.");
                     } else {
                         ImGui::Text("No method visualization available.");
                     }
@@ -440,6 +439,7 @@ void Preview::onStart() {
 
 void Preview::onStop() {
     _previewCache.clear();
+    isRunning = false;
 }
 
 void Preview::destroy()

@@ -24,6 +24,7 @@ message("Virtual Environment: ${VENV_PATH}")
 
 set(Python3_EXECUTABLE "${VENV_PATH}/bin/python3")
 set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/libs/imgui")
+set(IMPLOT_DIR "${CMAKE_SOURCE_DIR}/libs/implot")
 set(IMGUI_NODE_DIR "${CMAKE_SOURCE_DIR}/libs/imgui-node-editor")
 set(GLAD_DIR "${CMAKE_SOURCE_DIR}/libs/glad")
 
@@ -39,6 +40,12 @@ set(IMGUI_SOURCES
 
 
 set(GLAD_SOURCES ${GLAD_DIR}/src/glad.c)
+
+set(IMPLOT_SOURCES
+        ${IMPLOT_DIR}/implot.cpp
+        ${IMPLOT_DIR}/implot_demo.cpp
+        ${IMPLOT_DIR}/implot_items.cpp
+)
 
 set(IMGUI_NODE_SOURCES
         ${IMGUI_NODE_DIR}/crude_json.cpp
@@ -108,6 +115,8 @@ set(PEAR_LAB_SOURCES
         src/ui/utility/helpers.hpp
         src/ui/widgets/image_text_button.cpp
         src/ui/widgets/image_text_button.hpp
+        src/ui/widgets/scrollable_plot.cpp
+        src/ui/widgets/scrollable_plot.hpp
 
 )
 
@@ -133,6 +142,8 @@ include_directories(${Boost_INCLUDE_DIRS} ${Python3_INCLUDE_DIRS} ${NUMPY_INCLUD
 include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends)
 include_directories(${GLAD_DIR}/include)
 include_directories(${IMGUI_NODE_DIR})
+include_directories(${IMPLOT_DIR})
+
 include_directories(libs/stb)
 include_directories(libs/ImGuiFileDialog)
 include_directories(libs/nlohmannjson)
@@ -146,6 +157,7 @@ add_executable(PearlLab
         ${IMGUI_SOURCES}
         ${GLAD_SOURCES}
         ${IMGUI_NODE_SOURCES}
+        ${IMPLOT_SOURCES}
 )
 
 target_link_libraries(PearlLab

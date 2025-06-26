@@ -26,10 +26,6 @@ namespace Pipeline
         RESET_ENV
     };
 
-    struct ActiveActionStateData {
-        size_t next_action = -1;
-    };
-
     struct ActiveAgent
     {
         char name[256] = "Agent";
@@ -38,11 +34,26 @@ namespace Pipeline
         PyEnv   *env = nullptr;
         std::vector<PyMethod *> methods;
 
-        std::vector<double> scores_total;
-        std::vector<double> scores_ep;
 
-        double reward_total = 0;
-        double reward_ep = 0;
+        std::mutex score_update_lock;
+
+        // each item in this vector corresponds to a specific explainability method total score
+        std::vector<float> scores_total;
+        std::vector<float> scores_ep;
+
+        struct StepsScores {
+            // stores the score that a step produced for each step
+            std::vector<float> scores;
+        };
+
+        // for each method, store separate series
+        std::vector<StepsScores> steps_scores_ep;
+        std::vector<StepsScores> steps_scores_total;
+
+        StepsScores steps_rewards_total;
+        StepsScores steps_rewards_ep;
+        float reward_total = 0;
+        float reward_ep = 0;
 
         int64_t steps_current_episode;
         int64_t total_episodes;
@@ -50,7 +61,7 @@ namespace Pipeline
 
         bool env_terminated;
         bool env_truncated;
-        double last_move_reward = 0;
+        float last_move_reward = 0;
 
         // state variables
         std::mutex                    looper_lock;                // looper master lock,
@@ -237,9 +248,8 @@ namespace Pipeline
     // pauses the simulation if running, and stops the experiment (destroys objects!)
     void stopExperiment();
 
-    // returns either the simulation is running freely or not
 
-    void resetExperiment();
+    // void resetExperiment();
 
     // step simulation for one agent
     void stepSim(int agent_index);

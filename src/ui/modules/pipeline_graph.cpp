@@ -219,16 +219,16 @@ namespace PipelineGraph
         nodes.push_back(n);
         nodeLookup[n->id] = n;
 
-        for (auto &pin : n->inputs)
-        {
+        for (auto &pin : n->inputs) {
             pinNodeLookup[pin.id] = n;
             pinLookup[pin.id] = &pin;
         }
-        for (auto &pin : n->outputs)
-        {
+
+        for (auto &pin : n->outputs) {
             pinNodeLookup[pin.id] = n;
             pinLookup[pin.id] = &pin;
         }
+
         return n->id;
     }
 
