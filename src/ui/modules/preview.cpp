@@ -10,6 +10,7 @@
 #include "../../backend/py_safe_wrapper.hpp"
 #include "../utility/gl_texture.hpp"
 #include "../utility/image_store.hpp"
+#include "../widgets/image_text_button.hpp"
 
 namespace Preview {
     struct PreviewCache {
@@ -200,8 +201,7 @@ static void render_visualizable(Pipeline::VisualizedObject *obj, const std::stri
     }
 }
 
-static void _render_agent_basic(const Pipeline::ActiveAgent* agent, float width, int index)
-{
+static void render_agent_basic(Pipeline::ActiveAgent* agent, float width, int index) {
     ImVec2 childStart = ImGui::GetCursorScreenPos();
     auto& vis = Pipeline::PipelineState::activeVisualizations[index];
     auto& cache              = _previewCache[vis];
@@ -241,6 +241,11 @@ static void _render_agent_basic(const Pipeline::ActiveAgent* agent, float width,
     FontManager::pushFont("Bold");
     ImGui::Text("%s", agent->name);
     FontManager::popFont();
+
+    {
+        std::lock_guard guard(agent->score_update_lock);
+        ImGui::Text("Final Score: %.2f", Pipeline::evalAgent(index));
+    }
 
     if (agent->env) {
         render_visualizable(Pipeline::PipelineState::activeVisualizations[index]->env_visualization, "No observations available.");
@@ -289,11 +294,10 @@ static void _render_agent_basic(const Pipeline::ActiveAgent* agent, float width,
     cache.content_size = ImVec2(childEnd.x - childStart.x, childEnd.y - childStart.y);
 }
 
-typedef std::function<void(Pipeline::ActiveAgent*, float, int)> _agent_render_function;
+typedef std::function<void(Pipeline::ActiveAgent*, float, int)> _agentrender_function;
 
 static int agents_per_row = 2;
-static void tab_wrapper(const _agent_render_function &_f)
-{
+static void tab_wrapper(const _agentrender_function &_f) {
     ImGui::BeginChild("AgentsScrollArea", ImVec2(0, 0), false, ImGuiWindowFlags_NoScrollbar);
     
     { // agents previews (env)
@@ -337,33 +341,88 @@ static void tab_wrapper(const _agent_render_function &_f)
 }
 
 
-static void _render_preview() {
+static void render_preview() {
     for (int i = 0; i < Pipeline::PipelineState::activeAgents.size(); i++) {
         Pipeline::PipelineState::activeVisualizations[i]->update_tex(); // update the visualizations (textures)
     }
 
     { // control zone
+
+        ImGui::SeparatorText("Pipeline Control");
+
         auto size = ImGui::GetContentRegionAvail();
-        auto control_size = 16 * 2 + ImGui::GetStyle().ItemSpacing.x;
+        auto control_size = 23 * 3 + 4 * 3 + 10 * 2 + ImGui::CalcTextSize("Pause").x + ImGui::CalcTextSize("Reset Env").x + ImGui::CalcTextSize("Step").x + ImGui::GetStyle().ItemSpacing.x;
+
         auto x = (size.x - control_size) / 2;
-
-        std::string Icon = "./assets/icons/play-grad.png";
-        if (isRunning)
-            Icon = "./assets/icons/pause-grad.png";
-
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 4));
         ImGui::SetCursorPosX(x);
-        if (ImGui::ImageButton("##play_btn", ImageStore::idOf(Icon), {20, 20})) {
-            if (!isRunning)
-                isRunning = true;
-            else
-                isRunning = false;
+
+        {
+            std::string Icon = "./assets/icons/play-grad.png";
+            std::string text = "Play";
+            if (isRunning) {
+                Icon = "./assets/icons/pause-grad.png";
+                text = "Pause";
+            }
+
+            if (Widgets::ImageTextButton(ImageStore::idOf(Icon), text.c_str(), {28, 28})) {
+                if (!isRunning)
+                    isRunning = true;
+                else
+                    isRunning = false;
+            }
         }
 
         ImGui::SameLine();
-        if (ImGui::ImageButton("##step_btn", ImageStore::idOf("./assets/icons/step-grad.png"), {20, 20})) {
-            Pipeline::stepSim(-1);
+        ImGui::Dummy({10, 10});
+        ImGui::SameLine();
+
+        {
+            if (Widgets::ImageTextButton(ImageStore::idOf("./assets/icons/step-grad.png"), "Step", ImVec2(28, 28))) {
+                Pipeline::stepSim(-1);
+            }
         }
+
+        ImGui::SameLine();
+        ImGui::Dummy({10, 10});
+        ImGui::SameLine();
+
+        {
+            if (Widgets::ImageTextButton(ImageStore::idOf("./assets/icons/reset-grad.png"), "Reset Env", ImVec2(28, 28))) {
+                Pipeline::resetEnv(-1);
+            }
+        }
+
+        ImGui::SeparatorText("Pipeline Policies");
+
+        // StepPolicy Combo
+        {
+            static const char* step_policy_labels[] = {
+                "Random",
+                "Best Agent",
+                "Worst Agent",
+                "Independent"
+            };
+
+            int current_step_policy = static_cast<int>(Pipeline::PipelineState::stepPolicy);
+            if (ImGui::Combo("Step Policy", &current_step_policy, step_policy_labels, IM_ARRAYSIZE(step_policy_labels))) {
+                Pipeline::PipelineState::stepPolicy = static_cast<Pipeline::PipelineState::StepPolicy>(current_step_policy);
+            }
+        }
+
+        // ScorePolicy Combo
+        {
+            static const char* score_policy_labels[] = {
+                "Pearl",
+                "Reward"
+            };
+
+            int current_score_policy = static_cast<int>(Pipeline::PipelineState::scorePolicy);
+            if (ImGui::Combo("Score Policy", &current_score_policy, score_policy_labels, IM_ARRAYSIZE(score_policy_labels))) {
+                Pipeline::PipelineState::scorePolicy = static_cast<Pipeline::PipelineState::ScorePolicy>(current_score_policy);
+            }
+        }
+
         ImGui::PopStyleVar();
     }
 
@@ -371,17 +430,16 @@ static void _render_preview() {
     {
         if (ImGui::BeginTabItem("Basic"))
         {
-            tab_wrapper(_render_agent_basic);
+            tab_wrapper(render_agent_basic);
             ImGui::EndTabItem();
         }
 
         for (int i = 0; i < Pipeline::PipelineConfig::pipelineMethods.size(); i++)
         {
             ImGui::PushID(i);
-            if (Pipeline::PipelineConfig::pipelineMethods[i].active && ImGui::BeginTabItem(Pipeline::PipelineConfig::pipelineMethods[i].name))
+            if (ImGui::BeginTabItem(Pipeline::PipelineConfig::pipelineMethods[i].name))
             {
-                tab_wrapper([&](Pipeline::ActiveAgent *agent, float width, int index)
-                            {
+                tab_wrapper([&](Pipeline::ActiveAgent *agent, float width, int index){
                     ImGui::BeginChild(agent->name, ImVec2(width, 0), true);
                     FontManager::pushFont("Bold");
                     ImGui::Text("%s"   , agent->name);
@@ -422,7 +480,7 @@ void Preview::render()
         ImGui::SetCursorPos({x, y});
         ImGui::Text("No active experiment.\nStart an experiment in the pipeline tab.");
     } else {
-        _render_preview();
+        render_preview();
     }
 
     ImGui::End();

@@ -743,6 +743,9 @@ namespace PipelineGraph
         curr_focus_pin = nullptr;
         static bool first_frame = true;
         ImGui::Begin("Pipeline Graph");
+        if (Pipeline::PipelineState::experimentState != Pipeline::STOPPED) {
+            ImGui::BeginDisabled();
+        }
 
         // dialogs control
         static bool open_demux_popup = false;
@@ -871,6 +874,9 @@ namespace PipelineGraph
 
         renderPinTooltip();
 
+        if (Pipeline::PipelineState::experimentState != Pipeline::STOPPED) {
+            ImGui::EndDisabled();
+        }
         ImGui::End();
     }
 

@@ -78,6 +78,7 @@ static void render_python_object(PyLiveObject* obj) {
         ImGui::PushID(i);
         ImGui::BeginDisabled(editable == false);
 
+        // todo: test this thing one day ...
             switch (pub.type) {
                 case INTEGER: {
                     if (anno.hasChoices) {
@@ -128,12 +129,89 @@ static void render_python_object(PyLiveObject* obj) {
                 }
 
                 case FLOAT: {
-                    // todo
+                    if (anno.hasChoices) {
+                        auto data = Helpers::toImGuiList(anno.choices);
+                        int choice = 0;
+                        for (auto& c: anno.choices) {
+                            if (c == std::to_string(*pub.value.f)) {
+                                break;
+                            }
+                            choice++;
+                        }
+
+                        // there isn't anything better to do tbh ..
+                        if (choice == anno.choices.size()) choice = 0;
+
+                        if (ImGui::Combo("##<empty>", &choice, data.first, data.second)) {
+                            try {
+                                 (*pub.value.f) = std::stof(anno.choices[choice]);
+                            } catch (...) {
+                                // no need to handle the error
+                            }
+                        }
+                    } else {
+                        float start = -1;
+                        float end = -1;
+                        bool ranged = false;
+                        if (anno.rangeStart != "None" && anno.rangeEnd != "None") {
+                            try {
+                                start = std::stof(anno.rangeStart);
+                                end   = std::stof(anno.rangeEnd);
+                                ranged = true;
+                            } catch (...) {
+                                // no need to handle the error
+                            }
+                        }
+
+                        if (ranged) {
+                            ImGui::DragFloat(anno.attrName.c_str(), pub.value.f, 1, start, end);
+                        } else {
+                            ImGui::InputFloat(anno.attrName.c_str(), pub.value.f);
+                        }
+                        if (ImGui::BeginItemTooltip()) {
+                            ImGui::Text("%s",anno.disc.c_str());
+                            ImGui::EndTooltip();
+                        }
+                    }
                     break;
                 }
 
                 case STRING: {
-                    // todo
+                    if (anno.hasChoices) {
+                        auto data = Helpers::toImGuiList(anno.choices);
+                        int choice = 0;
+                        for (auto& c: anno.choices) {
+                            if (c == *pub.value.str) {
+                                break;
+                            }
+                            choice++;
+                        }
+
+                        // there isn't anything better to do tbh ..
+                        if (choice == anno.choices.size()) choice = 0;
+
+                        if (ImGui::Combo("##<empty>", &choice, data.first, data.second)) {
+                            try {
+                                 (*pub.value.str) = anno.choices[choice];
+                            } catch (...) {
+                                // no need to handle the error
+                            }
+                        }
+                    } else {
+                        static char buff[1024];
+
+                        strncpy(buff, pub.value.str->c_str(), 1023);
+                        buff[1023] = '\0';
+
+                        if (ImGui::InputText(anno.attrName.c_str(), buff, 1024)) {
+                            *pub.value.str = buff;
+                        }
+
+                        if (ImGui::BeginItemTooltip()) {
+                            ImGui::Text("%s",anno.disc.c_str());
+                            ImGui::EndTooltip();
+                        }
+                    }
                     break;
                 }
 
@@ -235,8 +313,6 @@ static void ShowAgentStateColored(Pipeline::ActiveAgentState state)
         case Pipeline::RESET_ENV:         label = "RESET_ENV";         color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f); break;
     }
 
-    ImGui::Text("State:");
-    ImGui::SameLine();
     ImGui::TextColored(color, "%s", label);
 }
 
@@ -303,9 +379,9 @@ static void ShowAgentStatsUI(Pipeline::ActiveAgent* agent, Pipeline::VisualizedA
         ImGui::EndTable();
     }
 
-    ImGui::SeparatorText("Next Action");
-    if (ImGui::BeginTable("NextAction", 2)) {
-        ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Next Action Index:");
+    ImGui::SeparatorText("Action Logic");
+    if (ImGui::BeginTable("Action Logic", 2)) {
+        ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Last Taken Action:");
         ImGui::TableSetColumnIndex(1); ImGui::Text("%zu", agent->next_action.load());
 
         ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Steps To Take:");
@@ -572,7 +648,7 @@ static void render_methods_details(Pipeline::VisualizedAgent* agent) {
 }
 
 static void _render_content(Pipeline::VisualizedAgent* agent) {
-    static std::vector<float> sizes = {0.1, 0.3, 0.3, 0.3};
+    static std::vector<float> sizes = {0.5, 0.3, 0.1, 0.1};
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4, 4));
         Splitter::Vertical(sizes, [agent](int i) {

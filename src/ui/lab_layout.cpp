@@ -73,8 +73,13 @@ void LabLayout::render()
 
     if (ImGui::BeginMainMenuBar())
     {
+
         if (ImGui::BeginMenu("File"))
         {
+            if (Pipeline::PipelineState::experimentState != Pipeline::STOPPED) {
+                ImGui::BeginDisabled();
+            }
+
             if (ImGui::MenuItem("Load Module"))
             {
                 ImGuiFileDialog::Instance()->OpenDialog("FileDlgKey", "Select module file", ".py");
@@ -97,6 +102,10 @@ void LabLayout::render()
                 ImGuiFileDialog::Instance()->OpenDialog("FileDlgKey", "Select module file", ".py");
             }
 
+            if (Pipeline::PipelineState::experimentState != Pipeline::STOPPED) {
+                ImGui::EndDisabled();
+            }
+
             ImGui::Separator();
             if (ImGui::MenuItem("Exit"))
             {
@@ -107,6 +116,10 @@ void LabLayout::render()
 
         if (ImGui::BeginMenu("Edit"))
         {
+            if (Pipeline::PipelineState::experimentState != Pipeline::STOPPED) {
+                ImGui::BeginDisabled();
+            }
+
             if (ImGui::MenuItem("Undo", "CTRL+Z"))
             { /* Undo Action */
             }
@@ -123,6 +136,11 @@ void LabLayout::render()
             if (ImGui::MenuItem("Paste", "CTRL+V"))
             { /* Paste Action */
             }
+
+            if (Pipeline::PipelineState::experimentState != Pipeline::STOPPED) {
+                ImGui::EndDisabled();
+            }
+
             ImGui::EndMenu();
         }
 
@@ -144,7 +162,7 @@ void LabLayout::render()
             ImGui::MenuItem("Preview"  , nullptr, &window_preview);
             ImGui::MenuItem("Graph"    , nullptr, &window_graph);
             ImGui::MenuItem("Event Log", nullptr, &window_logger);
-            ImGui::MenuItem("Inspector", nullptr, &window_inspector);
+            ImGui::MenuItem("Inspector (s)", nullptr, &window_inspector);
 
             ImGui::EndMenu();
         }
@@ -154,7 +172,6 @@ void LabLayout::render()
             }
             ImGui::EndMenu();
         }
-
 
         ImGui::Dummy({50, 1});
         ImGui::SameLine();
@@ -247,7 +264,6 @@ void LabLayout::render()
         ImGui::DockBuilderDockWindow("Pipeline Graph", center_top);
         ImGui::DockBuilderDockWindow("Event Log", center_bot);
 
-        ImGui::DockBuilderDockWindow("Inspector", right);
         ImGui::DockBuilderFinish(dockspace_id);
 
         Logger::info("Done.");

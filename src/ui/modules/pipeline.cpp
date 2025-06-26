@@ -167,6 +167,9 @@ namespace Pipeline
 
         if (agent->state != ActiveAgentState::RESET_ENV) preview->update(); // only update if we are not going to reset the env
 
+        if (agent->total_episodes >= PipelineConfig::maxEpisodes) return;
+        if (agent->total_steps    >= PipelineConfig::maxSteps   ) return;
+
         if (agent->state == IDLE) {
             if (agent->steps_to_take > 0) {
                 agent->state = ActiveAgentState::SELECTING_ACTION;
@@ -695,7 +698,7 @@ namespace Pipeline
         if (agent_index == -1) { // all agents
             std::lock_guard guard(PipelineState::agentsLock);
             for (int i = 0; i < PipelineState::activeAgents.size(); ++i) {
-                stepSim(i);
+                resetEnv(i);
             }
             return;
         }
@@ -733,12 +736,12 @@ namespace Pipeline
         {
             case PipelineState::PEARL: {
                 float result = 0;
-                for (int i = 0; i < agent->scores_total.size(); ++i)
-                {
-                    result += agent->scores_total[i] * (PipelineConfig::pipelineMethods[i].active ? PipelineConfig::pipelineMethods[i].weight : 0);
+                for (int i = 0; i < agent->scores_total.size(); ++i) {
+                    result += agent->scores_total[i] * PipelineConfig::pipelineMethods[i].weight;
                 }
                 return result / agent->total_steps;
             }
+
             case PipelineState::REWARD: {
                 return agent->reward_total / agent->total_steps;
             }
@@ -787,7 +790,12 @@ namespace Pipeline
 
     static void render_recipes()
     {
+
         ImGui::Begin("Recipes");
+
+        if (Pipeline::PipelineState::experimentState != STOPPED) {
+            ImGui::BeginDisabled();
+        }
 
         int visibleCount = 0;
         for (int i = 0; i < recipes.size(); ++i)
@@ -835,6 +843,10 @@ namespace Pipeline
         if (visibleCount == 0)
             ImGui::Text("No recipes (attach acceptors in Pipeline graph).");
 
+        if (Pipeline::PipelineState::experimentState != STOPPED) {
+            ImGui::EndDisabled();
+        }
+
         ImGui::End();
     }
 
@@ -852,7 +864,7 @@ namespace Pipeline
             }
         }
 
-        if (isExperimenting()) {
+        if (Pipeline::PipelineState::experimentState != STOPPED) {
             ImGui::BeginDisabled();
         }
 
@@ -904,8 +916,6 @@ namespace Pipeline
                     ImVec2 group_start = ImGui::GetCursorScreenPos();
                     ImGui::BeginGroup();
 
-                    ImGui::Checkbox("", &agent.active);
-                    ImGui::SameLine();
                     ImGui::Text("%s", agent.name);
 
                     ImGui::EndGroup();
@@ -984,8 +994,6 @@ namespace Pipeline
                     ImVec2 group_start = ImGui::GetCursorScreenPos();
                     ImGui::BeginGroup();
 
-                    ImGui::Checkbox("##box", &method.active);
-                    ImGui::SameLine();
                     ImGui::Text("%s", method.name);
                     ImGui::SameLine();
                     ImGui::SetNextItemWidth(std::min(150, (int)ImGui::GetContentRegionAvail().x));
@@ -1064,7 +1072,6 @@ namespace Pipeline
 
                     PipelineAgent agent;
                     agent.recipe = &recipe;
-                    agent.active = true;
                     strcpy(agent.name, recipe.acceptor->_tag);
                     agent.recipe_index = index;
                     PipelineConfig::pipelineAgents.push_back(agent);
@@ -1073,7 +1080,6 @@ namespace Pipeline
                 {
                     PipelineMethod method;
                     method.recipe = &recipe;
-                    method.active = true;
                     method.weight = 1.0;
                     strcpy(method.name, recipe.acceptor->_tag);
                     method.recipe_index = index;
@@ -1087,8 +1093,7 @@ namespace Pipeline
             ImGui::EndDragDropTarget();
         }
 
-        if (isExperimenting())
-        {
+        if (Pipeline::PipelineState::experimentState != STOPPED) {
             ImGui::EndDisabled();
         }
 

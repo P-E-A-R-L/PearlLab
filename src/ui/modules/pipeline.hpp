@@ -170,7 +170,6 @@ namespace Pipeline
     {
         char name[256] = "Method";
         PipelineGraph::ObjectRecipe *recipe{};
-        bool active = true;
         int recipe_index = 0;
     };
 
@@ -179,7 +178,6 @@ namespace Pipeline
         char name[256] = "Agent";
         PipelineGraph::ObjectRecipe *recipe{};
         float weight = 1;
-        bool active = true;
         int recipe_index = 0;
     };
 
@@ -229,6 +227,7 @@ namespace Pipeline
             REWARD, // agent's reward is what determines the criteria
         };
 
+        // fixme: maybe change this to atomic one day ? idk ..
         extern StepPolicy stepPolicy;
         extern ScorePolicy scorePolicy;
 

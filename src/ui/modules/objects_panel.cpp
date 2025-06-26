@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 
+#include "pipeline.hpp"
 #include "../shared_ui.hpp"
 
 void ObjectsPanel::init()
@@ -19,6 +20,10 @@ void ObjectsPanel::render()
     static bool showOthers = true;
 
     ImGui::Begin("Objects");
+
+    if (Pipeline::PipelineState::experimentState != Pipeline::STOPPED) {
+        ImGui::BeginDisabled();
+    }
 
     // Right-click context menu on window header
     if (ImGui::BeginPopupContextItem("Objects", ImGuiPopupFlags_MouseButtonRight))
@@ -107,6 +112,10 @@ void ObjectsPanel::render()
 
         if (visibleCount == 0)
             ImGui::Text("No objects match filters.");
+    }
+
+    if (Pipeline::PipelineState::experimentState != Pipeline::STOPPED) {
+        ImGui::EndDisabled();
     }
 
     ImGui::End();
