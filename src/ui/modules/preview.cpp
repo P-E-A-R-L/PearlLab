@@ -14,14 +14,13 @@
 
 namespace Preview {
     struct PreviewCache {
-        ImVec2 content_size          = ImVec2(1, 1);
+        ImVec2 content_size          = ImVec2(0, 0);
     };
 
-
+    static bool isRunning = false;
+    static std::map<Pipeline::VisualizedAgent*, Preview::PreviewCache> cache;
 }
 
-static bool isRunning = false;
-static std::map<Pipeline::VisualizedAgent*, Preview::PreviewCache> _previewCache;
 
 void Preview::init() {
     isRunning = false;
@@ -197,40 +196,37 @@ static void render_visualizable(Pipeline::VisualizedObject *obj, const std::stri
     }
 }
 
-static void render_agent_basic(Pipeline::ActiveAgent* agent, float width, int index) {
+static void render_agent_basic(Pipeline::ActiveAgent* agent, float width, float height, int index) {
     ImVec2 childStart = ImGui::GetCursorScreenPos();
     auto& vis = Pipeline::PipelineState::activeVisualizations[index];
-    auto& cache              = _previewCache[vis];
+    auto& cache              = Preview::cache[vis];
 
     ImVec2 contentRegion = cache.content_size;
     ImVec2 buttonPos = ImGui::GetCursorScreenPos();
 
-    ImGui::BeginChild(agent->name, ImVec2(width, 0), true);
     ImVec2 childPos = ImGui::GetCursorScreenPos();
+    ImGui::BeginChild(agent->name, ImVec2(width, height), true);
+
 
     ImGui::PushID(index);
-    ImGui::InvisibleButton("##click_area", contentRegion);
-    bool clicked = ImGui::IsItemClicked();
+
+    if (contentRegion.x != 0 && contentRegion.y != 0) {
+        ImGui::InvisibleButton("##click_area", contentRegion);
+        bool clicked = ImGui::IsItemClicked();
+
+        if (ImGui::IsItemHovered()) {
+            ImGui::GetWindowDrawList()->AddRectFilled(
+                buttonPos, ImVec2(buttonPos.x + contentRegion.x , buttonPos.y + contentRegion.y),
+                IM_COL32(255, 255, 0, 50)
+            );
+        }
+
+        if (clicked) {
+            Inspector::open(vis);
+        }
+    }
+
     ImGui::PopID();
-
-    /*
-    if (Preview::curr_selected_preview == vis) {
-        ImGui::GetWindowDrawList()->AddRectFilled(
-            buttonPos, ImVec2(buttonPos.x + contentRegion.x , buttonPos.y + contentRegion.y),
-            IM_COL32(91, 150, 204, 150)
-        );
-    } else
-     */
-    if (ImGui::IsItemHovered()) {
-        ImGui::GetWindowDrawList()->AddRectFilled(
-            buttonPos, ImVec2(buttonPos.x + contentRegion.x , buttonPos.y + contentRegion.y),
-            IM_COL32(255, 255, 0, 50)
-        );
-    }
-
-    if (clicked) {
-        Inspector::open(vis);
-    }
 
     ImGui::SetCursorScreenPos(childPos);
 
@@ -284,20 +280,20 @@ static void render_agent_basic(Pipeline::ActiveAgent* agent, float width, int in
     }
 
     ImGui::EndChild();
-
     ImVec2 childEnd = ImGui::GetItemRectMax();
 
     cache.content_size = ImVec2(childEnd.x - childStart.x, childEnd.y - childStart.y);
 }
 
-typedef std::function<void(Pipeline::ActiveAgent*, float, int)> _agentrender_function;
+typedef std::function<void(Pipeline::ActiveAgent*, float, float, int)> agent_render_function;
 
 static int agents_per_row = 2;
-static void tab_wrapper(const _agentrender_function &_f) {
-    ImGui::BeginChild("AgentsScrollArea", ImVec2(0, 0), false, ImGuiWindowFlags_NoScrollbar);
+static void tab_wrapper(const agent_render_function &_f) {
+    ImGui::BeginChild("AgentsScrollArea", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
     
     { // agents previews (env)
         auto available_width = ImGui::GetContentRegionAvail().x;
+        auto window_height = ImGui::GetContentRegionAvail().y;
         auto child_width = (available_width - (agents_per_row + 1) * 10) / agents_per_row;
         child_width = std::max(child_width, 320.0f);
 
@@ -317,7 +313,7 @@ static void tab_wrapper(const _agentrender_function &_f) {
                 
                 ImGui::SetCursorPos(ImVec2(col * (child_width + 10) + 10, total_height + 10));
                 ImGui::BeginGroup();
-                _f(agent, child_width, agent_index);
+                _f(agent, child_width, window_height, agent_index);
                 ImGui::EndGroup();
                 
                 ImGui::PopID();
@@ -356,16 +352,16 @@ static void render_preview() {
         {
             std::string Icon = "./assets/icons/play-grad.png";
             std::string text = "Play";
-            if (isRunning) {
+            if (Preview::isRunning) {
                 Icon = "./assets/icons/pause-grad.png";
                 text = "Pause";
             }
 
             if (Widgets::ImageTextButton(ImageStore::idOf(Icon), text.c_str(), {28, 28})) {
-                if (!isRunning)
-                    isRunning = true;
+                if (!Preview::isRunning)
+                    Preview::isRunning = true;
                 else
-                    isRunning = false;
+                    Preview::isRunning = false;
             }
         }
 
@@ -435,8 +431,8 @@ static void render_preview() {
             ImGui::PushID(i);
             if (ImGui::BeginTabItem(Pipeline::PipelineConfig::pipelineMethods[i].name)) {
 
-                tab_wrapper([&](Pipeline::ActiveAgent *agent, float width, int index){
-                    ImGui::BeginChild(agent->name, ImVec2(width, 0), true);
+                tab_wrapper([&](Pipeline::ActiveAgent *agent, float width, float height, int index){
+                    ImGui::BeginChild(agent->name, ImVec2(width, height), true);
                     FontManager::pushFont("Bold");
                     ImGui::Text("%s"   , agent->name);
                     FontManager::popFont();
@@ -487,18 +483,18 @@ void Preview::render()
 void Preview::onStart() {
     std::lock_guard guard(Pipeline::PipelineState::agentsLock);
 
-    _previewCache.clear();
+    cache.clear();
     for (auto& a: Pipeline::PipelineState::activeVisualizations) {
-        _previewCache[a] = {};
+        cache[a] = {};
     }
 }
 
 void Preview::onStop() {
-    _previewCache.clear();
+    cache.clear();
     isRunning = false;
 }
 
 void Preview::destroy()
 {
-    _previewCache.clear();
+    cache.clear();
 }
