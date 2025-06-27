@@ -130,8 +130,8 @@ class ShapExplainability(ExplainabilityMethod):
             heatmap_norm = (heatmap + scale) / (2 * scale + 1e-8) # Normalize to [0, 1]
             
             # Create masks for positive (red) and negative (blue) attributions
-            red_mask = heatmap_norm >= 0.6
-            blue_mask = heatmap_norm <= 0.4
+            red_mask = heatmap_norm >= 0.5
+            blue_mask = heatmap_norm <= 0.5
             important = red_mask | blue_mask
 
             # Create colored overlay

@@ -347,10 +347,10 @@ static void ShowAgentStatsUI(Pipeline::ActiveAgent* agent, Pipeline::VisualizedA
         ImGui::TableSetColumnIndex(1); ImGui::Text("%s", agent->env_truncated ? "Yes" : "No");
 
         ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Reward (total):");
-        ImGui::TableSetColumnIndex(1); ImGui::Text("%s", agent->reward_total);
+        ImGui::TableSetColumnIndex(1); ImGui::Text("%.4f", agent->reward_total);
 
         ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Reward (ep):");
-        ImGui::TableSetColumnIndex(1); ImGui::Text("%s", agent->reward_ep);
+        ImGui::TableSetColumnIndex(1); ImGui::Text("%.4f", agent->reward_ep);
 
         ImGui::EndTable();
     }
