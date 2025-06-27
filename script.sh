@@ -2,4 +2,4 @@ cd build/
 cmake ..
 cmake --build . --target PearlLab
 cd ..
-./build/PearlLab
+./build/PearlLab ./projects/space_invaders

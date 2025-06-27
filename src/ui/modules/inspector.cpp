@@ -57,7 +57,10 @@ void Inspector::onStart() {
             .window_name   = std::string("(") + std::to_string(a->agent_index) + std::string(") ") + std::string(a->agent->name)
         };
 
-        LabLayout::dockWindow(_cache[a].window_name, LabLayout::CENTER_RIGHT);
+        ImGui::DockBuilderDockWindow(_cache[a].window_name.c_str(), 
+                            LabLayout::IDs["right_top"]);
+        ImGui::DockBuilderFinish(ImGui::GetID("MyDockspace"));
+
     }
 }
 
@@ -697,5 +700,6 @@ void Inspector::open(Pipeline::VisualizedAgent* agent) {
     auto it = _cache.find(agent);
     if (it != _cache.end()) {
         it->second.window_opened = true;
+        ImGui::SetWindowFocus(it->second.window_name.c_str());
     }
 }

@@ -326,6 +326,20 @@ void LabLayout::render()
 
         ImGui::DockBuilderFinish(dockspace_id);
 
+         LabLayout::IDs = {
+            {"left_top",  left_top},
+            {"left_mid",  left_mid},
+            {"left_bot",  left_bot},
+            {"center_top", center_top},
+            {"center_bot", center_bot},
+            {"right_top", right_top},
+            {"right_mid", right_mid},
+            {"right_bot", right_bot},
+            {"left", left},
+            {"center", center},
+            {"right", right}
+        };
+
         Logger::info("Done.");
 
         StartupLoader::load_modules();
@@ -350,6 +364,7 @@ void LabLayout::render()
     if (first_run) {
         menu_reset_window = true; // reset layout on first run
         first_run = false;
+        ImGui::SetWindowFocus("Pipeline"); 
     }
 }
 
@@ -364,60 +379,4 @@ void LabLayout::destroy()
 
     SharedUi::destroy();
     PyScope::clearInstance();
-}
-
-void LabLayout::dockWindow(const std::string &name, DockLocation location) {
-    ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
-    if (ImGui::DockBuilderGetNode(dockspace_id)) {
-        // Split into columns: left, center, right
-        ImGuiID left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.25f, nullptr, &dockspace_id);
-        ImGuiID right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.25f, nullptr, &dockspace_id);
-        ImGuiID center = dockspace_id;
-
-        // Split left vertically
-        ImGuiID left_top = ImGui::DockBuilderSplitNode(left, ImGuiDir_Up, 0.25f, nullptr, &left);
-        ImGuiID left_mid = ImGui::DockBuilderSplitNode(left, ImGuiDir_Up, 0.33f, nullptr, &left);
-        ImGuiID left_bot = left;
-
-        // Split left vertically
-        ImGuiID right_top = ImGui::DockBuilderSplitNode(right, ImGuiDir_Up, 0.25f, nullptr, &right);
-        ImGuiID right_mid = ImGui::DockBuilderSplitNode(right, ImGuiDir_Up, 0.33f, nullptr, &right);
-        ImGuiID right_bot = right;
-
-        // Split center
-        ImGuiID center_top = ImGui::DockBuilderSplitNode(center, ImGuiDir_Up, 0.7f, nullptr, &center);
-        ImGuiID center_bot = center;
-
-        auto dock = center;
-        switch (location) {
-            case TOP_LEFT:
-                dock = left_top;
-                break;
-            case CENTER_LEFT:
-                dock = left_mid;
-                break;
-            case BOT_LEFT:
-                dock = left_bot;
-                break;
-            case TOP_RIGHT:
-                dock = right_top;
-                break;
-            case CENTER_RIGHT:
-                dock = right_mid;
-                break;
-            case BOT_RIGHT:
-                dock = right_bot;
-                break;
-            case CENTER_TOP:
-                dock = center_top;
-                break;
-            case CENTER_BOT:
-                dock = center_bot;
-                break;
-        }
-
-        ImGui::DockBuilderDockWindow(name.c_str(), dock);
-
-        ImGui::DockBuilderFinish(dockspace_id);
-    }
 }

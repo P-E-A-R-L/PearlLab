@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "project_manager.hpp"
+#include <unordered_map>
+#include <imgui.h>
 
 namespace LabLayout
 {
@@ -24,7 +26,17 @@ namespace LabLayout
         BOT_RIGHT,
     };
 
-    void dockWindow(const std::string& name, DockLocation location);
+    // IDs for docking windows, used to identify docking locations
+    inline std::unordered_map<std::string, ImGuiID> IDs = {
+        {"left_top", 0},
+        {"left_mid", 0},
+        {"left_bot", 0},
+        {"center_top", 0},
+        {"center_bot", 0},
+        {"right_top", 0},
+        {"right_mid", 0},
+        {"right_bot", 0}
+    };
 }
 
 #endif // LAB_LAYOUT_HPP
