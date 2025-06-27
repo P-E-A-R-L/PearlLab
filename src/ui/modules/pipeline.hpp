@@ -40,6 +40,7 @@ namespace Pipeline
         // each item in this vector corresponds to a specific explainability method total score
         std::vector<float> scores_total;
         std::vector<float> scores_ep;
+        std::vector<float> last_move_scores;
 
         struct StepsScores {
             // stores the score that a step produced for each step
@@ -47,13 +48,16 @@ namespace Pipeline
         };
 
         // for each method, store separate series
-        std::vector<StepsScores> steps_scores_ep;
         std::vector<StepsScores> steps_scores_total;
+        std::vector<StepsScores> steps_scores_ep;
+
+
+        float reward_total = 0;
+        float reward_ep = 0;
+        float last_move_reward = 0;
 
         StepsScores steps_rewards_total;
         StepsScores steps_rewards_ep;
-        float reward_total = 0;
-        float reward_ep = 0;
 
         int64_t steps_current_episode;
         int64_t total_episodes;
@@ -61,7 +65,6 @@ namespace Pipeline
 
         bool env_terminated;
         bool env_truncated;
-        float last_move_reward = 0;
 
         // state variables
         std::mutex                    looper_lock;                // looper master lock,
