@@ -28,7 +28,7 @@ void Preview::init() {
 }
 
 void Preview::update() {
-    if (isRunning) {
+    if (isRunning && Pipeline::PipelineState::experimentState == Pipeline::RUNNING) {
         Pipeline::stepSim(-1); // step all agents
     }
 }

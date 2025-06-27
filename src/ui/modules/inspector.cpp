@@ -34,6 +34,10 @@ void Inspector::init() {
 }
 
 void Inspector::update() {
+    if (Pipeline::PipelineState::experimentState != Pipeline::RUNNING) {
+        return;
+    }
+
     for (auto& [k, v]: _cache) {
         if (v.play) {
             Pipeline::stepSim(k->agent_index); // step the agent
@@ -345,8 +349,11 @@ static void ShowAgentStatsUI(Pipeline::ActiveAgent* agent, Pipeline::VisualizedA
         ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Truncated:");
         ImGui::TableSetColumnIndex(1); ImGui::Text("%s", agent->env_truncated ? "Yes" : "No");
 
-        ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Last Move Reward:");
-        ImGui::TableSetColumnIndex(1); ImGui::Text("%.4f", agent->last_move_reward);
+        ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Reward (total):");
+        ImGui::TableSetColumnIndex(1); ImGui::Text("%.4f", agent->reward_total);
+
+        ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Reward (ep):");
+        ImGui::TableSetColumnIndex(1); ImGui::Text("%.4f", agent->reward_ep);
 
         ImGui::EndTable();
     }
@@ -382,13 +389,25 @@ static void ShowAgentStatsUI(Pipeline::ActiveAgent* agent, Pipeline::VisualizedA
         ImGui::EndTable();
     }
 
-    ImGui::SeparatorText("Action Logic");
-    if (ImGui::BeginTable("Action Logic", 2)) {
-        ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Last Taken Action:");
+    ImGui::SeparatorText("Last Action");
+    if (ImGui::BeginTable("Last Action", 2)) {
+        ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Action:");
         ImGui::TableSetColumnIndex(1); ImGui::Text("%zu", agent->next_action.load());
 
-        ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Steps To Take:");
-        ImGui::TableSetColumnIndex(1); ImGui::Text("%zu", agent->steps_to_take.load());
+        // ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Steps To Take:");
+        // ImGui::TableSetColumnIndex(1); ImGui::Text("%zu", agent->steps_to_take.load());
+
+        ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::Text("Reward:");
+        ImGui::TableSetColumnIndex(1); ImGui::Text("%.4f", agent->last_move_reward);
+
+        std::lock_guard<std::mutex> lock(agent->score_update_lock);
+        for (size_t i = 0; i < agent->last_move_scores.size(); ++i) {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s", Pipeline::PipelineConfig::pipelineMethods[i].name);
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Text("%.4f", agent->last_move_scores[i]);
+        }
 
         ImGui::EndTable();
     }

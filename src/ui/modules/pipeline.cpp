@@ -112,12 +112,12 @@ namespace Pipeline
         agent->reward_ep    = 0;
         agent->steps_rewards_total = {};
         agent->steps_rewards_ep    = {};
+        agent->last_move_reward      = 0;
 
         agent->steps_current_episode = 0;
         agent->total_episodes        = 0;
         agent->total_steps           = 0;
 
-        agent->last_move_reward      = 0;
         agent->env_terminated        = false;
         agent->env_truncated         = false;
 
@@ -150,6 +150,8 @@ namespace Pipeline
             agent->methods      .push_back(methodPtr);
             agent->scores_total .push_back(0);
             agent->scores_ep    .push_back(0);
+
+            agent->last_move_scores.push_back(0);
 
             agent->steps_scores_ep    .emplace_back();
             agent->steps_scores_total .emplace_back();
@@ -302,28 +304,37 @@ namespace Pipeline
                     method->onStepAfter(py::int_(action), std::get<1>(result), std::get<2>(result) || std::get<3>(result), std::get<4>(result));
                 }
 
-
                 // methods rewards
                 std::vector<float> methods_values;
-                for (int i = 0; i < agent->methods.size(); ++i) {
-                    auto value = agent->methods[i]->value(ops);
+                for (auto & method : agent->methods) {
+                    auto value = method->value(ops);
                     methods_values.push_back(value);
-                    agent->scores_total[i] += value;
-                    agent->scores_ep   [i] += value;
-                    agent->steps_scores_ep[i]  .scores.push_back(value);
-                    agent->steps_scores_total[i].scores.push_back(value);
                 }
 
                 {
                     // update agent analytics
                     std::lock_guard guard(agent->score_update_lock);
 
-                    // todo: add reward
 
                     agent->total_steps           += 1;
                     agent->steps_current_episode += 1;
                     agent->env_terminated = std::get<2>(result);
                     agent->env_truncated  = std::get<3>(result);
+
+                    try {
+                        const py::dict& reward_dict = std::get<1>(result);
+                        auto reward_array = reward_dict["reward"].cast<py::array>();
+                        float reward = *static_cast<float*>(reward_array.mutable_data());
+
+                        agent->reward_ep       += reward;
+                        agent->reward_total    += reward;
+                        agent->last_move_reward = reward;
+
+                        agent->steps_rewards_ep.scores.push_back(reward);
+                        agent->steps_rewards_total.scores.push_back(reward);
+                    } catch (...) {
+                        // failed to get reward
+                    }
 
                     for (int i = 0; i < agent->methods.size(); ++i) {
                         auto value = methods_values[i];
@@ -332,6 +343,8 @@ namespace Pipeline
                         agent->steps_scores_ep[i]  .scores.push_back(value);
                         agent->steps_scores_total[i].scores.push_back(value);
                     }
+
+                    agent->last_move_scores = methods_values;
                 }
             });
 
@@ -365,6 +378,7 @@ namespace Pipeline
             {
                 agent->scores_ep[i]         = 0;
                 agent->steps_scores_ep[i] = {};
+                agent->last_move_scores[i]  = 0;
             }
 
             agent->state = IDLE;
@@ -602,21 +616,22 @@ namespace Pipeline
             active->reward_ep = 0;
             active->steps_rewards_ep = {};
             active->steps_rewards_total = {};
+            active->last_move_reward = 0;
 
             active->steps_current_episode = 0;
             active->total_episodes = 0;
             active->total_steps = 0;
 
-            active->last_move_reward = 0;
             active->env_terminated = false;
             active->env_truncated = false;
 
             for (int i = 0; i < active->scores_ep.size(); i++)
             {
-                active->scores_ep[i] = 0;
-                active->scores_total[i] = 0;
+                active->scores_ep[i]            = 0;
+                active->scores_total[i]         = 0;
                 active->steps_scores_ep[i]    = {};
                 active->steps_scores_total[i] = {};
+                active->last_move_scores[i]     = 0;
             }
 
             active->state = IDLE;
@@ -762,13 +777,13 @@ namespace Pipeline
 
     void setRecipes(std::vector<PipelineGraph::ObjectRecipe> r)
     {
-        if (isExperimenting())
-        {
+        if (isExperimenting()) {
             Logger::warning("Cannot set recipes while an experiment is running.");
             return;
         }
 
-        // todo: memory leak here
+        // todo: Memory leak here
+        // todo: I saw that but I'll ignore it
 
         recipes.clear();
         envs.clear();
