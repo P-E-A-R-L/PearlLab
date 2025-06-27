@@ -34,6 +34,10 @@ void Inspector::init() {
 }
 
 void Inspector::update() {
+    if (Pipeline::PipelineState::experimentState != Pipeline::RUNNING) {
+        return;
+    }
+
     for (auto& [k, v]: _cache) {
         if (v.play) {
             Pipeline::stepSim(k->agent_index); // step the agent
