@@ -25,7 +25,7 @@ class DQN(nn.Module):
             nn.Linear(7*7*64, 512), nn.ReLU(),
             nn.Linear(512, n_actions)
         )
-        
+
         # Support both "net" and "network" prefixes
         if prefix == "network":
             self.network = layers
@@ -98,12 +98,13 @@ if __name__ == "__main__":
 
     explainer2.set(env)
     explainer2.prepare(agent_bad)
-    
+
     explainer3.set(env)
     explainer3.prepare(agent_good)
+
     explainer4.set(env)
     explainer4.prepare(agent_bad)
-    
+
     scores = [0, 0]
     scores_lime = [0, 0]
     agents = [agent_good, agent_bad]
@@ -131,4 +132,3 @@ if __name__ == "__main__":
 
     print(f"SHAP 5M Model: {float(scores[0])}     1K Model: {float(scores[1])}")
     print(f"LIME 5M Model: {float(scores_lime[0])}      1K Model: {float(scores_lime[1])}")
-

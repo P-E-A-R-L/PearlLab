@@ -119,9 +119,33 @@
         {
             "dst": 141,
             "src": 2
+        },
+        {
+            "dst": 160,
+            "src": 151
+        },
+        {
+            "dst": 152,
+            "src": 2
+        },
+        {
+            "dst": 153,
+            "src": 168
+        },
+        {
+            "dst": 155,
+            "src": 166
+        },
+        {
+            "dst": 154,
+            "src": 164
+        },
+        {
+            "dst": 156,
+            "src": 173
         }
     ],
-    "next_id": 150,
+    "next_id": 175,
     "nodes": [
         {
             "data": {
@@ -511,6 +535,92 @@
                 "value": "./py/models/models/AtariDQN.cleanrl_model"
             },
             "type": "PipelineGraph.Nodes.PrimitiveStringNode"
+        },
+        {
+            "data": {
+                "id": 150,
+                "inputs": [
+                    152,
+                    153,
+                    154,
+                    155,
+                    156,
+                    157,
+                    158
+                ],
+                "module": "StabilityExplainability.StabilityExplainability",
+                "outputs": [
+                    151
+                ],
+                "tag": "<tag>"
+            },
+            "type": "PipelineGraph.Nodes.PythonModuleNode"
+        },
+        {
+            "data": {
+                "id": 159,
+                "inputs": [
+                    160
+                ],
+                "outputs": [],
+                "tag": "StabilityExplainability"
+            },
+            "type": "PipelineGraph.Nodes.MethodAcceptorNode"
+        },
+        {
+            "data": {
+                "id": 163,
+                "inputs": [],
+                "outputs": [
+                    164
+                ],
+                "rangeEnd": -1.0,
+                "rangeStart": -1.0,
+                "tag": "<tag>",
+                "value": 0.009999999776482582
+            },
+            "type": "PipelineGraph.Nodes.PrimitiveFloatNode"
+        },
+        {
+            "data": {
+                "id": 165,
+                "inputs": [],
+                "outputs": [
+                    166
+                ],
+                "rangeEnd": -1,
+                "rangeStart": -1,
+                "tag": "<tag>",
+                "value": 20
+            },
+            "type": "PipelineGraph.Nodes.PrimitiveIntNode"
+        },
+        {
+            "data": {
+                "file": false,
+                "id": 167,
+                "inputs": [],
+                "outputs": [
+                    168
+                ],
+                "tag": "noise_type",
+                "value": "gaussian"
+            },
+            "type": "PipelineGraph.Nodes.PrimitiveStringNode"
+        },
+        {
+            "data": {
+                "id": 172,
+                "inputs": [],
+                "outputs": [
+                    173
+                ],
+                "rangeEnd": -1,
+                "rangeStart": -1,
+                "tag": "<tag>",
+                "value": 0
+            },
+            "type": "PipelineGraph.Nodes.PrimitiveIntNode"
         }
     ]
 }
