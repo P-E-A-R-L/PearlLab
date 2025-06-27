@@ -16,8 +16,6 @@ namespace Pipeline {
 
         this->visualizable = obj;
         this->visualizable->init_members();
-        this->m_lock       = new std::mutex();
-
 
         if (visualizable->supports(VisualizationMethod::RGB_ARRAY)) {
             // std::cout << "VisualizedObject::init::_init_rgb_array" << std::endl;
@@ -93,9 +91,9 @@ namespace Pipeline {
     }
 
     void VisualizedObject::update_tex() {
-        if (rgb_array_params != nullptr) {
-            std::lock_guard guard(*m_lock);
-            auto& [rgbData, width, height, channels, valid] = rgb_array_buffer;
+        if (rgb_array_params != nullptr && rgb_array_buffer.changed) {
+            std::lock_guard guard(lock_rgb);
+            auto& [rgbData, width, height, channels, valid, changed] = rgb_array_buffer;
             if (rgb_array == nullptr) {
                 rgb_array        = new GLTexture();
                 rgb_array_viewer = new ImageViewer(rgb_array->id(), {0, 0});
@@ -109,12 +107,13 @@ namespace Pipeline {
                 }
 
                 rgb_array_viewer->imageSize = ImVec2(rgb_array->width(), rgb_array->height());
+                changed = false;
             }
         }
 
-        if (gray_params != nullptr) {
-            std::lock_guard guard(*m_lock);
-            auto& [rgbData, width, height, channels, valid] = gray_buffer;
+        if (gray_params != nullptr && gray_buffer.changed) {
+            std::lock_guard guard(lock_gray);
+            auto& [rgbData, width, height, channels, valid, changed] = gray_buffer;
             if (gray == nullptr) {
                 gray        = new GLTexture();
                 gray_viewer = new ImageViewer(gray->id(), {0, 0});
@@ -128,12 +127,13 @@ namespace Pipeline {
                 }
 
                 gray_viewer->imageSize = ImVec2(gray->width(), gray->height());
+                changed = false;
             }
         }
 
-        if (heat_map_params != nullptr) {
-            std::lock_guard guard(*m_lock);
-            auto& [rgbData, width, height, channels, valid] = heat_map_buffer;
+        if (heat_map_params != nullptr && heat_map_buffer.changed) {
+            std::lock_guard guard(lock_heat_map);
+            auto& [rgbData, width, height, channels, valid, changed] = heat_map_buffer;
             if (heat_map == nullptr) {
                 heat_map        = new GLTexture();
                 heat_map_viewer = new ImageViewer(heat_map->id(), {0, 0});
@@ -147,6 +147,7 @@ namespace Pipeline {
                 }
 
                 heat_map_viewer->imageSize = ImVec2(heat_map->width(), heat_map->height());
+                changed = false;
             }
         }
     }
@@ -180,9 +181,6 @@ namespace Pipeline {
         heat_map_params = nullptr;
 
         features_params = nullptr;
-
-        delete m_lock;
-        m_lock = nullptr;
     }
 
     void VisualizedObject::_init_rgb_array() {
@@ -238,12 +236,13 @@ namespace Pipeline {
                     int channels = arr.shape(2);
                     if (channels == 3 || channels == 4) {
 
-                        std::lock_guard guard(*m_lock);
+                        std::lock_guard guard(lock_rgb);
                         std::vector<unsigned char>& rgbData = rgb_array_buffer.data;
                         rgb_array_buffer.width    = width;
                         rgb_array_buffer.height   = height;
                         rgb_array_buffer.channels = channels;
                         rgb_array_buffer.valid    = true;
+                        rgb_array_buffer.changed  = true;
                         // std::cout << "rgbData.resize(width * height * channels)" << std::endl;
                         rgbData.resize(width * height * channels);
 
@@ -321,12 +320,13 @@ namespace Pipeline {
                     int height = arr.shape(0);
                     int channels = 1;
 
-                    std::lock_guard guard(*m_lock);
+                    std::lock_guard guard(lock_gray);
                     std::vector<unsigned char>& rgbData = gray_buffer.data;
                     gray_buffer.width    = width;
                     gray_buffer.height   = height;
                     gray_buffer.channels = 3;
                     gray_buffer.valid    = true;
+                    gray_buffer.changed  = true;
                     rgbData.resize(width * height * 3);
 
                     auto data_ptr = arr.data();
@@ -382,12 +382,13 @@ namespace Pipeline {
                     int height = arr.shape(0);
                     int channels = 1;
 
-                    std::lock_guard guard(*m_lock);
+                    std::lock_guard guard(lock_heat_map);
                     std::vector<unsigned char>& rgbData = heat_map_buffer.data;
                     heat_map_buffer.width    = width;
                     heat_map_buffer.height   = height;
                     heat_map_buffer.channels = 3;
                     heat_map_buffer.valid    = true;
+                    heat_map_buffer.changed  = true;
                     rgbData.resize(width * height * 3);
 
                     auto data_ptr = arr.data();
@@ -451,7 +452,7 @@ namespace Pipeline {
 
                 py::dict dict = data->cast<py::dict>();
                 {
-                    std::lock_guard guard(*m_lock);
+                    std::lock_guard guard(lock_features);
                     features.clear();
                     for (const auto item : dict) {
                         py::str key = py::str(item.first);
@@ -496,7 +497,7 @@ namespace Pipeline {
             if (data.has_value()) {
                 py::dict dict = data->cast<py::dict>();
                 {
-                    std::lock_guard guard(*m_lock);
+                    std::lock_guard guard(lock_features);
                     bar_chart.clear();
                     for (const auto item : dict) {
                         py::str key = py::str(item.first);

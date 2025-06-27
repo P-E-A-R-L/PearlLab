@@ -94,11 +94,12 @@ namespace Pipeline
         int height;
         int channels;
         bool valid = true;
+        bool changed = false;
     };
 
     struct VisualizedObject
     {
-        PyVisualizable *visualizable;
+        PyVisualizable *visualizable{};
 
         GLTexture *rgb_array                    = nullptr;
         GLTexture *gray                         = nullptr;
@@ -121,6 +122,12 @@ namespace Pipeline
         PyLiveObject *features_params       = nullptr;
         PyLiveObject *bar_chart_params      = nullptr;
 
+        std::mutex lock_rgb;
+        std::mutex lock_gray;
+        std::mutex lock_heat_map;
+        std::mutex lock_features;
+        std::mutex lock_bar_chart;
+
         void init(PyVisualizable *);
         [[nodiscard]] bool supports(VisualizationMethod method) const;
 
@@ -130,9 +137,13 @@ namespace Pipeline
         // update textures only [ui thread]
         void update_tex();
 
-        std::mutex* m_lock = nullptr;
-
         ~VisualizedObject();
+
+        // delete copy constructor (for mutexes)
+        VisualizedObject(const VisualizedObject& obj) = delete;
+
+        // enable only the empty constructor
+        VisualizedObject() = default;
 
     private:
         void _init_rgb_array();
@@ -228,7 +239,7 @@ namespace Pipeline
         };
 
         // fixme: maybe change this to atomic one day ? idk ..
-        extern StepPolicy stepPolicy;
+        extern StepPolicy  stepPolicy;
         extern ScorePolicy scorePolicy;
 
         extern std::vector<ActiveAgent*> activeAgents;

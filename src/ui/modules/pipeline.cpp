@@ -279,6 +279,7 @@ namespace Pipeline
 
         _update_agents_state_step: {
             if (agent->env_truncated || agent->env_terminated) {
+                agent->state = IDLE;
                 return;
             }
 
@@ -301,22 +302,31 @@ namespace Pipeline
                     method->onStepAfter(py::int_(action), std::get<1>(result), std::get<2>(result) || std::get<3>(result), std::get<4>(result));
                 }
 
-                // update agent analytics
+
+                // methods rewards
+                std::vector<float> methods_values;
+                for (int i = 0; i < agent->methods.size(); ++i) {
+                    auto value = agent->methods[i]->value(ops);
+                    methods_values.push_back(value);
+                    agent->scores_total[i] += value;
+                    agent->scores_ep   [i] += value;
+                    agent->steps_scores_ep[i]  .scores.push_back(value);
+                    agent->steps_scores_total[i].scores.push_back(value);
+                }
 
                 {
+                    // update agent analytics
                     std::lock_guard guard(agent->score_update_lock);
 
                     // todo: add reward
 
-                    // steps
                     agent->total_steps           += 1;
                     agent->steps_current_episode += 1;
                     agent->env_terminated = std::get<2>(result);
                     agent->env_truncated  = std::get<3>(result);
 
-                    // methods rewards
                     for (int i = 0; i < agent->methods.size(); ++i) {
-                        auto value = agent->methods[i]->value(ops);
+                        auto value = methods_values[i];
                         agent->scores_total[i] += value;
                         agent->scores_ep   [i] += value;
                         agent->steps_scores_ep[i]  .scores.push_back(value);

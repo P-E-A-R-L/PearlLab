@@ -38,8 +38,6 @@ static void render_visualizable(Pipeline::VisualizedObject *obj, const std::stri
     if (ImGui::BeginTabBar("##vis")) {
         if (obj->supports(VisualizationMethod::RGB_ARRAY) && ImGui::BeginTabItem("RGB")) {
             {
-                std::lock_guard guard(*obj->m_lock);
-                auto obs = obj->rgb_array;
                 obj->rgb_array_viewer->Render("##RGBArrayView");
             }
             ImGui::EndTabItem();
@@ -47,7 +45,6 @@ static void render_visualizable(Pipeline::VisualizedObject *obj, const std::stri
 
         if (obj->supports(VisualizationMethod::GRAY_SCALE) && ImGui::BeginTabItem("Gray")) {
             {
-                std::lock_guard guard(*obj->m_lock);
                 obj->gray_viewer->Render("##GrayView");
             }
 
@@ -56,7 +53,6 @@ static void render_visualizable(Pipeline::VisualizedObject *obj, const std::stri
 
         if (obj->supports(VisualizationMethod::HEAT_MAP) && ImGui::BeginTabItem("Heat Map")) {
             {
-                std::lock_guard guard(*obj->m_lock);
                 obj->heat_map_viewer->Render("##HeatMapView");
             }
 
@@ -67,7 +63,7 @@ static void render_visualizable(Pipeline::VisualizedObject *obj, const std::stri
             std::map<std::string, std::string> obs;
 
             {
-                std::lock_guard guard(*obj->m_lock);
+                std::lock_guard guard(obj->lock_features);
                 obs = obj->features;
             }
 
@@ -97,7 +93,7 @@ static void render_visualizable(Pipeline::VisualizedObject *obj, const std::stri
 
             std::map<std::string, float> obs;
             {
-                std::lock_guard guard(*obj->m_lock);
+                std::lock_guard guard(obj->lock_bar_chart);
                 obs = obj->bar_chart;
             }
 
