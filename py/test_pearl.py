@@ -14,23 +14,29 @@ from pearl.methods.ShapExplainability import ShapExplainability
 from pearl.methods.LimeExplainability import LimeExplainability
 from visual import VisualizationMethod
 
-
 class DQN(nn.Module):
-    def __init__(self, n_actions: int):
+    def __init__(self, n_actions: int, prefix="net"):
         super().__init__()
-        self.net = nn.Sequential(
+        layers = nn.Sequential(
             nn.Conv2d(4, 32, kernel_size=8, stride=4), nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2),      nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1),      nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2), nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1), nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(7*7*64, 512),                          nn.ReLU(),
+            nn.Linear(7*7*64, 512), nn.ReLU(),
             nn.Linear(512, n_actions)
         )
+        
+        # Support both "net" and "network" prefixes
+        if prefix == "network":
+            self.network = layers
+        else:
+            self.net = layers
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (N, H, W, C) -> (N, C, H, W)
-        # print(x.shape)
-        return self.net(x)
+        try:
+            return self.net(x)
+        except AttributeError:
+            return self.network(x)
 
 def preprocess(obs):
     gray = cv2.cvtColor(obs, cv2.COLOR_RGB2GRAY)
@@ -102,7 +108,7 @@ if __name__ == "__main__":
     scores_lime = [0, 0]
     agents = [agent_good, agent_bad]
 
-    for i in tqdm(range(2000)):  # max 2000 steps for now
+    for i in tqdm(range(10)):  # max 2000 steps for now
         obs = env.get_observations()
 
         rgb_image = env.getVisualization(VisualizationMethod.RGB_ARRAY, None)
@@ -124,5 +130,5 @@ if __name__ == "__main__":
             break
 
     print(f"SHAP 5M Model: {float(scores[0])}     1K Model: {float(scores[1])}")
-    print(f"LIME 5M Model: {float(scores_lime[0])}     LIME 1K Model: {float(scores_lime[1])}")
+    print(f"LIME 5M Model: {float(scores_lime[0])}      1K Model: {float(scores_lime[1])}")
 

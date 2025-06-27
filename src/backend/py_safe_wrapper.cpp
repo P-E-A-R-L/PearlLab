@@ -13,8 +13,8 @@ bool SafeWrapper::execute(const std::function<void()> &f){
         // Logger::error(std::format("[Python]: {}", e.what()));
         Logger::error("[Python]: " + std::string(e.what()));
         try {
-            py::print(e.trace());
-        } catch (...) { // for the love of god, sometimes it crashes and idk how ...
+            //py::print(e.trace());
+        } catch (...) { 
         }
     } catch (const std::exception &e) {
         // Logger::error(std::format("[Runtime]: {}", e.what()));

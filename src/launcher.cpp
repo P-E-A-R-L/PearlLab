@@ -17,9 +17,9 @@
 #include "ui/widgets/image_viewer.hpp"
 
 namespace fs = std::filesystem;
-static bool _run_application         = false;
+static bool _run_application         = true;
 static bool _application_initialized = false;
-static std::string project_path             = "";
+static std::string project_path = "./projects/space_invaders";
 
 bool OpenProject(const std::string& folderPath) {
     if (!fs::exists(folderPath)) {

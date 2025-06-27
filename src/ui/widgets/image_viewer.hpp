@@ -22,7 +22,7 @@ public:
 
     ImTextureID textureId;
     ImVec2 imageSize;
-    ResizeMode resizeMode = ResizeMode::FIT_WIDTH;
+    ResizeMode resizeMode = ResizeMode::FIT_HEIGHT;
     float zoom = 1.0f;
 
     ImageViewer(ImTextureID texId, const ImVec2& imgSize);

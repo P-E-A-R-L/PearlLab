@@ -1,28 +1,23 @@
 from typing import Any, Dict
-
 import numpy as np
 import shap
 import torch
-
+from skimage.color import gray2rgb
 from pearl.agent import RLAgent
 from pearl.env import RLEnvironment
 from pearl.mask import Mask
 from pearl.method import ExplainabilityMethod
-
 from annotations import Param
+from visual import VisualizationMethod
 
 # A little hack to fix the issue of shap not being able to handle Flatten layer
 from shap.explainers._deep import deep_pytorch
-
-from visual import VisualizationMethod
-
 deep_pytorch.op_handler['Flatten'] = deep_pytorch.passthrough
 
 class ShapVisualizationParams:
     action: Param(int) = 0
 
 class ShapExplainability(ExplainabilityMethod):
-
     def __init__(self, device, mask: Mask):
         super().__init__()
         self.device = device
@@ -31,6 +26,7 @@ class ShapExplainability(ExplainabilityMethod):
         self.mask = mask
         self.agent = None
         self.last_explain = None
+        self.last_obs = None
 
     def set(self, env: RLEnvironment):
         super().set(env)
@@ -42,8 +38,7 @@ class ShapExplainability(ExplainabilityMethod):
         self.agent = agent
 
     def onStep(self, action: Any):
-        # nothing for shap
-        pass
+        self.last_action = action
 
     def onStepAfter(self, action: Any, reward: Dict[str, np.ndarray], done: bool, info: dict):
         # nothing for shap
@@ -52,9 +47,14 @@ class ShapExplainability(ExplainabilityMethod):
     def explain(self, obs) -> np.ndarray | Any:
         if self.explainer is None:
             raise ValueError("Explainer not set. Please call prepare() first.")
-
+        
         obs_tensor = torch.as_tensor(obs, dtype=torch.float, device=self.device)
-        return self.explainer.shap_values(obs_tensor, check_additivity=False) # Fixme: check_additivity should be true .. but I set it to false for now
+        shap_values = self.explainer.shap_values(obs_tensor, check_additivity=False)
+        
+        # stored for visualization
+        self.last_obs = obs
+        self.last_explain = shap_values
+        return shap_values
 
     def value(self, obs) -> float:
         explain = self.explain(obs)
@@ -62,35 +62,89 @@ class ShapExplainability(ExplainabilityMethod):
         self.mask.update(obs)
         scores = self.mask.compute(explain)
         action = np.argmax(self.agent.predict(obs_tensor))
-        self.last_explain = explain
         return scores[action]
 
     def supports(self, m: VisualizationMethod) -> bool:
         if not isinstance(m, VisualizationMethod):
             m = VisualizationMethod(m)
-
-        return m == VisualizationMethod.HEAT_MAP
+        return m == VisualizationMethod.RGB_ARRAY
 
     def getVisualizationParamsType(self, m: VisualizationMethod) -> type | None:
         if not isinstance(m, VisualizationMethod):
             m = VisualizationMethod(m)
-
-        if m == VisualizationMethod.HEAT_MAP:
+        if m == VisualizationMethod.RGB_ARRAY:
             return ShapVisualizationParams
         return None
 
     def getVisualization(self, m: VisualizationMethod, params: Any = None) -> np.ndarray | dict | None:
-        if self.last_explain is None:
-            return np.zeros((84, 84), dtype=np.float32)
-
+        if self.last_explain is None or self.last_obs is None:
+            return np.zeros((84, 84, 3), dtype=np.float32)
+        
         if not isinstance(m, VisualizationMethod):
             m = VisualizationMethod(m)
+        
+        if m == VisualizationMethod.RGB_ARRAY:
+            # Get the last frame from observations
+            if self.last_obs.ndim == 4:
+                last_obs = self.last_obs[-1]
+            elif self.last_obs.ndim == 3:
+                last_obs = self.last_obs
+            else:
+                raise ValueError(f"Unexpected observation shape: {self.last_obs.shape}")
             
-        if m == VisualizationMethod.HEAT_MAP:
-            idx = 0
-            if params is not None and isinstance(params, ShapVisualizationParams):
-                idx = params.action
-            if idx < 0: idx = 0
-            idx = idx % len(self.last_explain)
-            return self.last_explain[..., idx].mean(axis=(0, 1))
+            # Extract the last frame (most recent grayscale frame)
+            if last_obs.ndim == 3:
+                last_frame = last_obs[-1]  # Get the most recent frame
+            elif last_obs.ndim == 2:
+                last_frame = last_obs
+            else:
+                raise ValueError(f"Unexpected frame shape: {last_obs.shape}")
+
+            # Get SHAP values for the specific action and last frame
+            if isinstance(self.last_explain, list):
+                # Multiple outputs (one per action)
+                shap_vals = self.last_explain[self.last_action]
+            else:
+                # Single output, select the action dimension
+                shap_vals = self.last_explain[..., self.last_action]
+            
+            # Extract heatmap for the last frame
+            if shap_vals.ndim == 4:  # (batch, channels, height, width)
+                heatmap = shap_vals[0, -1, :, :]  # Last channel (most recent frame)
+            elif shap_vals.ndim == 3:  # (channels, height, width)
+                heatmap = shap_vals[-1, :, :]  # Last channel
+            elif shap_vals.ndim == 2:  # (height, width)
+                heatmap = shap_vals
+            else:
+                # Fallback: average across all dimensions except spatial
+                heatmap = np.mean(shap_vals, axis=tuple(range(shap_vals.ndim - 2)))
+
+            # Convert grayscale frame to RGB
+            obs_img = gray2rgb(last_frame)
+            obs_img = obs_img / 255.0 if obs_img.max() > 1.0 else obs_img
+
+            # get the higher magnitude "min or max"
+            scale = np.max(np.abs(heatmap))
+            
+            # Normalize heatmap
+            heatmap_norm = (heatmap + scale) / (2 * scale + 1e-8) # Normalize to [0, 1]
+            
+            # Create masks for positive (red) and negative (blue) attributions
+            red_mask = heatmap_norm >= 0.6
+            blue_mask = heatmap_norm <= 0.4
+            important = red_mask | blue_mask
+
+            # Create colored overlay
+            colored = np.zeros_like(obs_img)
+            colored[red_mask, 0] = heatmap_norm[red_mask]  # Red for positive
+            colored[blue_mask, 2] = 1 - heatmap_norm[blue_mask]  # Blue for negative
+
+            # Create alpha channel for blending
+            alpha = np.zeros((obs_img.shape[0], obs_img.shape[1], 1), dtype=np.float32)
+            alpha[important] = 0.5
+
+            # Blend the original image with the colored heatmap
+            blended = (1 - alpha) * obs_img + alpha * colored
+            return np.clip(blended, 0, 1)
+        
         return None

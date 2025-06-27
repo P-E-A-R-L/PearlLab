@@ -118,7 +118,7 @@ void LabLayout::render()
 {
 
     ///
-    /// MAIN MANU
+    /// MAIN MENU
     ///
     static bool open_modules_debugger = false;
     static bool show_metrics = false;

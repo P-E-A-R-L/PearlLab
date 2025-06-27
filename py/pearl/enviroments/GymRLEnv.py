@@ -108,7 +108,7 @@ class GymRLEnv(RLEnvironment):
         truncated = False
         for _ in range(self.action_repeat):
             obs, reward, term, trunc, info = self.env.step(action)
-            total_reward += reward if isinstance(reward, float) else reward[0]
+            total_reward += reward if isinstance(reward, float) or isinstance(reward, int) else reward[0]
             terminated = terminated or (term if isinstance(term, bool) else term[0])
             truncated = truncated or (trunc if isinstance(trunc, bool) else trunc[0])
         raw = obs if not isinstance(obs, tuple) else obs[0]

@@ -14,10 +14,10 @@ from pearl.custom_methods.customLimeImage import CustomLimeImageExplainer
 class LimeVisualizationParams:
     action: Param(int) = 0
 
-
 class LimeExplainability(ExplainabilityMethod):
     """
     LIME explainability aligned with the new ShapExplainability interface.
+    Uses only the most recent frame from a stack of grayscale frames.
     """
     def __init__(self, device: torch.device, mask: Mask):
         super().__init__()
@@ -34,23 +34,36 @@ class LimeExplainability(ExplainabilityMethod):
     def prepare(self, agent: RLAgent):
         self.agent = agent
 
-    def onStep(self, action: Any): pass
-    def onStepAfter(self, action: Any, reward: dict, done: bool, info: dict): pass
+    def onStep(self, action: Any):
+        self.last_action = action
+
+    def onStepAfter(self, action: Any, reward: dict, done: bool, info: dict):
+        pass
 
     def explain(self, obs: np.ndarray) -> Any:
         if self.agent is None:
             raise ValueError("Call prepare() before explain().")
 
         self.obs = obs
-        frame = obs.squeeze()  # (C, H, W)
-        img = np.transpose(frame, (1, 2, 0))
-        if img.shape[2] != 3:
-            img = img[:, :, :3] if img.shape[2] > 3 else gray2rgb(img[:, :, 0])
+        frame = obs.squeeze()  # (C, H, W) or (H, W)
+        # Determine channel count for Q-net input
+        orig_C = frame.shape[0] if frame.ndim == 3 else 1
+        # Use only the most recent grayscale frame
+        if frame.ndim == 3:
+            gray_frame = frame[-1, :, :]
+        elif frame.ndim == 2:
+            gray_frame = frame
+        else:
+            raise ValueError(f"Unexpected frame shape: {frame.shape}")
+        # Convert to RGB for LIME
+        img = gray2rgb(gray_frame)
 
         def batch_predict(images: np.ndarray) -> np.ndarray:
             gr = np.mean(images, axis=3, keepdims=True).astype(np.float32) / 255.0
-            stacked = np.repeat(gr, frame.shape[0], axis=3)
-            tensor = torch.tensor(np.transpose(stacked, (0, 3, 1, 2)), dtype=torch.float32).to(self.device)
+            stacked = np.repeat(gr, orig_C, axis=3)
+            tensor = torch.tensor(
+                np.transpose(stacked, (0, 3, 1, 2)), dtype=torch.float32
+            ).to(self.device)
             with torch.no_grad():
                 out = self.agent.get_q_net()(tensor)
             return out.cpu().numpy()
@@ -64,6 +77,7 @@ class LimeExplainability(ExplainabilityMethod):
         )
 
         self.last_explain = exp
+        self.last_obs = obs
         return exp
 
     def value(self, obs: np.ndarray) -> float:
@@ -75,8 +89,7 @@ class LimeExplainability(ExplainabilityMethod):
         action = int(torch.argmax(q))
 
         segs = exp.segments
-        A = self.mask.action_space
-        C, H, W = obs.shape[1:]
+        A, C, H, W = self.mask.action_space, *obs.shape[1:]
 
         maps = np.zeros((A, H, W), dtype=float)
         for lbl, pairs in exp.local_exp.items():
@@ -84,44 +97,63 @@ class LimeExplainability(ExplainabilityMethod):
                 maps[lbl, segs == seg_id] = wt
 
         if segs.shape != (H, W):
-            maps = np.stack([resize(m, (H, W), preserve_range=True, anti_aliasing=True) for m in maps], axis=0)
+            maps = np.stack([
+                resize(m, (H, W), preserve_range=True, anti_aliasing=True)
+                for m in maps
+            ], axis=0)
 
         maps_hw_a = np.transpose(maps, (1, 2, 0))
-        attributions = np.broadcast_to(maps_hw_a[None, None, :, :, :], (1, C, H, W, A)).astype(np.float32)
-        attributions = np.abs(attributions)
-        attributions = attributions / np.sum(attributions, axis=(1, 2, 3), keepdims=True)
+        attributions = np.abs(maps_hw_a[None, None, :, :, :].astype(np.float32))
+        attributions /= np.sum(attributions, axis=(1, 2, 3), keepdims=True)
 
         return float(self.mask.compute(attributions)[action])
 
     def supports(self, m: VisualizationMethod) -> bool:
         if not isinstance(m, VisualizationMethod):
             m = VisualizationMethod(m)
-        return m == VisualizationMethod.HEAT_MAP
+        return m == VisualizationMethod.RGB_ARRAY
 
     def getVisualizationParamsType(self, m: VisualizationMethod) -> type | None:
         if not isinstance(m, VisualizationMethod):
             m = VisualizationMethod(m)
-        if m == VisualizationMethod.HEAT_MAP:
-            return LimeVisualizationParams
-        return None
+        return LimeVisualizationParams if m == VisualizationMethod.RGB_ARRAY else None
 
     def getVisualization(self, m: VisualizationMethod, params: Any = None) -> np.ndarray | dict | None:
-        if self.last_explain is None:
-            return np.zeros((336, 336), dtype=np.float32)
+        if self.last_explain is None or self.last_obs is None:
+            return np.zeros((84, 84, 3), dtype=np.float32)
         if not isinstance(m, VisualizationMethod):
             m = VisualizationMethod(m)
-        if m == VisualizationMethod.HEAT_MAP:
-            idx = 0
-            if params is not None and isinstance(params, LimeVisualizationParams):
-                idx = params.action
-            if idx < 0: idx = 0
-            idx = idx % self.mask.action_space
-            
-
+        if m == VisualizationMethod.RGB_ARRAY:
             segs = self.last_explain.segments
             heatmap = np.zeros(segs.shape, dtype=np.float32)
-            for segment, importance in self.last_explain.local_exp[idx]:
+            for segment, importance in self.last_explain.local_exp[self.last_action]:
                 heatmap[segs == segment] = importance
-                
-            return heatmap
+
+            if self.last_obs.ndim == 4:
+                self.last_obs = self.last_obs[-1]
+            if self.last_obs.ndim == 3:
+                last_frame = self.last_obs[-1]
+            elif self.last_obs.ndim == 2:
+                last_frame = self.last_obs
+            else:
+                raise ValueError(f"Unexpected observation shape: {self.last_obs.shape}")
+
+            obs_img = gray2rgb(last_frame)
+            obs_img = obs_img / 255.0 if obs_img.max() > 1.0 else obs_img
+
+            scale = np.max(np.abs(heatmap))
+            heatmap_norm = (heatmap + scale) / (2 * scale + 1e-8)
+            red_mask = heatmap_norm >= 0.6
+            blue_mask = heatmap_norm <= 0.4
+            important = red_mask | blue_mask
+
+            colored = np.zeros_like(obs_img)
+            colored[red_mask, 0] = heatmap_norm[red_mask]
+            colored[blue_mask, 2] = 1 - heatmap_norm[blue_mask]
+
+            alpha = np.zeros((obs_img.shape[0], obs_img.shape[1], 1), dtype=np.float32)
+            alpha[important] = 0.5
+
+            blended = (1 - alpha) * obs_img + alpha * colored
+            return np.clip(blended, 0, 1)
         return None

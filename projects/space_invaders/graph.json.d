@@ -91,9 +91,37 @@
         {
             "dst": 32,
             "src": 123
+        },
+        {
+            "dst": 133858913696640,
+            "src": 127
+        },
+        {
+            "dst": 134,
+            "src": 130
+        },
+        {
+            "dst": 133,
+            "src": 67
+        },
+        {
+            "dst": 143,
+            "src": 138
+        },
+        {
+            "dst": 140,
+            "src": 132
+        },
+        {
+            "dst": 139,
+            "src": 147
+        },
+        {
+            "dst": 141,
+            "src": 2
         }
     ],
-    "next_id": 126,
+    "next_id": 150,
     "nodes": [
         {
             "data": {
@@ -297,7 +325,8 @@
             "data": {
                 "id": 68,
                 "inputs": [
-                    70
+                    70,
+                    133858913696640
                 ],
                 "module": "test_pearl.DQN",
                 "outputs": [
@@ -391,7 +420,7 @@
             "data": {
                 "id": 122,
                 "inputs": [
-                    124
+                    73
                 ],
                 "module": "test_pearl.preprocess",
                 "outputs": [
@@ -401,6 +430,87 @@
                 "tag": "<tag>"
             },
             "type": "PipelineGraph.Nodes.PythonFunctionNode"
+        },
+        {
+            "data": {
+                "file": false,
+                "id": 126,
+                "inputs": [],
+                "outputs": [
+                    127
+                ],
+                "tag": "<tag>",
+                "value": "net"
+            },
+            "type": "PipelineGraph.Nodes.PrimitiveStringNode"
+        },
+        {
+            "data": {
+                "file": false,
+                "id": 129,
+                "inputs": [],
+                "outputs": [
+                    130
+                ],
+                "tag": "<tag>",
+                "value": "network"
+            },
+            "type": "PipelineGraph.Nodes.PrimitiveStringNode"
+        },
+        {
+            "data": {
+                "id": 131,
+                "inputs": [
+                    133,
+                    134
+                ],
+                "module": "test_pearl.DQN",
+                "outputs": [
+                    132
+                ],
+                "tag": "<tag>"
+            },
+            "type": "PipelineGraph.Nodes.PythonModuleNode"
+        },
+        {
+            "data": {
+                "id": 137,
+                "inputs": [
+                    139,
+                    140,
+                    141
+                ],
+                "module": "pearl.agents.TourchDQN.TorchDQN",
+                "outputs": [
+                    138
+                ],
+                "tag": "<tag>"
+            },
+            "type": "PipelineGraph.Nodes.PythonModuleNode"
+        },
+        {
+            "data": {
+                "id": 142,
+                "inputs": [
+                    143
+                ],
+                "outputs": [],
+                "tag": "Agent47"
+            },
+            "type": "PipelineGraph.Nodes.AgentAcceptorNode"
+        },
+        {
+            "data": {
+                "file": false,
+                "id": 146,
+                "inputs": [],
+                "outputs": [
+                    147
+                ],
+                "tag": "<tag>",
+                "value": "./py/models/models/AtariDQN.cleanrl_model"
+            },
+            "type": "PipelineGraph.Nodes.PrimitiveStringNode"
         }
     ]
 }
