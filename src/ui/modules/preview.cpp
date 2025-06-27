@@ -433,8 +433,8 @@ static void render_preview() {
         for (int i = 0; i < Pipeline::PipelineConfig::pipelineMethods.size(); i++)
         {
             ImGui::PushID(i);
-            if (ImGui::BeginTabItem(Pipeline::PipelineConfig::pipelineMethods[i].name))
-            {
+            if (ImGui::BeginTabItem(Pipeline::PipelineConfig::pipelineMethods[i].name)) {
+
                 tab_wrapper([&](Pipeline::ActiveAgent *agent, float width, int index){
                     ImGui::BeginChild(agent->name, ImVec2(width, 0), true);
                     FontManager::pushFont("Bold");
@@ -452,7 +452,9 @@ static void render_preview() {
                         ImGui::Text("<Episode completed>");
                     }
 
-                    ImGui::EndChild(); });
+                    ImGui::EndChild();
+                });
+
                 ImGui::EndTabItem();
             }
             ImGui::PopID();

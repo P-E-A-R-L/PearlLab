@@ -26,6 +26,7 @@ namespace LabLayout
 
     ProjectManager::ProjectDetails project_details;
 
+    std::unordered_map<std::string, ImGuiID> IDs;
 }
 
 extern GLFWwindow *AppWindow;
