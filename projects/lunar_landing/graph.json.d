@@ -57,22 +57,6 @@
             "src": 68
         },
         {
-            "dst": 79,
-            "src": 74
-        },
-        {
-            "dst": 80,
-            "src": 70
-        },
-        {
-            "dst": 81,
-            "src": 2
-        },
-        {
-            "dst": 88,
-            "src": 78
-        },
-        {
             "dst": 84,
             "src": 76
         },
@@ -346,53 +330,13 @@
         {
             "data": {
                 "file": false,
-                "id": 73,
-                "inputs": [],
-                "outputs": [
-                    74
-                ],
-                "tag": "<tag>",
-                "value": "py/experiments/lunar_lander/lunar_lander_reinforce_2000.pth"
-            },
-            "type": "PipelineGraph.Nodes.PrimitiveStringNode"
-        },
-        {
-            "data": {
-                "id": 77,
-                "inputs": [
-                    79,
-                    80,
-                    81
-                ],
-                "module": "pearl.agents.TorchPolicy.TorchPolicyAgent",
-                "outputs": [
-                    78
-                ],
-                "tag": "<tag>"
-            },
-            "type": "PipelineGraph.Nodes.PythonModuleNode"
-        },
-        {
-            "data": {
-                "id": 87,
-                "inputs": [
-                    88
-                ],
-                "outputs": [],
-                "tag": "REINFORCE Agent (2000)"
-            },
-            "type": "PipelineGraph.Nodes.AgentAcceptorNode"
-        },
-        {
-            "data": {
-                "file": false,
                 "id": 75,
                 "inputs": [],
                 "outputs": [
                     76
                 ],
                 "tag": "<tag>",
-                "value": "py/experiments/lunar_lander/lunar_lander_reinforce_500.pth"
+                "value": "py/experiments/lunar_lander/lunar_lander_2000.pth"
             },
             "type": "PipelineGraph.Nodes.PrimitiveStringNode"
         },
@@ -419,7 +363,7 @@
                     90
                 ],
                 "outputs": [],
-                "tag": "REINFORCE Agent (500)"
+                "tag": "Agent (2000)"
             },
             "type": "PipelineGraph.Nodes.AgentAcceptorNode"
         },
@@ -432,7 +376,7 @@
                     106
                 ],
                 "tag": "<tag>",
-                "value": "py/experiments/lunar_lander/dqn_lunar_lander_agent48.pth"
+                "value": "py/experiments/lunar_lander/lunar_lander_pretrained_600.pth"
             },
             "type": "PipelineGraph.Nodes.PrimitiveStringNode"
         },
@@ -474,7 +418,7 @@
                     122
                 ],
                 "outputs": [],
-                "tag": "Agent48"
+                "tag": "Pretrained Agent (600)"
             },
             "type": "PipelineGraph.Nodes.AgentAcceptorNode"
         },

@@ -78,10 +78,10 @@ if __name__ == "__main__":
 
     # Setup agents
     policy_net_good = REINFORCE_Net(input_dim, n_actions)
-    agent_good = TorchPolicyAgent('experiments/lunar_lander/lunar_lander_reinforce_2000.pth', policy_net_good, device)
+    agent_good = TorchPolicyAgent('experiments/lunar_lander/lunar_lander_pretrained_600.pth', policy_net_good, device)
     
     policy_net_bad = REINFORCE_Net(input_dim, n_actions)
-    agent_bad = TorchPolicyAgent('experiments/lunar_lander/lunar_lander_reinforce_10.pth', policy_net_bad, device)
+    agent_bad = TorchPolicyAgent('experiments/lunar_lander/lunar_lander_2000.pth', policy_net_bad, device)
     
     agents = [agent_good, agent_bad]
     

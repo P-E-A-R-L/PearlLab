@@ -46,7 +46,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load trained agent
 agent = TorchDQN(
-    "dqn_lunar_lander_agent48.pth",
+    "lunar_lander_pretrained_judge.pth",
     DQN(obs_dim, n_actions),
     device
 )
@@ -102,22 +102,9 @@ for a in range(n_actions):
     if counts[a] > 0:
         averaged_vectors[a] = accumulated_vectors[a] / counts[a]
 
-# Print output
 print("\n--- Averaged LIME Explanation Vectors (one per action) ---")
 for a in range(n_actions):
     print(f"Action {a}: {averaged_vectors[a]}")
 
 if __name__ == "__main__":
     pass
-
-
-# --- Averaged LIME Explanation Vectors (one per action) ---
-# Action 0: [0.09308317, 0.09749602, 0.23993654, 0.33300868, 0.09240652, 0.11172584, 0.01716148, 0.01518175]
-# Action 1: [0.10035031, 0.0978269,  0.30228677, 0.22909508, 0.09797481, 0.15964805, 0.00675054, 0.00606754]
-# Action 2: [0.09868395, 0.09582568, 0.22472089, 0.35638494, 0.0984113,  0.10176454, 0.01516911, 0.00903959]
-# Action 3: [0.10791439, 0.10658454, 0.28125881, 0.21808978, 0.10598366, 0.16484477, 0.00851407, 0.00680997]
-
-# Action 0: [0.11660886 0.36630058 0.16460501 0.03132948 0.11978805 0.1467052 0.02788054 0.02678227]
-# Action 1: [0.11660886 0.36630058 0.16460501 0.03132948 0.11978805 0.1467052 0.02788054 0.02678227]
-# Action 2: [0.11660886 0.36630058 0.16460501 0.03132948 0.11978805 0.1467052 0.02788054 0.02678227]
-# Action 3: [0.11660886 0.36630058 0.16460501 0.03132948 0.11978805 0.1467052 0.02788054 0.02678227]

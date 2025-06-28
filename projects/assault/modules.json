@@ -1,4 +1,3 @@
 [
-    "./py/test_assault.py",
-    "/home/sobhy/PearlLab/py/pearl/methods/StabilityExplainability.py"
+    "./py/test_assault.py"
 ]

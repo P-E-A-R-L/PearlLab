@@ -12,6 +12,7 @@ from pearl.enviroments.ObservationWrapper import ObservationWrapper
 from pearl.provided.AssaultEnv import AssaultEnvShapMask
 from pearl.methods.ShapExplainability import ShapExplainability
 from pearl.methods.LimeExplainability import LimeExplainability
+from pearl.methods.StabilityExplainability import StabilityExplainability
 from pearl.lab.visual import VisualizationMethod
 
 class DQN(nn.Module):
@@ -87,10 +88,10 @@ if __name__ == "__main__":
     n_actions = env.action_space.n
 
     policy_net_good = DQN(n_actions)
-    agent_good = TorchDQN('experiments/models/dqn_assault_5m.pth', policy_net_good, device)
+    agent_good = TorchDQN('experiments/models/dqn_assault_15m.pth', policy_net_good, device)
 
     policy_net_bad = DQN(n_actions)
-    agent_bad = TorchDQN('experiments/models/dqn_assault_1k.pth', policy_net_bad, device)
+    agent_bad = TorchDQN('experiments/models/dqn_assault_5m.pth', policy_net_bad, device)
 
     env.reset()
     explainer1.set(env)

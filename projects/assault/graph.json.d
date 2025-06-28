@@ -61,22 +61,6 @@
             "src": 2
         },
         {
-            "dst": 84,
-            "src": 81
-        },
-        {
-            "dst": 85,
-            "src": 69
-        },
-        {
-            "dst": 86,
-            "src": 2
-        },
-        {
-            "dst": 88,
-            "src": 83
-        },
-        {
             "dst": 25,
             "src": 43
         },
@@ -121,28 +105,28 @@
             "src": 2
         },
         {
+            "dst": 160,
+            "src": 151
+        },
+        {
+            "dst": 153,
+            "src": 163
+        },
+        {
             "dst": 152,
             "src": 2
         },
         {
-            "dst": 153,
-            "src": 161
-        },
-        {
             "dst": 154,
-            "src": 164
-        },
-        {
-            "dst": 155,
             "src": 167
         },
         {
-            "dst": 156,
+            "dst": 155,
             "src": 170
         },
         {
-            "dst": 173,
-            "src": 151
+            "dst": 156,
+            "src": 173
         }
     ],
     "next_id": 175,
@@ -402,46 +386,6 @@
         },
         {
             "data": {
-                "file": false,
-                "id": 80,
-                "inputs": [],
-                "outputs": [
-                    81
-                ],
-                "tag": "<tag>",
-                "value": "py/experiments/assualt/dqn_assault_1k.pth"
-            },
-            "type": "PipelineGraph.Nodes.PrimitiveStringNode"
-        },
-        {
-            "data": {
-                "id": 82,
-                "inputs": [
-                    84,
-                    85,
-                    86
-                ],
-                "module": "pearl.agents.TorchDQN.TorchDQN",
-                "outputs": [
-                    83
-                ],
-                "tag": "<tag>"
-            },
-            "type": "PipelineGraph.Nodes.PythonModuleNode"
-        },
-        {
-            "data": {
-                "id": 87,
-                "inputs": [
-                    88
-                ],
-                "outputs": [],
-                "tag": "TorchDQN (1k)"
-            },
-            "type": "PipelineGraph.Nodes.AgentAcceptorNode"
-        },
-        {
-            "data": {
                 "id": 122,
                 "inputs": [
                     73
@@ -519,7 +463,7 @@
                     143
                 ],
                 "outputs": [],
-                "tag": "Agent47"
+                "tag": "TorchDQN (15m)"
             },
             "type": "PipelineGraph.Nodes.AgentAcceptorNode"
         },
@@ -532,7 +476,7 @@
                     147
                 ],
                 "tag": "<tag>",
-                "value": "py/experiments/assualt/AtariDQN.cleanrl_model"
+                "value": "py/experiments/assualt/dqn_assault_15m.pth"
             },
             "type": "PipelineGraph.Nodes.PrimitiveStringNode"
         },
@@ -548,7 +492,7 @@
                     157,
                     158
                 ],
-                "module": "StabilityExplainability.StabilityExplainability",
+                "module": "pearl.methods.StabilityExplainability.StabilityExplainability",
                 "outputs": [
                     151
                 ],
@@ -558,11 +502,22 @@
         },
         {
             "data": {
+                "id": 159,
+                "inputs": [
+                    160
+                ],
+                "outputs": [],
+                "tag": "StabilityExplainability"
+            },
+            "type": "PipelineGraph.Nodes.MethodAcceptorNode"
+        },
+        {
+            "data": {
                 "file": false,
-                "id": 160,
+                "id": 162,
                 "inputs": [],
                 "outputs": [
-                    161
+                    163
                 ],
                 "tag": "<tag>",
                 "value": "gaussian"
@@ -571,31 +526,17 @@
         },
         {
             "data": {
-                "id": 163,
-                "inputs": [],
-                "outputs": [
-                    164
-                ],
-                "rangeEnd": -1.0,
-                "rangeStart": -1.0,
-                "tag": "<tag>",
-                "value": 0.009999999776482582
-            },
-            "type": "PipelineGraph.Nodes.PrimitiveFloatNode"
-        },
-        {
-            "data": {
                 "id": 166,
                 "inputs": [],
                 "outputs": [
                     167
                 ],
-                "rangeEnd": -1,
-                "rangeStart": -1,
+                "rangeEnd": -1.0,
+                "rangeStart": -1.0,
                 "tag": "<tag>",
-                "value": 20
+                "value": 0.0
             },
-            "type": "PipelineGraph.Nodes.PrimitiveIntNode"
+            "type": "PipelineGraph.Nodes.PrimitiveFloatNode"
         },
         {
             "data": {
@@ -607,20 +548,23 @@
                 "rangeEnd": -1,
                 "rangeStart": -1,
                 "tag": "<tag>",
-                "value": 1
+                "value": 20
             },
             "type": "PipelineGraph.Nodes.PrimitiveIntNode"
         },
         {
             "data": {
                 "id": 172,
-                "inputs": [
+                "inputs": [],
+                "outputs": [
                     173
                 ],
-                "outputs": [],
-                "tag": "StabilityExplainability"
+                "rangeEnd": -1,
+                "rangeStart": -1,
+                "tag": "<tag>",
+                "value": 1
             },
-            "type": "PipelineGraph.Nodes.MethodAcceptorNode"
+            "type": "PipelineGraph.Nodes.PrimitiveIntNode"
         }
     ]
 }

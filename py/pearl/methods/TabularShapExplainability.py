@@ -106,4 +106,10 @@ class TabularShapExplainability(ExplainabilityMethod):
             idx = max(0, idx) % self.mask.action_space
         
         vals = np.array(self.last_explain['shap_values'])[idx]
+        
+        # Normalize the values to make absolute values sum to 1
+        abs_sum = np.sum(np.abs(vals))
+        if abs_sum > 0:
+            vals = vals / abs_sum
+        
         return {self.feature_names[i]: float(vals[i]) for i in range(len(self.feature_names))}
