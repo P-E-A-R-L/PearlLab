@@ -100,7 +100,7 @@ static void render_python_object(PyLiveObject* obj) {
                         // there isn't anything better to do tbh ..
                         if (choice == anno.choices.size()) choice = 0;
 
-                        if (ImGui::Combo("##<empty>", &choice, data.first, data.second)) {
+                        if (ImGui::Combo(anno.attrName.c_str(), &choice, data.first, data.second)) {
                             try {
                                  (*pub.value.i) = std::stoi(anno.choices[choice]);
                             } catch (...) {
@@ -154,7 +154,7 @@ static void render_python_object(PyLiveObject* obj) {
                         // there isn't anything better to do tbh ..
                         if (choice == anno.choices.size()) choice = 0;
 
-                        if (ImGui::Combo("##<empty>", &choice, data.first, data.second)) {
+                        if (ImGui::Combo(anno.attrName.c_str(), &choice, data.first, data.second)) {
                             try {
                                  (*pub.value.f) = std::stof(anno.choices[choice]);
                             } catch (...) {
@@ -202,7 +202,7 @@ static void render_python_object(PyLiveObject* obj) {
                         // there isn't anything better to do tbh ..
                         if (choice == anno.choices.size()) choice = 0;
 
-                        if (ImGui::Combo("##<empty>", &choice, data.first, data.second)) {
+                        if (ImGui::Combo(anno.attrName.c_str(), &choice, data.first, data.second)) {
                             try {
                                  (*pub.value.str) = anno.choices[choice];
                             } catch (...) {
