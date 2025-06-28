@@ -127,7 +127,7 @@
             "data": {
                 "id": 1,
                 "inputs": [],
-                "module": "test_pearl.cudaDevice",
+                "module": "test_assault.cudaDevice",
                 "outputs": [
                     2
                 ],
@@ -274,7 +274,7 @@
                 "inputs": [
                     53
                 ],
-                "module": "test_pearl.Wrapper",
+                "module": "test_assault.Wrapper",
                 "outputs": [
                     52
                 ],
@@ -328,7 +328,7 @@
                     70,
                     133858913696640
                 ],
-                "module": "test_pearl.DQN",
+                "module": "test_assault.DQN",
                 "outputs": [
                     69
                 ],
@@ -345,7 +345,7 @@
                     72
                 ],
                 "tag": "<tag>",
-                "value": "./py/models/models/dqn_assault_5m.pth"
+                "value": "py/experiments/assualt/dqn_assault_5m.pth"
             },
             "type": "PipelineGraph.Nodes.PrimitiveStringNode"
         },
@@ -357,7 +357,7 @@
                     76,
                     77
                 ],
-                "module": "pearl.agents.TourchDQN.TorchDQN",
+                "module": "pearl.agents.TorchDQN.TorchDQN",
                 "outputs": [
                     74
                 ],
@@ -385,7 +385,7 @@
                     81
                 ],
                 "tag": "<tag>",
-                "value": "./py/models/models/dqn_assault_1k.pth"
+                "value": "py/experiments/assualt/dqn_assault_1k.pth"
             },
             "type": "PipelineGraph.Nodes.PrimitiveStringNode"
         },
@@ -397,7 +397,7 @@
                     85,
                     86
                 ],
-                "module": "pearl.agents.TourchDQN.TorchDQN",
+                "module": "pearl.agents.TorchDQN.TorchDQN",
                 "outputs": [
                     83
                 ],
@@ -422,7 +422,7 @@
                 "inputs": [
                     73
                 ],
-                "module": "test_pearl.preprocess",
+                "module": "test_assault.preprocess",
                 "outputs": [
                     123
                 ],
@@ -464,7 +464,7 @@
                     133,
                     134
                 ],
-                "module": "test_pearl.DQN",
+                "module": "test_assault.DQN",
                 "outputs": [
                     132
                 ],
@@ -480,7 +480,7 @@
                     140,
                     141
                 ],
-                "module": "pearl.agents.TourchDQN.TorchDQN",
+                "module": "pearl.agents.TorchDQN.TorchDQN",
                 "outputs": [
                     138
                 ],
@@ -508,7 +508,7 @@
                     147
                 ],
                 "tag": "<tag>",
-                "value": "./py/models/models/AtariDQN.cleanrl_model"
+                "value": "py/experiments/assualt/AtariDQN.cleanrl_model"
             },
             "type": "PipelineGraph.Nodes.PrimitiveStringNode"
         }

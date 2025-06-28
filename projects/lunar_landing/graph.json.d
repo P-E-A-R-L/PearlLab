@@ -352,7 +352,7 @@
                     74
                 ],
                 "tag": "<tag>",
-                "value": "./py/models/lunar_lander_reinforce_2000.pth"
+                "value": "py/experiments/lunar_lander/lunar_lander_reinforce_2000.pth"
             },
             "type": "PipelineGraph.Nodes.PrimitiveStringNode"
         },
@@ -392,7 +392,7 @@
                     76
                 ],
                 "tag": "<tag>",
-                "value": "./py/models/lunar_lander_reinforce_500.pth"
+                "value": "py/experiments/lunar_lander/lunar_lander_reinforce_500.pth"
             },
             "type": "PipelineGraph.Nodes.PrimitiveStringNode"
         },
@@ -432,7 +432,7 @@
                     106
                 ],
                 "tag": "<tag>",
-                "value": "./py/models/dqn_lunar_lander.pth"
+                "value": "py/experiments/lunar_lander/dqn_lunar_lander_agent48.pth"
             },
             "type": "PipelineGraph.Nodes.PrimitiveStringNode"
         },
@@ -459,7 +459,7 @@
                     116,
                     117
                 ],
-                "module": "pearl.agents.TourchDQN.TorchDQN",
+                "module": "pearl.agents.TorchDQN.TorchDQN",
                 "outputs": [
                     114
                 ],

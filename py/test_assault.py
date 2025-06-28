@@ -6,7 +6,7 @@ import numpy as np
 import torch.nn as nn
 from tqdm import tqdm
 
-from pearl.agents.TourchDQN import TorchDQN
+from pearl.agents.TorchDQN import TorchDQN
 from pearl.enviroments.GymRLEnv import GymRLEnv
 from pearl.enviroments.ObservationWrapper import ObservationWrapper
 from pearl.provided.AssaultEnv import AssaultEnvShapMask
@@ -87,10 +87,10 @@ if __name__ == "__main__":
     n_actions = env.action_space.n
 
     policy_net_good = DQN(n_actions)
-    agent_good = TorchDQN('models/models/dqn_assault_5m.pth', policy_net_good, device)
+    agent_good = TorchDQN('experiments/models/dqn_assault_5m.pth', policy_net_good, device)
 
     policy_net_bad = DQN(n_actions)
-    agent_bad = TorchDQN('models/models/dqn_assault_1k.pth', policy_net_bad, device)
+    agent_bad = TorchDQN('experiments/models/dqn_assault_1k.pth', policy_net_bad, device)
 
     env.reset()
     explainer1.set(env)

@@ -46,7 +46,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load trained agent
 agent = TorchDQN(
-    "./models/dqn_lunar_lander.pth",
+    "experiments/lunar_lander/dqn_lunar_lander.pth",
     DQN(obs_dim, n_actions),
     device
 )

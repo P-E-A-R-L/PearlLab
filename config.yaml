@@ -2,4 +2,4 @@ version: 1.0-beta
 window:
   width: 1280
   height: 720
-venv: /home/youssef/pearl/Pearl/
+venv: /home/xabdomo/tf-env/
