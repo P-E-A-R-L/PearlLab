@@ -12,6 +12,7 @@ from pearl.enviroments.ObservationWrapper import ObservationWrapper
 from pearl.provided.AssaultEnv import AssaultEnvShapMask
 from pearl.methods.ShapExplainability import ShapExplainability
 from pearl.methods.LimeExplainability import LimeExplainability
+from pearl.methods.StabilityExplainability import StabilityExplainability
 from pearl.lab.visual import VisualizationMethod
 
 class DQN(nn.Module):

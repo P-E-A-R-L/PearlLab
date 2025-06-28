@@ -121,28 +121,28 @@
             "src": 2
         },
         {
+            "dst": 160,
+            "src": 151
+        },
+        {
+            "dst": 153,
+            "src": 163
+        },
+        {
             "dst": 152,
             "src": 2
         },
         {
-            "dst": 153,
-            "src": 161
-        },
-        {
             "dst": 154,
-            "src": 164
-        },
-        {
-            "dst": 155,
             "src": 167
         },
         {
-            "dst": 156,
+            "dst": 155,
             "src": 170
         },
         {
-            "dst": 173,
-            "src": 151
+            "dst": 156,
+            "src": 173
         }
     ],
     "next_id": 175,
@@ -548,7 +548,7 @@
                     157,
                     158
                 ],
-                "module": "StabilityExplainability.StabilityExplainability",
+                "module": "pearl.methods.StabilityExplainability.StabilityExplainability",
                 "outputs": [
                     151
                 ],
@@ -558,11 +558,22 @@
         },
         {
             "data": {
+                "id": 159,
+                "inputs": [
+                    160
+                ],
+                "outputs": [],
+                "tag": "StabilityExplainability"
+            },
+            "type": "PipelineGraph.Nodes.MethodAcceptorNode"
+        },
+        {
+            "data": {
                 "file": false,
-                "id": 160,
+                "id": 162,
                 "inputs": [],
                 "outputs": [
-                    161
+                    163
                 ],
                 "tag": "<tag>",
                 "value": "gaussian"
@@ -571,10 +582,10 @@
         },
         {
             "data": {
-                "id": 163,
+                "id": 166,
                 "inputs": [],
                 "outputs": [
-                    164
+                    167
                 ],
                 "rangeEnd": -1.0,
                 "rangeStart": -1.0,
@@ -582,20 +593,6 @@
                 "value": 0.009999999776482582
             },
             "type": "PipelineGraph.Nodes.PrimitiveFloatNode"
-        },
-        {
-            "data": {
-                "id": 166,
-                "inputs": [],
-                "outputs": [
-                    167
-                ],
-                "rangeEnd": -1,
-                "rangeStart": -1,
-                "tag": "<tag>",
-                "value": 20
-            },
-            "type": "PipelineGraph.Nodes.PrimitiveIntNode"
         },
         {
             "data": {
@@ -607,20 +604,23 @@
                 "rangeEnd": -1,
                 "rangeStart": -1,
                 "tag": "<tag>",
-                "value": 1
+                "value": 20
             },
             "type": "PipelineGraph.Nodes.PrimitiveIntNode"
         },
         {
             "data": {
                 "id": 172,
-                "inputs": [
+                "inputs": [],
+                "outputs": [
                     173
                 ],
-                "outputs": [],
-                "tag": "StabilityExplainability"
+                "rangeEnd": -1,
+                "rangeStart": -1,
+                "tag": "<tag>",
+                "value": 1
             },
-            "type": "PipelineGraph.Nodes.MethodAcceptorNode"
+            "type": "PipelineGraph.Nodes.PrimitiveIntNode"
         }
     ]
 }
