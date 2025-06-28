@@ -1,13 +1,14 @@
 from typing import Any, List
 import numpy as np
 import torch
+
 from pearl.agent import RLAgent
 from pearl.env import RLEnvironment
 from pearl.mask import Mask
 from pearl.method import ExplainabilityMethod
-from pearl.custom_methods.customLime import CustomLimeTabularExplainer
 from visual import VisualizationMethod
 from annotations import Param
+from lime.lime_tabular import LimeTabularExplainer
 
 
 class TabularLimeVisualizationParams:
@@ -16,11 +17,6 @@ class TabularLimeVisualizationParams:
 
 class TabularLimeExplainability(ExplainabilityMethod):
     def __init__(self, device: torch.device, mask: Mask, feature_names: List[str]):
-        """
-        :param device: torch device
-        :param mask: Mask object for score computation
-        :param feature_names: Names of each feature in the state vector
-        """
         super().__init__()
         self.device = device
         self.mask = mask
@@ -29,9 +25,12 @@ class TabularLimeExplainability(ExplainabilityMethod):
         else:
             self.feature_names = feature_names
         self.agent: RLAgent = None
-       
-        self.explainer = CustomLimeTabularExplainer(
+
+        self.explainer = LimeTabularExplainer(
+            training_data=np.zeros((1, len(self.feature_names))),
             feature_names=self.feature_names,
+            mode="classification",
+            discretize_continuous=False
         )
         self.last_explain = None
 
@@ -41,7 +40,8 @@ class TabularLimeExplainability(ExplainabilityMethod):
     def prepare(self, agent: RLAgent):
         self.agent = agent
 
-    def onStep(self, action: Any): pass
+    def onStep(self, action: Any): 
+        self.last_action = action
     def onStepAfter(self, action: Any, reward: dict, done: bool, info: dict): pass
 
     def explain(self, obs: np.ndarray) -> Any:
@@ -54,7 +54,6 @@ class TabularLimeExplainability(ExplainabilityMethod):
 
         model = self.agent.get_q_net().to(self.device).eval()
 
-        # Predict function for LIME: mirror model preprocessing exactly
         def predict_fn(x: np.ndarray) -> np.ndarray:
             with torch.no_grad():
                 x_tensor = torch.tensor(x, dtype=torch.float32).to(self.device)
@@ -62,21 +61,20 @@ class TabularLimeExplainability(ExplainabilityMethod):
                 probs = torch.softmax(logits, dim=1).cpu().numpy()
             return probs
 
-        # Get predicted action for focusing LIME
         obs_tensor = torch.tensor(obs_vec.reshape(1, -1), dtype=torch.float32).to(self.device)
         with torch.no_grad():
             q_vals = model(obs_tensor)
-        action = int(torch.argmax(q_vals))
+        num_actions = q_vals.shape[1]
 
-        # Explain only the predicted action for stability
         exp = self.explainer.explain_instance(
             data_row=obs_vec,
             predict_fn=predict_fn,
             num_features=len(self.feature_names),
-            top_labels=action + 1  # ensure explanations include this label
+            top_labels=num_actions,
+            num_samples=1000,
         )
-        # Store both explanation object and action
-        self.last_explain = (exp, action)
+
+        self.last_explain = exp
         return exp
 
     def value(self, obs: np.ndarray) -> float:
@@ -86,21 +84,19 @@ class TabularLimeExplainability(ExplainabilityMethod):
         obs_tensor = torch.tensor(obs, dtype=torch.float32, device=self.device).squeeze()
         with torch.no_grad():
             q_vals = self.agent.get_q_net()(obs_tensor)
-            
+
         action = int(torch.argmax(q_vals))
 
-        # Build weights array for this action
         weights = np.zeros(len(self.feature_names), dtype=float)
         for fid, weight in exp.local_exp.get(action, []):
             weights[fid] = weight
 
-        # Attribution tensor shape (1, features, 1,1, action_space)
         attribution = np.abs(weights).reshape(1, len(self.feature_names), 1, 1, 1)
         attribution = np.broadcast_to(
             attribution,
             (1, len(self.feature_names), 1, 1, self.mask.action_space)
         ).astype(np.float32)
-        # Normalize
+
         total = np.sum(attribution, axis=1, keepdims=True)
         if total.any():
             attribution /= total
@@ -128,14 +124,13 @@ class TabularLimeExplainability(ExplainabilityMethod):
         if not isinstance(m, VisualizationMethod):
             m = VisualizationMethod(m)
         if m == VisualizationMethod.BAR_CHART:
-            # Return empty dict if no explanation exists
             if self.last_explain is None:
                 return {name: 0.0 for name in self.feature_names}
-            exp, action = self.last_explain
             idx = 0
             if params is not None and isinstance(params, TabularLimeVisualizationParams):
                 idx = params.action
             idx = max(0, idx) % self.mask.action_space
-            # Return a dict of feature name: importance
-            return {self.feature_names[fid]: weight for fid, weight in exp.local_exp.get(action, [])}
+            
+            idx = self.last_action
+            return {self.feature_names[fid]: weight for fid, weight in self.last_explain.local_exp.get(idx, [])}
         return None

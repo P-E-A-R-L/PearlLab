@@ -6,9 +6,9 @@ from pearl.agent import RLAgent
 from pearl.env import RLEnvironment
 from pearl.mask import Mask
 from pearl.method import ExplainabilityMethod
-from pearl.custom_methods.customShap import CustomShapTabularExplainer
 from visual import VisualizationMethod
 from annotations import Param
+import shap
 
 
 class TabularShapVisualizationParams:
@@ -20,48 +20,46 @@ class TabularShapExplainability(ExplainabilityMethod):
         super().__init__()
         self.device = device
         self.mask = mask
-        if isinstance(feature_names, str):
-            self.feature_names = feature_names.split(",")
-        else:
-            self.feature_names = feature_names
+        self.feature_names = feature_names if isinstance(feature_names, list) else feature_names.split(',')
         self.agent: RLAgent = None
         self.explainer = None
+        self.background_size = 100
         self.last_explain = None
 
     def set(self, env: RLEnvironment):
         super().set(env)
+        self.env = env
+        self.background = np.array(
+            [env.observation_space.sample() for _ in range(self.background_size)],
+            dtype=np.float32
+        ).reshape(self.background_size, -1)
 
     def prepare(self, agent: RLAgent):
         self.agent = agent
         model = agent.get_q_net().to(self.device).eval()
-        feature_dim = len(self.feature_names)
-        self.explainer = CustomShapTabularExplainer(
-            model,
-            feature_dim,
-            num_samples=100,
-            use_lasso=False,
-            normalize_inputs=False,
-            mask_k=None
-        )
 
-    def onStep(self, action: Any): pass
-    def onStepAfter(self, action: Any, reward: dict, done: bool, info: dict): pass
+        def predict_fn(x: np.ndarray) -> np.ndarray:
+            with torch.no_grad():
+                x_tensor = torch.tensor(x, dtype=torch.float32, device=self.device)
+                logits = model(x_tensor)
+                probs = torch.softmax(logits, dim=1).cpu().numpy()
+            return probs
+
+        self.explainer = shap.KernelExplainer(predict_fn, self.background)
+
+    def onStep(self, action):
+        self.last_action = action
+        
+    def onStepAfter(self, action, reward, done, info): pass
 
     def explain(self, obs: np.ndarray) -> Any:
-        if self.explainer is None:
-            raise ValueError("Explainer not initialized. Call prepare() first.")
-
-        obs_vec = obs.squeeze()
-        if obs_vec.ndim == 2:
-            obs_vec = obs_vec[0]
-
-        obs_tensor = torch.tensor(obs_vec.reshape(1, -1), dtype=torch.float32).to(self.device)
-        shap_values = self.explainer.shap_values(obs_tensor)
+        obs_vec = np.asarray(obs, dtype=np.float32).reshape(1, -1)
+        shap_vals = self.explainer.shap_values(obs_vec, silent=True).squeeze().T
 
         explanation = {
-            'shap_values': shap_values,  # List/array per action
+            'shap_values': np.array(shap_vals),  # shape: (action, features)
             'feature_names': self.feature_names,
-            'data': obs_vec
+            'data': obs_vec.squeeze()
         }
         self.last_explain = explanation
         return explanation
@@ -79,11 +77,7 @@ class TabularShapExplainability(ExplainabilityMethod):
         action_shap = shap_values[action]
 
         weights = np.abs(action_shap).reshape(1, len(self.feature_names), 1, 1, 1)
-        attribution = np.broadcast_to(
-            weights,
-            (1, len(self.feature_names), 1, 1, self.mask.action_space)
-        ).astype(np.float32)
-
+        attribution = np.broadcast_to(weights, (1, len(self.feature_names), 1, 1, self.mask.action_space)).astype(np.float32)
         total = np.sum(attribution, axis=1, keepdims=True)
         if total.any():
             attribution /= total
@@ -92,32 +86,23 @@ class TabularShapExplainability(ExplainabilityMethod):
         action_q = q_vals[action].item()
         max_q = torch.max(q_vals).item()
         confidence = action_q / max_q if max_q != 0 else 1.0
-
         return score * confidence
 
     def supports(self, m: VisualizationMethod) -> bool:
-        if not isinstance(m, VisualizationMethod):
-            m = VisualizationMethod(m)
-        return m == VisualizationMethod.BAR_CHART
+        return VisualizationMethod(m) == VisualizationMethod.BAR_CHART
 
     def getVisualizationParamsType(self, m: VisualizationMethod) -> type | None:
-        if not isinstance(m, VisualizationMethod):
-            m = VisualizationMethod(m)
-        if m == VisualizationMethod.BAR_CHART:
+        if VisualizationMethod(m) == VisualizationMethod.BAR_CHART:
             return TabularShapVisualizationParams
         return None
 
     def getVisualization(self, m: VisualizationMethod, params: Any = None) -> dict | None:
-        if not isinstance(m, VisualizationMethod):
-            m = VisualizationMethod(m)
-        if m == VisualizationMethod.BAR_CHART:
-            if self.last_explain is None:
-                return {name: 0.0 for name in self.feature_names}
-            idx = 0
-            if params is not None and isinstance(params, TabularShapVisualizationParams):
-                idx = params.action
-            idx = max(0, idx) % self.mask.action_space
-
-            shap_vals = self.last_explain['shap_values'][idx]
-            return {self.feature_names[i]: float(shap_vals[i]) for i in range(len(self.feature_names))}
-        return None
+        if VisualizationMethod(m) != VisualizationMethod.BAR_CHART:
+            return None
+        if self.last_explain is None:
+            return {name: 0.0 for name in self.feature_names}
+        idx = params.action if isinstance(params, TabularShapVisualizationParams) else 0
+        idx %= self.mask.action_space
+        idx = self.last_action
+        vals = np.array(self.last_explain['shap_values'])[idx]
+        return {self.feature_names[i]: float(vals[i]) for i in range(len(self.feature_names))}

@@ -764,10 +764,16 @@ namespace Pipeline
                 for (int i = 0; i < agent->scores_total.size(); ++i) {
                     result += agent->scores_total[i] * PipelineConfig::pipelineMethods[i].weight;
                 }
+                if (agent->total_steps == 0) {
+                    return 0;
+                }
                 return result / agent->total_steps;
             }
 
             case PipelineState::REWARD: {
+                if(agent->total_steps == 0) {
+                    return 0;
+                }
                 return agent->reward_total / agent->total_steps;
             }
         }

@@ -17,22 +17,6 @@
             "src": 6
         },
         {
-            "dst": 12,
-            "src": 2
-        },
-        {
-            "dst": 13,
-            "src": 4
-        },
-        {
-            "dst": 14,
-            "src": 20
-        },
-        {
-            "dst": 18,
-            "src": 11
-        },
-        {
             "dst": 33,
             "src": 30
         },
@@ -103,9 +87,49 @@
         {
             "dst": 90,
             "src": 83
+        },
+        {
+            "dst": 109,
+            "src": 66
+        },
+        {
+            "dst": 110,
+            "src": 68
+        },
+        {
+            "dst": 116,
+            "src": 108
+        },
+        {
+            "dst": 115,
+            "src": 106
+        },
+        {
+            "dst": 117,
+            "src": 2
+        },
+        {
+            "dst": 122,
+            "src": 114
+        },
+        {
+            "dst": 128,
+            "src": 20
+        },
+        {
+            "dst": 127,
+            "src": 4
+        },
+        {
+            "dst": 126,
+            "src": 2
+        },
+        {
+            "dst": 18,
+            "src": 125
         }
     ],
-    "next_id": 105,
+    "next_id": 133,
     "nodes": [
         {
             "data": {
@@ -143,22 +167,6 @@
                 "module": "pearl.methods.TabularLimeExplainability.TabularLimeExplainability",
                 "outputs": [
                     6
-                ],
-                "tag": "<tag>"
-            },
-            "type": "PipelineGraph.Nodes.PythonModuleNode"
-        },
-        {
-            "data": {
-                "id": 10,
-                "inputs": [
-                    12,
-                    13,
-                    14
-                ],
-                "module": "pearl.methods.TabularShapExplainability.TabularShapExplainability",
-                "outputs": [
-                    11
                 ],
                 "tag": "<tag>"
             },
@@ -417,16 +425,74 @@
         },
         {
             "data": {
-                "id": 103,
+                "file": false,
+                "id": 105,
                 "inputs": [],
-                "module": "test_lunarlander.cudaDevice",
                 "outputs": [
-                    104
+                    106
                 ],
-                "pointer": true,
+                "tag": "<tag>",
+                "value": "./py/models/dqn_lunar_lander.pth"
+            },
+            "type": "PipelineGraph.Nodes.PrimitiveStringNode"
+        },
+        {
+            "data": {
+                "id": 107,
+                "inputs": [
+                    109,
+                    110
+                ],
+                "module": "test_lunarlander.DQN",
+                "outputs": [
+                    108
+                ],
                 "tag": "<tag>"
             },
-            "type": "PipelineGraph.Nodes.PythonFunctionNode"
+            "type": "PipelineGraph.Nodes.PythonModuleNode"
+        },
+        {
+            "data": {
+                "id": 113,
+                "inputs": [
+                    115,
+                    116,
+                    117
+                ],
+                "module": "pearl.agents.TourchDQN.TorchDQN",
+                "outputs": [
+                    114
+                ],
+                "tag": "<tag>"
+            },
+            "type": "PipelineGraph.Nodes.PythonModuleNode"
+        },
+        {
+            "data": {
+                "id": 121,
+                "inputs": [
+                    122
+                ],
+                "outputs": [],
+                "tag": "Agent48"
+            },
+            "type": "PipelineGraph.Nodes.AgentAcceptorNode"
+        },
+        {
+            "data": {
+                "id": 124,
+                "inputs": [
+                    126,
+                    127,
+                    128
+                ],
+                "module": "pearl.methods.TabularShapExplainability.TabularShapExplainability",
+                "outputs": [
+                    125
+                ],
+                "tag": "<tag>"
+            },
+            "type": "PipelineGraph.Nodes.PythonModuleNode"
         }
     ]
 }
