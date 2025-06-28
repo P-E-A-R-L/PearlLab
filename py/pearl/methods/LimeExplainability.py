@@ -3,13 +3,15 @@ import numpy as np
 import torch
 from skimage.color import gray2rgb
 from skimage.transform import resize
+
 from pearl.agent import RLAgent
 from pearl.env import RLEnvironment
 from pearl.mask import Mask
 from pearl.method import ExplainabilityMethod
-from visual import VisualizationMethod
-from annotations import Param
 from pearl.custom_methods.customLimeImage import CustomLimeImageExplainer
+
+from pearl.lab.visual import VisualizationMethod
+from pearl.lab.annotations import Param
 
 class LimeVisualizationParams:
     action: Param(int) = 0

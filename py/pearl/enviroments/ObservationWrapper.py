@@ -4,7 +4,8 @@ from typing import Optional, Dict, Any
 import numpy as np
 
 from pearl.env import RLEnvironment
-from visual import VisualizationMethod
+from pearl.lab.visual import VisualizationMethod
+from pearl.lab.annotations import Param
 
 
 class ObservationWrapper(RLEnvironment):

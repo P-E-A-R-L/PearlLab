@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 from tqdm import tqdm
-from annotations import Param
+from pearl.lab.annotations import Param
 import torch.nn.functional as F
 
 

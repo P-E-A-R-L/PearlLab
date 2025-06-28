@@ -520,7 +520,7 @@ void PyScope::init()
 
     try
     {
-        instance->annotations = py::module_::import("annotations");
+        instance->annotations = py::module_::import("pearl.lab.annotations");
         instance->param_type = instance->annotations.attr("Param");
 
         instance->pythonModules.push_back(instance->annotations);
@@ -533,7 +533,7 @@ void PyScope::init()
 
     try
     {
-        instance->helper = py::module_::import("lab_helpers");
+        instance->helper = py::module_::import("pearl.lab.helpers");
         instance->isgeneric = instance->helper.attr("is_generic_type");
 
         instance->pythonModules.push_back(instance->helper);
@@ -546,22 +546,22 @@ void PyScope::init()
 
     if (instance->annotations.is_none())
     {
-        Logger::error("  Failed to import 'py/annotations' module.");
+        Logger::error("  Failed to import './pearl/lab/annotations' module.");
     }
 
     if (instance->param_type.is_none())
     {
-        Logger::error("  Failed to import 'annotations' from 'py/annotations' module.");
+        Logger::error("  Failed to import 'annotations' from './pearl/lab/annotations' module.");
     }
 
     if (instance->helper.is_none())
     {
-        Logger::error("  Failed to import 'py/lab_helper' module.");
+        Logger::error("  Failed to import './pearl/lab/helpers' module.");
     }
 
     if (instance->isgeneric.is_none())
     {
-        Logger::error("  Failed to import 'is_generic_type' from 'py/lab_helper' module.");
+        Logger::error("  Failed to import 'is_generic_type' from './pearl/lab/helpers' module.");
     }
 
     try
@@ -580,9 +580,7 @@ void PyScope::init()
         instance->pythonModules.push_back(instance->pearl_env);
         instance->pythonModules.push_back(instance->pearl_method);
         instance->pythonModules.push_back(instance->pearl_mask);
-    }
-    catch (...)
-    {
+    } catch (...) {
         // nothing to do
         Logger::error("[Pearl Library] Failed to initialize Python (see errors)");
     }

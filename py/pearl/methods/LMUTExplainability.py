@@ -11,9 +11,9 @@ from pearl.agent import RLAgent
 from pearl.env import RLEnvironment
 from pearl.mask import Mask
 from pearl.method import ExplainabilityMethod
-from visual import VisualizationMethod
-from annotations import Param
 
+from pearl.lab.visual import VisualizationMethod
+from pearl.lab.annotations import Param
 
 class LMUTVisualizationParams:
     action: Param(int) = 0

@@ -1,7 +1,7 @@
 import numbers
 from typing import Optional, Callable
 import numpy as np
-from annotations import Param
+from pearl.lab.annotations import Param
 
 
 class test:

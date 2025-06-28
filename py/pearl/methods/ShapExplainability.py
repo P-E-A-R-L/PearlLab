@@ -7,8 +7,9 @@ from pearl.agent import RLAgent
 from pearl.env import RLEnvironment
 from pearl.mask import Mask
 from pearl.method import ExplainabilityMethod
-from annotations import Param
-from visual import VisualizationMethod
+
+from pearl.lab.visual import VisualizationMethod
+from pearl.lab.annotations import Param
 
 # A little hack to fix the issue of shap not being able to handle Flatten layer
 from shap.explainers._deep import deep_pytorch

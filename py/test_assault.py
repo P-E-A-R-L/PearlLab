@@ -12,7 +12,7 @@ from pearl.enviroments.ObservationWrapper import ObservationWrapper
 from pearl.provided.AssaultEnv import AssaultEnvShapMask
 from pearl.methods.ShapExplainability import ShapExplainability
 from pearl.methods.LimeExplainability import LimeExplainability
-from visual import VisualizationMethod
+from pearl.lab.visual import VisualizationMethod
 
 class DQN(nn.Module):
     def __init__(self, n_actions: int, prefix="net"):

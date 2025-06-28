@@ -1,15 +1,15 @@
 from typing import Any, List
 import numpy as np
 import torch
+import shap
 
 from pearl.agent import RLAgent
 from pearl.env import RLEnvironment
 from pearl.mask import Mask
 from pearl.method import ExplainabilityMethod
-from visual import VisualizationMethod
-from annotations import Param
-import shap
 
+from pearl.lab.visual import VisualizationMethod
+from pearl.lab.annotations import Param
 
 class TabularShapVisualizationParams:
     action: Param(int) = 0

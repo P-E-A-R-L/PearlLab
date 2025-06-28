@@ -3,7 +3,8 @@ from typing import Any
 
 import numpy as np
 
-from visual import VisualizationMethod
+from pearl.lab.visual import VisualizationMethod
+from pearl.lab.annotations import Param
 
 
 class Visualizable(ABC):

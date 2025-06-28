@@ -4,7 +4,9 @@ import collections
 import numpy as np
 import gymnasium as gym
 import ale_py
-from visual import VisualizationMethod
+
+from pearl.lab.visual import VisualizationMethod
+from pearl.lab.annotations import Param
 
 gym.register_envs(ale_py)
 

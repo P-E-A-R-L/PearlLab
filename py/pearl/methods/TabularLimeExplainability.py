@@ -6,10 +6,10 @@ from pearl.agent import RLAgent
 from pearl.env import RLEnvironment
 from pearl.mask import Mask
 from pearl.method import ExplainabilityMethod
-from visual import VisualizationMethod
-from annotations import Param
 from lime.lime_tabular import LimeTabularExplainer
 
+from pearl.lab.visual import VisualizationMethod
+from pearl.lab.annotations import Param
 
 class TabularLimeVisualizationParams:
     action: Param(int) = 0
