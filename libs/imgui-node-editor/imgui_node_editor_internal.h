@@ -1473,7 +1473,8 @@ struct EditorContext
 
     ImDrawList* GetDrawList() { return m_DrawList; }
 
-private:
+    // Abdo - Exposed LoadSettings, SaveSettings, m_Config to the public scope
+// private:
     void LoadSettings();
     void SaveSettings();
 
@@ -1484,6 +1485,9 @@ private:
     void UpdateAnimations();
 
     Config              m_Config;
+
+private:
+    // Abdo - End of change
 
     ImGuiID             m_EditorActiveId;
     bool                m_IsFirstFrame;

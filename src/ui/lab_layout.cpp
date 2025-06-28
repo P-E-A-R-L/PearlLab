@@ -143,24 +143,23 @@ void LabLayout::render()
 
             if (ImGui::MenuItem("Load Module"))
             {
-                ImGuiFileDialog::Instance()->OpenDialog("FileDlgKey", "Select module file", ".py");
+                ImGuiFileDialog::Instance()->OpenDialog("LoadModuleFileDlgKey", "Select module file", ".py");
             }
 
             if (ImGui::MenuItem("Quick Save"))
             {
-                if (ProjectManager::saveProject(project_details.project_path))
-                {
+                auto result = ProjectManager::saveProject(project_details.project_path);
+                if (result != std::nullopt) {
+                    PipelineGraph::saveSettings(result->graph_file);
                     Logger::info("Project saved successfully.");
-                }
-                else
-                {
+                } else {
                     Logger::error("Failed to save project.");
                 }
             }
 
             if (ImGui::MenuItem("Save Project"))
             {
-                ImGuiFileDialog::Instance()->OpenDialog("FileDlgKey", "Select module file", ".py");
+                ImGuiFileDialog::Instance()->OpenDialog("SaveProjectFileDlgKey", "Select a folder to save project to", nullptr);
             }
 
             if (Pipeline::PipelineState::experimentState != Pipeline::STOPPED) {
@@ -175,35 +174,35 @@ void LabLayout::render()
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("Edit"))
-        {
-            if (Pipeline::PipelineState::experimentState != Pipeline::STOPPED) {
-                ImGui::BeginDisabled();
-            }
-
-            if (ImGui::MenuItem("Undo", "CTRL+Z"))
-            { /* Undo Action */
-            }
-            if (ImGui::MenuItem("Redo", "CTRL+Y", false, false))
-            { /* Disabled Redo */
-            }
-            ImGui::Separator();
-            if (ImGui::MenuItem("Cut", "CTRL+X"))
-            { /* Cut Action */
-            }
-            if (ImGui::MenuItem("Copy", "CTRL+C"))
-            { /* Copy Action */
-            }
-            if (ImGui::MenuItem("Paste", "CTRL+V"))
-            { /* Paste Action */
-            }
-
-            if (Pipeline::PipelineState::experimentState != Pipeline::STOPPED) {
-                ImGui::EndDisabled();
-            }
-
-            ImGui::EndMenu();
-        }
+        // if (ImGui::BeginMenu("Edit"))
+        // {
+        //     if (Pipeline::PipelineState::experimentState != Pipeline::STOPPED) {
+        //         ImGui::BeginDisabled();
+        //     }
+        //
+        //     if (ImGui::MenuItem("Undo", "CTRL+Z"))
+        //     { /* Undo Action */
+        //     }
+        //     if (ImGui::MenuItem("Redo", "CTRL+Y", false, false))
+        //     { /* Disabled Redo */
+        //     }
+        //     ImGui::Separator();
+        //     if (ImGui::MenuItem("Cut", "CTRL+X"))
+        //     { /* Cut Action */
+        //     }
+        //     if (ImGui::MenuItem("Copy", "CTRL+C"))
+        //     { /* Copy Action */
+        //     }
+        //     if (ImGui::MenuItem("Paste", "CTRL+V"))
+        //     { /* Paste Action */
+        //     }
+        //
+        //     if (Pipeline::PipelineState::experimentState != Pipeline::STOPPED) {
+        //         ImGui::EndDisabled();
+        //     }
+        //
+        //     ImGui::EndMenu();
+        // }
 
         if (ImGui::BeginMenu("Debug"))
         {
@@ -230,6 +229,7 @@ void LabLayout::render()
 
         if (ImGui::BeginMenu("Help")) {
             if (ImGui::MenuItem("About")) {
+                // TODO
             }
             ImGui::EndMenu();
         }
@@ -244,15 +244,29 @@ void LabLayout::render()
         ImGui::EndMainMenuBar(); // Closes the menu bar
     }
 
-    if (ImGuiFileDialog::Instance()->Display("FileDlgKey"))
+    if (ImGuiFileDialog::Instance()->Display("SaveProjectFileDlgKey")) {
+        if (ImGuiFileDialog::Instance()->IsOk()) {
+            std::string folderPath = ImGuiFileDialog::Instance()->GetCurrentPath();
+            Logger::info("Saving project to: " + folderPath);
+            auto result = ProjectManager::saveProject(folderPath);
+            if (result != std::nullopt) {
+                PipelineGraph::saveSettings(result->graph_file);
+                Logger::info("Project saved successfully.");
+            } else {
+                Logger::error("Failed to save project.");
+            }
+        }
+        ImGuiFileDialog::Instance()->Close();
+    }
+
+    if (ImGuiFileDialog::Instance()->Display("LoadModuleFileDlgKey"))
     {
-        if (ImGuiFileDialog::Instance()->IsOk()) // If user selects a file
-        {
+        // If user selects a file
+        if (ImGuiFileDialog::Instance()->IsOk()) {
             py::gil_scoped_acquire acquire{};
             std::string filePath = ImGuiFileDialog::Instance()->GetFilePathName();
             auto result = PyScope::LoadModuleForClasses(filePath);
-            for (auto obj : result)
-            {
+            for (auto obj : result) {
                 SharedUi::pushModule(obj);
                 Logger::info("Loaded module: " + std::string(py::str(obj.attr("__name__"))));
             }

@@ -14,7 +14,7 @@ namespace ProjectManager
     };
 
     ProjectDetails loadProject(const std::string &path);
-    bool saveProject(const std::string &path);
+    std::optional<ProjectManager::ProjectDetails> saveProject(const std::string &path);
 }
 
 #endif // PROJECT_MANAGER_HPP

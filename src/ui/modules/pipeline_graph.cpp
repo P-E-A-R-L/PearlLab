@@ -16,6 +16,32 @@
 
 #include "../utility/drawing.h"
 
+namespace ax::NodeEditor::Detail {
+    struct Config: ax::NodeEditor::Config
+    {
+        Config(const ax::NodeEditor::Config* config);
+
+        std::string Load();
+        std::string LoadNode(NodeId nodeId);
+
+        void BeginSave();
+        bool Save(const std::string& data, SaveReasonFlags flags);
+        bool SaveNode(NodeId nodeId, const std::string& data, SaveReasonFlags flags);
+        void EndSave();
+    };
+
+    struct EditorContext
+    {
+        EditorContext(const ax::NodeEditor::Config* config = nullptr);
+        ~EditorContext();
+
+        void LoadSettings();
+        void SaveSettings();
+
+        Config              m_Config;
+    };
+
+}
 namespace std
 {
     template <>
@@ -600,7 +626,17 @@ namespace PipelineGraph
 
     void saveSettings(const std::string &graph_file)
     {
-        // TODO
+        const auto editor = reinterpret_cast<ax::NodeEditor::Detail::EditorContext*>(m_Context);
+        ax::NodeEditor::Detail::Config old_cfg = editor->m_Config;
+
+        ed::Config internal;
+        internal.SettingsFile = graph_file.c_str();
+
+        ax::NodeEditor::Detail::Config tmp(&internal);
+        // Swap config, save, then rollback
+        editor->m_Config = tmp;
+        editor->SaveSettings();
+        editor->m_Config = old_cfg;
     }
 
     Pin *curr_focus_pin;
@@ -883,6 +919,7 @@ namespace PipelineGraph
     void destroy()
     {
         py::gil_scoped_acquire acquire{};
+
 
         ed::DestroyEditor(m_Context);
 

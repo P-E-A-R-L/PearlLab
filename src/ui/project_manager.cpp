@@ -135,20 +135,23 @@ ProjectManager::ProjectDetails ProjectManager::loadProject(const std::string &p_
     return projectDetails;
 }
 
-bool ProjectManager::saveProject(const std::string &path)
-{
+std::optional<ProjectManager::ProjectDetails> ProjectManager::saveProject(const std::string &path) {
 
     fs::path base_path = path;
-    if (!fs::exists(base_path))
-    {
+    if (!fs::exists(base_path)) {
         Logger::error("Project path does not exist: " + base_path.string());
-        return false;
+        return std::nullopt;
     }
 
     fs::path graph_file = base_path / "graph.json";
     fs::path imgui_file = base_path / "imgui.ini";
     fs::path graph_details = base_path / "graph.json.d";
     fs::path modules_file = base_path / "modules.json";
+
+    ProjectDetails projectDetails;
+    projectDetails.graph_file = base_path / std::string("graph.json");
+    projectDetails.imgui_file = base_path / std::string("imgui.ini");
+    projectDetails.project_path = base_path.string();
 
     ImGui::SaveIniSettingsToDisk(imgui_file.string().c_str());
 
@@ -226,5 +229,5 @@ bool ProjectManager::saveProject(const std::string &path)
     std::ofstream modules_file_stream(modules_file);
     modules_file_stream << modules_json.dump(4);
 
-    return true;
+    return projectDetails;
 }

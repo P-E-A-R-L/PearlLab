@@ -2194,6 +2194,7 @@ void ed::EditorContext::SaveSettings()
         }
     }
 
+    // Abdo - Not sure what this line does
     m_Settings.m_Selection.resize(0);
     for (auto& object : m_SelectedObjects)
         m_Settings.m_Selection.push_back(object->ID());
