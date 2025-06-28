@@ -92,6 +92,7 @@ namespace PipelineGraph
     static std::vector<ed::NodeId> selectedNodeIds;
     static std::vector<ed::LinkId> selectedLinkIds;
     static std::vector<PipelineGraph::Node> clipboardNodes;
+    Pin *curr_focus_pin;
 
     void ShowIntegerInputDialog(bool *open, const char *popup_id, const std::function<void(int)> &on_confirm)
     {
@@ -263,16 +264,19 @@ namespace PipelineGraph
         py::gil_scoped_acquire acquire{};
 
         auto node = nodeLookup.find(id);
-        if (node == nodeLookup.end())
-        {
-            Logger::error("Tried to deleted a node that does not exist");
+
+        if (node == nodeLookup.end()) {
+            Logger::warning("Tried to deleted a node that does not exist");
             return;
         }
 
         clearNode(id);
 
         ed::DeleteNode(id);
+        nodeLookup.erase(id);
+
         nodes.erase(std::ranges::find(nodes, node->second));
+        curr_focus_pin = nullptr;
         delete node->second;
     }
 
@@ -281,16 +285,14 @@ namespace PipelineGraph
         py::gil_scoped_acquire acquire{};
 
         auto node = nodeLookup.find(id);
-        if (node == nodeLookup.end())
-        {
-            Logger::error("Tried to clear a node that does not exist");
+        if (node == nodeLookup.end()) {
+            // Logger::error("Tried to clear a node that does not exist");
             return;
         }
+
         auto node_ptr = node->second;
-        for (auto &in : node_ptr->inputs)
-        {
-            if (pinLinkLookup.find(in.id) != pinLinkLookup.end())
-            {
+        for (auto &in : node_ptr->inputs) {
+            if (pinLinkLookup.find(in.id) != pinLinkLookup.end()) {
                 auto &links = pinLinkLookup[in.id];
                 for (auto &link : links)
                 {
@@ -299,13 +301,10 @@ namespace PipelineGraph
             }
         }
 
-        for (auto &out : node_ptr->outputs)
-        {
-            if (pinLinkLookup.find(out.id) != pinLinkLookup.end())
-            {
+        for (auto &out : node_ptr->outputs) {
+            if (pinLinkLookup.find(out.id) != pinLinkLookup.end()) {
                 auto &links = pinLinkLookup[out.id];
-                for (auto &link : links)
-                {
+                for (auto &link : links) {
                     removeLink(link->id);
                 }
             }
@@ -332,18 +331,14 @@ namespace PipelineGraph
                 {
                     auto input_pin_link = pinLinkLookup.find(inputPinId);
                     auto output_pin_link = pinLinkLookup.find(outputPinId);
-                    if (input_pin_link != pinLinkLookup.end())
-                    {
-                    }
-                    else
-                    {
+                    if (input_pin_link != pinLinkLookup.end()) { }
+                    else {
                         auto link = new Link{ed::LinkId(GetNextId()), inputPinId, outputPinId};
                         links.push_back(link);
 
                         linkLookup[link->id] = link;
 
-                        if (output_pin_link == pinLinkLookup.end())
-                        {
+                        if (output_pin_link == pinLinkLookup.end()) {
                             pinLinkLookup[outputPinId] = {};
                         }
 
@@ -396,8 +391,7 @@ namespace PipelineGraph
 
                         linkLookup[link->id] = link;
 
-                        if (output_pin_link == pinLinkLookup.end())
-                        {
+                        if (output_pin_link == pinLinkLookup.end()) {
                             pinLinkLookup[outputPinId] = {};
                         }
 
@@ -447,9 +441,8 @@ namespace PipelineGraph
         py::gil_scoped_acquire acquire{};
 
         auto link = linkLookup.find(id);
-        if (link == linkLookup.end())
-        {
-            Logger::error("Tried to remove a link that does not exist");
+        if (link == linkLookup.end()) {
+            Logger::warning("Tried to remove a link that does not exist");
             return;
         }
 
@@ -460,15 +453,13 @@ namespace PipelineGraph
 
         auto src = link_ptr->inputPinId;
         pinLinkLookup[src].erase(std::ranges::find(pinLinkLookup[src], link_ptr));
-        if (pinLinkLookup[src].empty())
-        {
+        if (pinLinkLookup[src].empty()) {
             pinLinkLookup.erase(src);
         }
 
         auto dst = link_ptr->outputPinId;
         pinLinkLookup[dst].erase(std::ranges::find(pinLinkLookup[dst], link_ptr));
-        if (pinLinkLookup[dst].empty())
-        {
+        if (pinLinkLookup[dst].empty()) {
             pinLinkLookup.erase(dst);
         }
 
@@ -639,7 +630,7 @@ namespace PipelineGraph
         editor->m_Config = old_cfg;
     }
 
-    Pin *curr_focus_pin;
+
     static void switchFocus(Pin *p)
     {
         if (ImGui::IsItemHovered())
@@ -650,8 +641,7 @@ namespace PipelineGraph
 
     static void renderPinTooltip()
     {
-        if (!curr_focus_pin)
-        {
+        if (!curr_focus_pin){
             return;
         }
 
@@ -1741,7 +1731,7 @@ namespace PipelineGraph
     {
         py::gil_scoped_acquire acquire{};
 
-        _type = type;
+        _type    = type;
         _pointer = pointer;
 
         id = GetNextId();
@@ -1852,7 +1842,7 @@ namespace PipelineGraph
         inputs = _inputs;
         SingleOutputNode::save(custom_data);
 
-        custom_data["module"] = _type->moduleName;
+        custom_data["module"]  =  _type->moduleName;
         custom_data["pointer"] = _pointer;
     }
 
