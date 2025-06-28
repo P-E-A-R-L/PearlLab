@@ -61,22 +61,6 @@
             "src": 2
         },
         {
-            "dst": 84,
-            "src": 81
-        },
-        {
-            "dst": 85,
-            "src": 69
-        },
-        {
-            "dst": 86,
-            "src": 2
-        },
-        {
-            "dst": 88,
-            "src": 83
-        },
-        {
             "dst": 25,
             "src": 43
         },
@@ -402,46 +386,6 @@
         },
         {
             "data": {
-                "file": false,
-                "id": 80,
-                "inputs": [],
-                "outputs": [
-                    81
-                ],
-                "tag": "<tag>",
-                "value": "py/experiments/assualt/dqn_assault_1k.pth"
-            },
-            "type": "PipelineGraph.Nodes.PrimitiveStringNode"
-        },
-        {
-            "data": {
-                "id": 82,
-                "inputs": [
-                    84,
-                    85,
-                    86
-                ],
-                "module": "pearl.agents.TorchDQN.TorchDQN",
-                "outputs": [
-                    83
-                ],
-                "tag": "<tag>"
-            },
-            "type": "PipelineGraph.Nodes.PythonModuleNode"
-        },
-        {
-            "data": {
-                "id": 87,
-                "inputs": [
-                    88
-                ],
-                "outputs": [],
-                "tag": "TorchDQN (1k)"
-            },
-            "type": "PipelineGraph.Nodes.AgentAcceptorNode"
-        },
-        {
-            "data": {
                 "id": 122,
                 "inputs": [
                     73
@@ -519,7 +463,7 @@
                     143
                 ],
                 "outputs": [],
-                "tag": "Agent47"
+                "tag": "TorchDQN (15m)"
             },
             "type": "PipelineGraph.Nodes.AgentAcceptorNode"
         },
@@ -532,7 +476,7 @@
                     147
                 ],
                 "tag": "<tag>",
-                "value": "py/experiments/assualt/AtariDQN.cleanrl_model"
+                "value": "py/experiments/assualt/dqn_assault_15m.pth"
             },
             "type": "PipelineGraph.Nodes.PrimitiveStringNode"
         },
@@ -590,7 +534,7 @@
                 "rangeEnd": -1.0,
                 "rangeStart": -1.0,
                 "tag": "<tag>",
-                "value": 0.009999999776482582
+                "value": 0.0
             },
             "type": "PipelineGraph.Nodes.PrimitiveFloatNode"
         },

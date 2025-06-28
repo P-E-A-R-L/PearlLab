@@ -126,5 +126,14 @@ class TabularLimeExplainability(ExplainabilityMethod):
                     idx = params.action
                 idx = max(0, idx) % self.mask.action_space
             
-            return {self.feature_names[fid]: weight for fid, weight in self.last_explain.local_exp.get(idx, [])}
+            weights = [(self.feature_names[fid], weight) for fid, weight in self.last_explain.local_exp.get(idx, [])]
+            
+            # Normalize weights to make absolute values sum to 1
+            total_abs = sum(abs(w) for _, w in weights)
+            if total_abs > 0:
+                normalized_weights = {name: weight / total_abs for name, weight in weights}
+            else:
+                normalized_weights = weights
+                
+            return normalized_weights
         return None
