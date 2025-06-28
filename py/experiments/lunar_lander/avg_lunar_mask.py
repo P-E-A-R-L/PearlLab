@@ -39,23 +39,22 @@ class TorchDQN:
         return self.q_net
 
 # Setup
-env = gym.make("LunarLander-v3", render_mode="human")
+env = gym.make("LunarLander-v3")# , render_mode="human")
 obs_dim = env.observation_space.shape[0]
 n_actions = env.action_space.n
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load trained agent
 agent = TorchDQN(
-    "experiments/lunar_lander/dqn_lunar_lander.pth",
+    "dqn_lunar_lander_agent48.pth",
     DQN(obs_dim, n_actions),
     device
 )
 
 # Prepare LIME
-train_data = np.array([env.reset()[0] for _ in range(500)])
 feature_names = ["x_pos", "y_pos", "x_vel", "y_vel", "angle", "angular_vel", "leg1", "leg2"]
 lime_explainer = LimeTabularExplainer(
-    training_data=train_data,
+    training_data=np.zeros((1, len(feature_names))),
     feature_names=feature_names,
     class_names=[f"Action {i}" for i in range(n_actions)],
     mode="classification"
@@ -65,8 +64,8 @@ def agent_fn(obs_batch):
     return np.array([agent.predict(obs) for obs in obs_batch])
 
 # Parameters
-num_episodes = 3
-max_steps = 500
+num_episodes = 100
+max_steps    = 1000
 accumulated_vectors = np.zeros((n_actions, obs_dim))
 counts = np.zeros(n_actions)
 
@@ -117,3 +116,8 @@ if __name__ == "__main__":
 # Action 1: [0.10035031, 0.0978269,  0.30228677, 0.22909508, 0.09797481, 0.15964805, 0.00675054, 0.00606754]
 # Action 2: [0.09868395, 0.09582568, 0.22472089, 0.35638494, 0.0984113,  0.10176454, 0.01516911, 0.00903959]
 # Action 3: [0.10791439, 0.10658454, 0.28125881, 0.21808978, 0.10598366, 0.16484477, 0.00851407, 0.00680997]
+
+# Action 0: [0.11660886 0.36630058 0.16460501 0.03132948 0.11978805 0.1467052 0.02788054 0.02678227]
+# Action 1: [0.11660886 0.36630058 0.16460501 0.03132948 0.11978805 0.1467052 0.02788054 0.02678227]
+# Action 2: [0.11660886 0.36630058 0.16460501 0.03132948 0.11978805 0.1467052 0.02788054 0.02678227]
+# Action 3: [0.11660886 0.36630058 0.16460501 0.03132948 0.11978805 0.1467052 0.02788054 0.02678227]

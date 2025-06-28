@@ -490,14 +490,12 @@ namespace Pipeline {
     }
 
     void VisualizedObject::_update_bar_chart() {
-
-
         SafeWrapper::execute([&]{
             auto data = visualizable->getVisualization(VisualizationMethod::BAR_CHART, bar_chart_params->object);
             if (data.has_value()) {
                 py::dict dict = data->cast<py::dict>();
                 {
-                    std::lock_guard guard(lock_features);
+                    std::lock_guard guard(lock_bar_chart);
                     bar_chart.clear();
                     for (const auto item : dict) {
                         py::str key = py::str(item.first);
