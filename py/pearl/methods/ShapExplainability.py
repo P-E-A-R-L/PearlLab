@@ -16,7 +16,9 @@ from shap.explainers._deep import deep_pytorch
 deep_pytorch.op_handler['Flatten'] = deep_pytorch.passthrough
 
 class ShapVisualizationParams:
+    mode: Param(str, choices=["Last Action", "Selected Action"]) = "Last Action"
     action: Param(int) = 0
+    threshold: Param(float, choices=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5]) = 0.4
 
 class ShapExplainability(ExplainabilityMethod):
     def __init__(self, device, mask: Mask):
@@ -100,14 +102,17 @@ class ShapExplainability(ExplainabilityMethod):
                 last_frame = last_obs
             else:
                 raise ValueError(f"Unexpected frame shape: {last_obs.shape}")
+            
+            idx = self.last_action if params is None or params.mode == "Last Action" else params.action
+            idx = max(0, idx) % self.mask.action_space
 
             # Get SHAP values for the specific action and last frame
             if isinstance(self.last_explain, list):
                 # Multiple outputs (one per action)
-                shap_vals = self.last_explain[self.last_action]
+                shap_vals = self.last_explain[idx]
             else:
                 # Single output, select the action dimension
-                shap_vals = self.last_explain[..., self.last_action]
+                shap_vals = self.last_explain[..., idx]
             
             # Extract heatmap for the last frame
             if shap_vals.ndim == 4:  # (batch, channels, height, width)
@@ -131,8 +136,8 @@ class ShapExplainability(ExplainabilityMethod):
             heatmap_norm = (heatmap + scale) / (2 * scale + 1e-8) # Normalize to [0, 1]
             
             # Create masks for positive (red) and negative (blue) attributions
-            red_mask = heatmap_norm >= 0.5
-            blue_mask = heatmap_norm <= 0.5
+            red_mask = heatmap_norm >= 1 - params.threshold
+            blue_mask = heatmap_norm <= params.threshold
             important = red_mask | blue_mask
 
             # Create colored overlay

@@ -12,8 +12,8 @@ from pearl.lab.visual import VisualizationMethod
 from pearl.lab.annotations import Param
 
 class TabularLimeVisualizationParams:
+    mode: Param(str, choices=["Last Action", "Selected Action"]) = "Last Action"
     action: Param(int) = 0
-
 
 class TabularLimeExplainability(ExplainabilityMethod):
     def __init__(self, device: torch.device, mask: Mask, feature_names: List[str]):
@@ -87,21 +87,12 @@ class TabularLimeExplainability(ExplainabilityMethod):
 
         action = int(torch.argmax(q_vals))
 
-        weights = np.zeros(len(self.feature_names), dtype=float)
-        for fid, weight in exp.local_exp.get(action, []):
-            weights[fid] = weight
+        weights = np.zeros((len(self.feature_names), self.mask.action_space), dtype=np.float32)
+        for a in range(self.mask.action_space):
+            for fid, weight in exp.local_exp.get(a, []):
+                weights[fid, a] = weight
 
-        attribution = np.abs(weights).reshape(1, len(self.feature_names), 1, 1, 1)
-        attribution = np.broadcast_to(
-            attribution,
-            (1, len(self.feature_names), 1, 1, self.mask.action_space)
-        ).astype(np.float32)
-
-        total = np.sum(attribution, axis=1, keepdims=True)
-        if total.any():
-            attribution /= total
-
-        score = float(self.mask.compute(attribution)[action])
+        score = float(self.mask.compute(weights)[action])
         action_q = q_vals[action].item()
         max_q = torch.max(q_vals).item()
         confidence = action_q / max_q if max_q != 0 else 1.0
@@ -126,11 +117,14 @@ class TabularLimeExplainability(ExplainabilityMethod):
         if m == VisualizationMethod.BAR_CHART:
             if self.last_explain is None:
                 return {name: 0.0 for name in self.feature_names}
-            idx = 0
-            if params is not None and isinstance(params, TabularLimeVisualizationParams):
-                idx = params.action
-            idx = max(0, idx) % self.mask.action_space
             
-            idx = self.last_action
+            if params.mode == "Last Action":
+                idx = self.last_action
+            else:
+                idx = 0
+                if params is not None and isinstance(params, TabularLimeVisualizationParams):
+                    idx = params.action
+                idx = max(0, idx) % self.mask.action_space
+            
             return {self.feature_names[fid]: weight for fid, weight in self.last_explain.local_exp.get(idx, [])}
         return None

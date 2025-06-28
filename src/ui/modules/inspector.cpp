@@ -84,8 +84,7 @@ static void render_python_object(PyLiveObject* obj) {
 
         ImGui::PushID(i);
         ImGui::BeginDisabled(editable == false);
-
-        // todo: test this thing one day ...
+        
             switch (pub.type) {
                 case INTEGER: {
                     if (anno.hasChoices) {
@@ -140,7 +139,13 @@ static void render_python_object(PyLiveObject* obj) {
                         auto data = Helpers::toImGuiList(anno.choices);
                         int choice = 0;
                         for (auto& c: anno.choices) {
-                            if (c == std::to_string(*pub.value.f)) {
+                            float value = 0;
+                            try {
+                                value = std::stof(c);
+                            } catch (...) {
+                                // no need to handle the error
+                            }
+                            if (std::abs(value - *pub.value.f) < 0.0001f) {
                                 break;
                             }
                             choice++;
@@ -670,7 +675,7 @@ static void render_methods_details(Pipeline::VisualizedAgent* agent) {
 }
 
 static void _render_content(Pipeline::VisualizedAgent* agent) {
-    static std::vector<float> sizes = {0.5, 0.3, 0.1, 0.1};
+    static std::vector<float> sizes = {0.35, 0.3, 0.05, 0.3};
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4, 4));
         Splitter::Vertical(sizes, [agent](int i) {

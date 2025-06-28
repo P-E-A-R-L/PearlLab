@@ -14,7 +14,9 @@ from pearl.lab.visual import VisualizationMethod
 from pearl.lab.annotations import Param
 
 class LimeVisualizationParams:
+    mode: Param(str, choices=["Last Action", "Selected Action"]) = "Last Action"
     action: Param(int) = 0
+    threshold: Param(float, choices=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5]) = 0.4
 
 class LimeExplainability(ExplainabilityMethod):
     """
@@ -128,7 +130,10 @@ class LimeExplainability(ExplainabilityMethod):
         if m == VisualizationMethod.RGB_ARRAY:
             segs = self.last_explain.segments
             heatmap = np.zeros(segs.shape, dtype=np.float32)
-            for segment, importance in self.last_explain.local_exp[self.last_action]:
+            idx = self.last_action if params is None or params.mode == "Last Action" else params.action
+            idx = max(0, idx) % self.mask.action_space
+            
+            for segment, importance in self.last_explain.local_exp[idx]:
                 heatmap[segs == segment] = importance
 
             if self.last_obs.ndim == 4:
@@ -145,8 +150,8 @@ class LimeExplainability(ExplainabilityMethod):
 
             scale = np.max(np.abs(heatmap))
             heatmap_norm = (heatmap + scale) / (2 * scale + 1e-8)
-            red_mask = heatmap_norm >= 0.6
-            blue_mask = heatmap_norm <= 0.4
+            red_mask = heatmap_norm >= 1 - params.threshold
+            blue_mask = heatmap_norm <= params.threshold
             important = red_mask | blue_mask
 
             colored = np.zeros_like(obs_img)

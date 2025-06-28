@@ -12,6 +12,7 @@ from pearl.lab.visual import VisualizationMethod
 from pearl.lab.annotations import Param
 
 class TabularShapVisualizationParams:
+    mode: Param(str, choices=["Last Action", "Selected Action"]) = "Last Action"
     action: Param(int) = 0
 
 
@@ -74,15 +75,9 @@ class TabularShapExplainability(ExplainabilityMethod):
 
         action = int(torch.argmax(q_vals))
         shap_values = exp['shap_values']
-        action_shap = shap_values[action]
+        weights = shap_values.T
 
-        weights = np.abs(action_shap).reshape(1, len(self.feature_names), 1, 1, 1)
-        attribution = np.broadcast_to(weights, (1, len(self.feature_names), 1, 1, self.mask.action_space)).astype(np.float32)
-        total = np.sum(attribution, axis=1, keepdims=True)
-        if total.any():
-            attribution /= total
-
-        score = float(self.mask.compute(attribution)[action])
+        score = float(self.mask.compute(weights)[action])
         action_q = q_vals[action].item()
         max_q = torch.max(q_vals).item()
         confidence = action_q / max_q if max_q != 0 else 1.0
@@ -101,8 +96,14 @@ class TabularShapExplainability(ExplainabilityMethod):
             return None
         if self.last_explain is None:
             return {name: 0.0 for name in self.feature_names}
-        idx = params.action if isinstance(params, TabularShapVisualizationParams) else 0
-        idx %= self.mask.action_space
-        idx = self.last_action
+        
+        if params.mode == "Last Action":
+                idx = self.last_action
+        else:
+            idx = 0
+            if params is not None and isinstance(params, TabularShapVisualizationParams):
+                idx = params.action
+            idx = max(0, idx) % self.mask.action_space
+        
         vals = np.array(self.last_explain['shap_values'])[idx]
         return {self.feature_names[i]: float(vals[i]) for i in range(len(self.feature_names))}
