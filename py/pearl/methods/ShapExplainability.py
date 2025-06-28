@@ -18,7 +18,7 @@ deep_pytorch.op_handler['Flatten'] = deep_pytorch.passthrough
 class ShapVisualizationParams:
     mode: Param(str, choices=["Last Action", "Selected Action"]) = "Last Action"
     action: Param(int) = 0
-    threshold: Param(float, choices=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5]) = 0.4
+    threshold: Param(float, choices=[0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.47, 0.49, 0.5]) = 0.49
 
 class ShapExplainability(ExplainabilityMethod):
     def __init__(self, device, mask: Mask):
